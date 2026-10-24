@@ -1,0 +1,348 @@
+# Starter form. Review wording with your radiologists before clinical use.
+id: us-thyroid
+title: US Thyroid
+description: Thyroid and neck soft tissue ultrasound with ACR TI-RADS nodule scoring.
+study_match:
+  - THYROID
+  - US NECK SOFT TISSUE
+  - US NECK
+  - THYR
+
+sections:
+  - id: clinical
+    title: Clinical
+    fields:
+      - id: indication
+        type: multi
+        label: Indication
+        required: true
+        other: true
+        options:
+          - { value: palpable, label: Palpable nodule / neck mass, text: palpable thyroid nodule or neck mass }
+          - { value: followup, label: Nodule follow-up, text: follow-up of thyroid nodule(s) }
+          - { value: incidental, label: Incidental nodule on CT / MRI / PET, text: incidental thyroid nodule on prior imaging }
+          - { value: goiter, label: Goiter / enlarged thyroid, text: goiter }
+          - { value: hypo, label: Hypothyroidism, text: hypothyroidism }
+          - { value: hyper, label: Hyperthyroidism, text: hyperthyroidism }
+          - { value: abnormal_tft, label: Abnormal thyroid function tests, text: abnormal thyroid function tests }
+          - { value: cancer, label: Thyroid cancer surveillance, text: surveillance for thyroid cancer }
+      - id: comparison
+        type: text
+        label: Comparison
+        placeholder: "e.g. US thyroid 03/14/2025, or leave blank for none"
+    report: |
+      INDICATION: {{indication | cap}}.
+      COMPARISON: {{#if present(comparison)}}{{comparison}}{{else}}None{{/if}}.
+      TECHNIQUE: Grayscale and color Doppler ultrasound of the thyroid gland and neck was performed.
+
+  - id: gland
+    title: Thyroid gland
+    fields:
+      - id: gland_status
+        type: choice
+        label: Gland
+        required: true
+        default: intact
+        options:
+          - { value: intact, label: Both lobes present }
+          - { value: r_lobectomy, label: Right lobectomy }
+          - { value: l_lobectomy, label: Left lobectomy }
+          - { value: total, label: Total thyroidectomy }
+      - id: r_lobe
+        type: dims
+        label: Right lobe
+        help: Length (craniocaudal) x AP x width (transverse)
+        min: 1
+        max: 10
+        required: true
+        show_if: "gland_status in ['intact', 'l_lobectomy']"
+      - id: r_lobe_vol
+        type: calc
+        label: Right lobe volume
+        formula: ellipsoid(r_lobe)
+        unit: mL
+        decimals: 1
+        show_if: "gland_status in ['intact', 'l_lobectomy']"
+      - id: l_lobe
+        type: dims
+        label: Left lobe
+        help: Length (craniocaudal) x AP x width (transverse)
+        min: 1
+        max: 10
+        required: true
+        show_if: "gland_status in ['intact', 'r_lobectomy']"
+      - id: l_lobe_vol
+        type: calc
+        label: Left lobe volume
+        formula: ellipsoid(l_lobe)
+        unit: mL
+        decimals: 1
+        show_if: "gland_status in ['intact', 'r_lobectomy']"
+      - id: isthmus
+        type: number
+        label: Isthmus AP thickness
+        unit: cm
+        decimals: 2
+        min: 0
+        max: 2
+        required: "gland_status == 'intact'"
+        show_if: "gland_status != 'total'"
+      - id: echotexture
+        type: choice
+        label: Parenchymal echotexture
+        required: true
+        show_if: "gland_status != 'total'"
+        normal: homogeneous
+        options:
+          - { value: homogeneous, label: Homogeneous, text: homogeneous echotexture }
+          - { value: mild_het, label: Mildly heterogeneous, text: mildly heterogeneous echotexture }
+          - { value: heterogeneous, label: Heterogeneous / coarsened, text: "heterogeneous, coarsened echotexture, which can be seen with thyroiditis" }
+          - { value: pseudonodular, label: Heterogeneous with pseudonodules, text: "heterogeneous echotexture with ill-defined hypoechoic areas (pseudonodularity), which can be seen with thyroiditis" }
+      - id: vascularity
+        type: choice
+        label: Vascularity
+        required: true
+        show_if: "gland_status != 'total'"
+        normal: normal
+        options:
+          - { value: normal, label: Normal, text: normal vascularity }
+          - { value: increased, label: Increased, text: diffusely increased vascularity }
+          - { value: markedly, label: Markedly increased (inferno), text: markedly increased vascularity }
+          - { value: decreased, label: Decreased, text: decreased vascularity }
+      - id: bed
+        type: choice
+        label: Thyroidectomy bed
+        show_if: "gland_status != 'intact'"
+        normal: clear
+        options:
+          - { value: clear, label: No residual / recurrent tissue, text: No mass or residual thyroid tissue in the surgical bed. }
+          - { value: tissue, label: Soft tissue in bed (describe below), text: "Soft tissue is present in the thyroidectomy bed, as described below." }
+    report: |
+      {{#if gland_status == 'total'}}
+      THYROID: Status post total thyroidectomy. {{bed}}
+      {{else}}
+      {{#if gland_status == 'r_lobectomy'}}
+      RIGHT LOBE: Surgically absent. {{bed}}
+      {{else}}
+      RIGHT LOBE: Measures {{r_lobe}} (volume {{r_lobe_vol}}).
+      {{/if}}
+      {{#if gland_status == 'l_lobectomy'}}
+      LEFT LOBE: Surgically absent. {{bed}}
+      {{else}}
+      LEFT LOBE: Measures {{l_lobe}} (volume {{l_lobe_vol}}).
+      {{/if}}
+      {{#if present(isthmus)}}
+      ISTHMUS: Measures {{isthmus}} in AP thickness.
+      {{/if}}
+      {{#if present(echotexture) or present(vascularity)}}
+      PARENCHYMA: {{echotexture | sentence}} {{vascularity | sentence}}
+      {{/if}}
+      {{/if}}
+
+  - id: nodules_section
+    title: Nodules
+    fields:
+      - id: nodule_status
+        type: choice
+        label: Thyroid nodules
+        required: true
+        normal: none
+        options:
+          - { value: none, label: None }
+          - { value: present, label: Present (score each below) }
+      - id: multinodular
+        type: boolean
+        label: Multinodular gland (only the dominant / most suspicious nodules are scored)
+        show_if: "nodule_status == 'present'"
+      - id: nodules
+        type: repeat
+        label: Nodules
+        item_label: Nodule
+        max_items: 6
+        required: true
+        show_if: "nodule_status == 'present'"
+        fields:
+          - id: location
+            type: choice
+            label: Location
+            layout: dropdown
+            required: true
+            options:
+              - { value: r_upper, label: Right upper, text: right upper pole }
+              - { value: r_mid, label: Right mid, text: right mid lobe }
+              - { value: r_lower, label: Right lower, text: right lower pole }
+              - { value: isthmus, label: Isthmus, text: isthmus }
+              - { value: l_upper, label: Left upper, text: left upper pole }
+              - { value: l_mid, label: Left mid, text: left mid lobe }
+              - { value: l_lower, label: Left lower, text: left lower pole }
+              - { value: bed_r, label: Right thyroidectomy bed, text: right thyroidectomy bed }
+              - { value: bed_l, label: Left thyroidectomy bed, text: left thyroidectomy bed }
+          - id: size
+            type: dims
+            label: Size
+            help: Length (craniocaudal) x AP x width (transverse)
+            min: 0.2
+            max: 10
+            required: true
+          - id: composition
+            type: choice
+            label: Composition
+            required: true
+            options:
+              - { value: cystic, label: Cystic / almost completely cystic, text: cystic or almost completely cystic, points: 0 }
+              - { value: spongiform, label: Spongiform, text: spongiform, points: 0 }
+              - { value: mixed, label: Mixed cystic and solid, text: mixed cystic and solid, points: 1 }
+              - { value: solid, label: Solid / almost completely solid, text: solid or almost completely solid, points: 2 }
+          - id: echogenicity
+            type: choice
+            label: Echogenicity
+            required: true
+            options:
+              - { value: anechoic, label: Anechoic, text: anechoic, points: 0 }
+              - { value: hyperechoic, label: Hyperechoic, text: hyperechoic, points: 1 }
+              - { value: isoechoic, label: Isoechoic, text: isoechoic, points: 1 }
+              - { value: hypoechoic, label: Hypoechoic, text: hypoechoic, points: 2 }
+              - { value: very_hypo, label: Very hypoechoic (vs. strap muscles), text: very hypoechoic, points: 3 }
+              - { value: indeterminate, label: Cannot be determined, text: of indeterminate echogenicity, points: 1 }
+          - id: shape
+            type: choice
+            label: Shape (transverse plane)
+            required: true
+            options:
+              - { value: wider, label: Wider-than-tall, text: wider-than-tall, points: 0 }
+              - { value: taller, label: Taller-than-wide, text: taller-than-wide, points: 3 }
+          - id: margin
+            type: choice
+            label: Margin
+            required: true
+            options:
+              - { value: smooth, label: Smooth, text: smooth margins, points: 0 }
+              - { value: ill_defined, label: Ill-defined, text: ill-defined margins, points: 0 }
+              - { value: irregular, label: Lobulated / irregular, text: lobulated or irregular margins, points: 2 }
+              - { value: ete, label: Extrathyroidal extension, text: extrathyroidal extension, points: 3 }
+              - { value: indeterminate, label: Cannot be determined, text: indeterminate margins, points: 0 }
+          - id: foci
+            type: multi
+            label: Echogenic foci (all that apply)
+            required: true
+            options:
+              - { value: none, label: None, text: none, points: 0 }
+              - { value: comet, label: Large comet-tail artifacts, text: large comet-tail artifacts, points: 0 }
+              - { value: macro, label: Macrocalcifications, text: macrocalcifications, points: 1 }
+              - { value: rim, label: Peripheral (rim) calcifications, text: peripheral (rim) calcifications, points: 2 }
+              - { value: punctate, label: Punctate echogenic foci, text: punctate echogenic foci, points: 3 }
+          - id: change
+            type: choice
+            label: Compared with prior
+            options:
+              - { value: new, label: New, text: New since the prior examination. }
+              - { value: stable, label: Stable, text: Stable compared with the prior examination. }
+              - { value: larger, label: Enlarged, text: Increased in size compared with the prior examination. }
+              - { value: smaller, label: Smaller, text: Decreased in size compared with the prior examination. }
+          - id: tr_points
+            type: calc
+            label: TI-RADS points
+            formula: "if(present(composition) and present(echogenicity) and present(shape) and present(margin) and present(foci), points(composition, echogenicity, shape, margin, foci))"
+          - id: tr_level
+            type: calc
+            label: TI-RADS level
+            formula: tirads(tr_points)
+          - id: tr_max
+            type: calc
+            label: Maximum dimension
+            formula: max_dim(size)
+            unit: cm
+            decimals: 1
+          - id: tr_rec
+            type: calc
+            label: ACR recommendation
+            formula: tirads_rec(tr_level, tr_max)
+    report: |
+      {{#if nodule_status == 'none'}}
+      NODULES: No thyroid nodules.
+      {{else if nodule_status == 'present'}}
+      NODULES:{{#if multinodular}} The gland is multinodular. The dominant and/or most suspicious nodules are described below.{{/if}}
+      {{#each nodules}}
+      - Nodule {{@index}} ({{location}}): Measures {{size}}. {{composition | cap}}, {{echogenicity}}, {{shape}}, with {{margin}}.{{#if present(foci)}} Echogenic foci: {{foci}}.{{/if}} {{#if present(tr_level)}}ACR TI-RADS {{tr_level}} ({{tr_points}} point{{#if tr_points != 1}}s{{/if}}).{{/if}} {{#if tr_rec == 'FNA recommended'}}Meets criteria for FNA.{{else if tr_rec == 'Follow-up recommended'}}Meets criteria for follow-up ultrasound.{{else if present(tr_rec)}}Does not meet criteria for FNA or follow-up.{{/if}} {{change}}
+      {{/each}}
+      {{/if}}
+
+  - id: lymph_nodes
+    title: Cervical lymph nodes
+    fields:
+      - id: ln_status
+        type: choice
+        label: Cervical lymph nodes
+        required: true
+        normal: normal
+        options:
+          - { value: normal, label: Normal / no abnormal nodes }
+          - { value: abnormal, label: Abnormal (describe) }
+          - { value: not_assessed, label: Not assessed }
+      - id: ln_nodes
+        type: repeat
+        label: Abnormal lymph nodes
+        item_label: Lymph node
+        max_items: 6
+        required: true
+        show_if: "ln_status == 'abnormal'"
+        fields:
+          - id: side
+            type: choice
+            label: Side
+            required: true
+            options:
+              - { value: right, label: Right, text: right }
+              - { value: left, label: Left, text: left }
+              - { value: midline, label: Midline, text: midline }
+          - id: level
+            type: choice
+            label: Level
+            layout: dropdown
+            options:
+              - { value: "1", label: I, text: level I }
+              - { value: "2", label: II, text: level II }
+              - { value: "3", label: III, text: level III }
+              - { value: "4", label: IV, text: level IV }
+              - { value: "5", label: V, text: level V }
+              - { value: "6", label: VI (central), text: level VI }
+          - id: size
+            type: dims
+            label: Size
+            axes: [Long, Short]
+            min: 0.2
+            max: 8
+            required: true
+          - id: features
+            type: multi
+            label: Abnormal features
+            other: true
+            options:
+              - { value: no_hilum, label: Loss of fatty hilum, text: loss of the fatty hilum }
+              - { value: round, label: Rounded shape, text: rounded shape }
+              - { value: cystic, label: Cystic change, text: cystic change }
+              - { value: calc, label: Microcalcifications, text: microcalcifications }
+              - { value: vascular, label: Peripheral / chaotic vascularity, text: peripheral or chaotic vascularity }
+              - { value: hyperechoic, label: Hyperechoic (thyroid-like), text: hyperechoic echotexture }
+    report: |
+      {{#if ln_status == 'normal'}}
+      LYMPH NODES: No abnormal cervical lymph nodes.
+      {{else if ln_status == 'abnormal'}}
+      LYMPH NODES:
+      {{#each ln_nodes}}
+      - {{side | cap}} {{level}} lymph node measuring {{size}}{{#if present(features)}} with {{features}}{{/if}}.
+      {{/each}}
+      {{else if ln_status == 'not_assessed'}}
+      LYMPH NODES: Not assessed.
+      {{/if}}
+
+  - id: impression
+    title: Tech impression (preliminary)
+    report: false
+    fields:
+      - id: tech_impression
+        type: choice
+        label: Overall
+        options:
+          - { value: normal, label: Normal study }
+          - { value: abnormal, label: Abnormal – see findings }

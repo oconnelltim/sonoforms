@@ -1,0 +1,438 @@
+# Starter form. Review wording with your radiologists before clinical use.
+id: us-renal
+title: US Renal / Kidneys and Bladder
+description: Renal and bladder ultrasound with bladder volumes and optional prostate volume.
+study_match:
+  - RENAL
+  - KIDNEY
+  - KIDNEYS
+  - RETROPERITONEAL
+  - US KIDNEYS BLADDER
+
+sections:
+  - id: clinical
+    title: Clinical
+    fields:
+      - id: indication
+        type: multi
+        label: Indication
+        required: true
+        other: true
+        options:
+          - { value: aki, label: Acute kidney injury / elevated creatinine, text: elevated creatinine }
+          - { value: ckd, label: Chronic kidney disease, text: chronic kidney disease }
+          - { value: flank_pain, label: Flank pain, text: flank pain }
+          - { value: hematuria, label: Hematuria, text: hematuria }
+          - { value: uti, label: UTI / pyelonephritis, text: urinary tract infection }
+          - { value: stones, label: Nephrolithiasis, text: nephrolithiasis }
+          - { value: hydro, label: Hydronephrosis follow-up, text: follow-up of hydronephrosis }
+          - { value: retention, label: Urinary retention, text: urinary retention }
+          - { value: htn, label: Hypertension, text: hypertension }
+      - id: comparison
+        type: text
+        label: Comparison
+        placeholder: "e.g. CT abdomen 03/14/2025, or leave blank for none"
+    report: |
+      INDICATION: {{indication | cap}}.
+      COMPARISON: {{#if present(comparison)}}{{comparison}}{{else}}None{{/if}}.
+      TECHNIQUE: Grayscale and color Doppler ultrasound of the kidneys and urinary bladder was performed.
+
+  - id: right_kidney
+    title: Right kidney
+    fields:
+      - id: r_kid_status
+        type: choice
+        label: Right kidney
+        required: true
+        default: seen
+        options:
+          - { value: seen, label: Visualized }
+          - { value: absent, label: Surgically absent }
+          - { value: not_seen, label: Not visualized }
+      - id: r_kid_length
+        type: number
+        label: Right kidney length
+        unit: cm
+        decimals: 1
+        min: 7
+        max: 15
+        required: true
+        show_if: "r_kid_status == 'seen'"
+      - id: r_cortex
+        type: choice
+        label: Cortical echogenicity
+        required: true
+        show_if: "r_kid_status == 'seen'"
+        normal: normal
+        options:
+          - { value: normal, label: Normal, text: Normal cortical echogenicity and corticomedullary differentiation. }
+          - { value: increased, label: Increased, text: "Increased cortical echogenicity, which can be seen with medical renal disease." }
+          - { value: thin, label: Cortical thinning, text: Diffuse cortical thinning. }
+          - { value: scar, label: Focal cortical scar, text: Focal cortical scarring. }
+      - id: r_hydro
+        type: choice
+        label: Hydronephrosis
+        required: true
+        show_if: "r_kid_status == 'seen'"
+        normal: none
+        options:
+          - { value: none, label: None, text: No hydronephrosis. }
+          - { value: mild, label: Mild, text: Mild hydronephrosis. }
+          - { value: moderate, label: Moderate, text: Moderate hydronephrosis. }
+          - { value: severe, label: Severe, text: Severe hydronephrosis. }
+      - id: r_hydroureter
+        type: boolean
+        label: Proximal hydroureter
+        show_if: "r_kid_status == 'seen' and r_hydro in ['mild', 'moderate', 'severe']"
+      - id: r_stones
+        type: choice
+        label: Stones
+        required: true
+        show_if: "r_kid_status == 'seen'"
+        normal: none
+        options:
+          - { value: none, label: None, text: No nephrolithiasis. }
+          - { value: single, label: Single }
+          - { value: multiple, label: Multiple }
+      - id: r_stone_size
+        type: number
+        label: Largest stone
+        unit: mm
+        decimals: 0
+        min: 1
+        max: 50
+        show_if: "r_kid_status == 'seen' and r_stones in ['single', 'multiple']"
+      - id: r_stone_loc
+        type: choice
+        label: Location (largest stone)
+        layout: dropdown
+        show_if: "r_kid_status == 'seen' and r_stones in ['single', 'multiple']"
+        options:
+          - { value: upper, label: Upper pole, text: in the upper pole }
+          - { value: inter, label: Interpolar, text: in the interpolar region }
+          - { value: lower, label: Lower pole, text: in the lower pole }
+          - { value: pelvis, label: Renal pelvis, text: in the renal pelvis }
+          - { value: upj, label: UPJ, text: at the ureteropelvic junction }
+      - id: r_cyst_status
+        type: choice
+        label: Cysts / masses
+        required: true
+        show_if: "r_kid_status == 'seen'"
+        normal: none
+        options:
+          - { value: none, label: None }
+          - { value: present, label: Present (describe) }
+      - id: r_cysts
+        type: repeat
+        label: Right renal cysts / lesions
+        item_label: Lesion
+        max_items: 6
+        required: true
+        show_if: "r_kid_status == 'seen' and r_cyst_status == 'present'"
+        fields:
+          - id: location
+            type: choice
+            label: Location
+            required: true
+            options:
+              - { value: upper, label: Upper pole, text: upper pole }
+              - { value: inter, label: Interpolar, text: interpolar region }
+              - { value: lower, label: Lower pole, text: lower pole }
+              - { value: parapelvic, label: Parapelvic, text: parapelvic region }
+          - id: kind
+            type: choice
+            label: Appearance
+            required: true
+            options:
+              - { value: simple, label: Simple cyst, text: simple cyst }
+              - { value: min_complex, label: Thin septation / few septa, text: cyst with a thin septation }
+              - { value: complex, label: Complex cyst (thick septa / nodule), text: complex cystic lesion }
+              - { value: echogenic, label: Echogenic (AML-like), text: echogenic lesion }
+              - { value: solid, label: Solid, text: solid-appearing lesion }
+            other: true
+          - id: size
+            type: number
+            label: Maximum dimension
+            unit: cm
+            decimals: 1
+            min: 0.2
+            max: 20
+            required: true
+          - id: flow
+            type: choice
+            label: Internal flow
+            show_if: "kind in ['complex', 'echogenic', 'solid', 'other']"
+            options:
+              - { value: none, label: None, text: No internal vascularity. }
+              - { value: present, label: Present, text: Internal vascularity is present. }
+    report: |
+      {{#if r_kid_status == 'absent'}}
+      RIGHT KIDNEY: Surgically absent.
+      {{else if r_kid_status == 'not_seen'}}
+      RIGHT KIDNEY: Not visualized.
+      {{else if r_hydro == 'none' and r_stones == 'none' and r_cyst_status == 'none'}}
+      RIGHT KIDNEY: Measures {{r_kid_length}} in length. {{r_cortex}} No hydronephrosis, nephrolithiasis, or mass.
+      {{else}}
+      RIGHT KIDNEY: Measures {{r_kid_length}} in length. {{r_cortex}} {{r_hydro}}{{#if r_hydroureter}} Proximal hydroureter is present.{{/if}} {{#if r_stones == 'single'}}A {{#if present(r_stone_size)}}{{r_stone_size}} {{/if}}calculus{{#if present(r_stone_loc)}} {{r_stone_loc}}{{/if}}.{{else if r_stones == 'multiple'}}Multiple calculi{{#if present(r_stone_size)}}, the largest measuring {{r_stone_size}}{{/if}}{{#if present(r_stone_loc)}} {{r_stone_loc}}{{/if}}.{{else}}{{r_stones}}{{/if}}{{#if r_cyst_status == 'none'}} No renal cyst or mass.{{/if}}
+      {{#each r_cysts}}
+      - {{location | cap}}: {{size}} {{kind}}.{{#if present(flow)}} {{flow}}{{/if}}
+      {{/each}}
+      {{/if}}
+
+  - id: left_kidney
+    title: Left kidney
+    fields:
+      - id: l_kid_status
+        type: choice
+        label: Left kidney
+        required: true
+        default: seen
+        options:
+          - { value: seen, label: Visualized }
+          - { value: absent, label: Surgically absent }
+          - { value: not_seen, label: Not visualized }
+      - id: l_kid_length
+        type: number
+        label: Left kidney length
+        unit: cm
+        decimals: 1
+        min: 7
+        max: 15
+        required: true
+        show_if: "l_kid_status == 'seen'"
+      - id: l_cortex
+        type: choice
+        label: Cortical echogenicity
+        required: true
+        show_if: "l_kid_status == 'seen'"
+        normal: normal
+        options:
+          - { value: normal, label: Normal, text: Normal cortical echogenicity and corticomedullary differentiation. }
+          - { value: increased, label: Increased, text: "Increased cortical echogenicity, which can be seen with medical renal disease." }
+          - { value: thin, label: Cortical thinning, text: Diffuse cortical thinning. }
+          - { value: scar, label: Focal cortical scar, text: Focal cortical scarring. }
+      - id: l_hydro
+        type: choice
+        label: Hydronephrosis
+        required: true
+        show_if: "l_kid_status == 'seen'"
+        normal: none
+        options:
+          - { value: none, label: None, text: No hydronephrosis. }
+          - { value: mild, label: Mild, text: Mild hydronephrosis. }
+          - { value: moderate, label: Moderate, text: Moderate hydronephrosis. }
+          - { value: severe, label: Severe, text: Severe hydronephrosis. }
+      - id: l_hydroureter
+        type: boolean
+        label: Proximal hydroureter
+        show_if: "l_kid_status == 'seen' and l_hydro in ['mild', 'moderate', 'severe']"
+      - id: l_stones
+        type: choice
+        label: Stones
+        required: true
+        show_if: "l_kid_status == 'seen'"
+        normal: none
+        options:
+          - { value: none, label: None, text: No nephrolithiasis. }
+          - { value: single, label: Single }
+          - { value: multiple, label: Multiple }
+      - id: l_stone_size
+        type: number
+        label: Largest stone
+        unit: mm
+        decimals: 0
+        min: 1
+        max: 50
+        show_if: "l_kid_status == 'seen' and l_stones in ['single', 'multiple']"
+      - id: l_stone_loc
+        type: choice
+        label: Location (largest stone)
+        layout: dropdown
+        show_if: "l_kid_status == 'seen' and l_stones in ['single', 'multiple']"
+        options:
+          - { value: upper, label: Upper pole, text: in the upper pole }
+          - { value: inter, label: Interpolar, text: in the interpolar region }
+          - { value: lower, label: Lower pole, text: in the lower pole }
+          - { value: pelvis, label: Renal pelvis, text: in the renal pelvis }
+          - { value: upj, label: UPJ, text: at the ureteropelvic junction }
+      - id: l_cyst_status
+        type: choice
+        label: Cysts / masses
+        required: true
+        show_if: "l_kid_status == 'seen'"
+        normal: none
+        options:
+          - { value: none, label: None }
+          - { value: present, label: Present (describe) }
+      - id: l_cysts
+        type: repeat
+        label: Left renal cysts / lesions
+        item_label: Lesion
+        max_items: 6
+        required: true
+        show_if: "l_kid_status == 'seen' and l_cyst_status == 'present'"
+        fields:
+          - id: location
+            type: choice
+            label: Location
+            required: true
+            options:
+              - { value: upper, label: Upper pole, text: upper pole }
+              - { value: inter, label: Interpolar, text: interpolar region }
+              - { value: lower, label: Lower pole, text: lower pole }
+              - { value: parapelvic, label: Parapelvic, text: parapelvic region }
+          - id: kind
+            type: choice
+            label: Appearance
+            required: true
+            options:
+              - { value: simple, label: Simple cyst, text: simple cyst }
+              - { value: min_complex, label: Thin septation / few septa, text: cyst with a thin septation }
+              - { value: complex, label: Complex cyst (thick septa / nodule), text: complex cystic lesion }
+              - { value: echogenic, label: Echogenic (AML-like), text: echogenic lesion }
+              - { value: solid, label: Solid, text: solid-appearing lesion }
+            other: true
+          - id: size
+            type: number
+            label: Maximum dimension
+            unit: cm
+            decimals: 1
+            min: 0.2
+            max: 20
+            required: true
+          - id: flow
+            type: choice
+            label: Internal flow
+            show_if: "kind in ['complex', 'echogenic', 'solid', 'other']"
+            options:
+              - { value: none, label: None, text: No internal vascularity. }
+              - { value: present, label: Present, text: Internal vascularity is present. }
+    report: |
+      {{#if l_kid_status == 'absent'}}
+      LEFT KIDNEY: Surgically absent.
+      {{else if l_kid_status == 'not_seen'}}
+      LEFT KIDNEY: Not visualized.
+      {{else if l_hydro == 'none' and l_stones == 'none' and l_cyst_status == 'none'}}
+      LEFT KIDNEY: Measures {{l_kid_length}} in length. {{l_cortex}} No hydronephrosis, nephrolithiasis, or mass.
+      {{else}}
+      LEFT KIDNEY: Measures {{l_kid_length}} in length. {{l_cortex}} {{l_hydro}}{{#if l_hydroureter}} Proximal hydroureter is present.{{/if}} {{#if l_stones == 'single'}}A {{#if present(l_stone_size)}}{{l_stone_size}} {{/if}}calculus{{#if present(l_stone_loc)}} {{l_stone_loc}}{{/if}}.{{else if l_stones == 'multiple'}}Multiple calculi{{#if present(l_stone_size)}}, the largest measuring {{l_stone_size}}{{/if}}{{#if present(l_stone_loc)}} {{l_stone_loc}}{{/if}}.{{else}}{{l_stones}}{{/if}}{{#if l_cyst_status == 'none'}} No renal cyst or mass.{{/if}}
+      {{#each l_cysts}}
+      - {{location | cap}}: {{size}} {{kind}}.{{#if present(flow)}} {{flow}}{{/if}}
+      {{/each}}
+      {{/if}}
+
+  - id: bladder
+    title: Bladder
+    fields:
+      - id: bladder_status
+        type: choice
+        label: Bladder
+        required: true
+        default: distended
+        options:
+          - { value: distended, label: Distended, text: Adequately distended. }
+          - { value: under, label: Underdistended, text: "Underdistended, limiting evaluation." }
+          - { value: decompressed, label: Decompressed / empty }
+          - { value: foley, label: Foley catheter in place }
+      - id: pre_dims
+        type: dims
+        label: Pre-void bladder
+        min: 1
+        max: 20
+        required: "bladder_status == 'distended'"
+        show_if: "bladder_status in ['distended', 'under']"
+      - id: pre_vol
+        type: calc
+        label: Pre-void volume
+        formula: volume(pre_dims, 0.52)
+        unit: mL
+        decimals: 0
+        show_if: "bladder_status in ['distended', 'under']"
+      - id: bladder_findings
+        type: choice
+        label: Wall / lumen
+        required: true
+        show_if: "bladder_status in ['distended', 'under']"
+        normal: normal
+        options:
+          - { value: normal, label: Normal, text: No bladder wall thickening or intraluminal abnormality. }
+          - { value: thick, label: Diffuse wall thickening / trabeculation, text: Diffuse bladder wall thickening and trabeculation. }
+          - { value: debris, label: Layering debris, text: Layering debris within the bladder. }
+          - { value: stone, label: Bladder stone, text: Shadowing calculus within the bladder. }
+          - { value: mass, label: Focal wall lesion / mass, text: Focal bladder wall lesion. }
+          - { value: diverticulum, label: Diverticulum, text: Bladder diverticulum. }
+        other: true
+      - id: jets
+        type: choice
+        label: Ureteral jets
+        show_if: "bladder_status in ['distended', 'under']"
+        normal: bilateral
+        options:
+          - { value: bilateral, label: Bilateral, text: Bilateral ureteral jets are demonstrated. }
+          - { value: right, label: Right only, text: A right ureteral jet is demonstrated. No left ureteral jet is seen. }
+          - { value: left, label: Left only, text: A left ureteral jet is demonstrated. No right ureteral jet is seen. }
+          - { value: none, label: None seen, text: No ureteral jets are demonstrated. }
+          - { value: not_assessed, label: Not assessed, text: "" }
+      - id: post_void
+        type: choice
+        label: Post-void imaging
+        show_if: "bladder_status in ['distended', 'under']"
+        default: done
+        options:
+          - { value: done, label: Performed }
+          - { value: unable, label: Patient unable to void }
+          - { value: not_done, label: Not performed }
+      - id: post_dims
+        type: dims
+        label: Post-void bladder
+        min: 0
+        max: 20
+        required: true
+        show_if: "bladder_status in ['distended', 'under'] and post_void == 'done'"
+      - id: post_vol
+        type: calc
+        label: Post-void residual
+        formula: volume(post_dims, 0.52)
+        unit: mL
+        decimals: 0
+        show_if: "bladder_status in ['distended', 'under'] and post_void == 'done'"
+    report: |
+      {{#if bladder_status == 'foley'}}
+      BLADDER: Decompressed with a Foley catheter in place.
+      {{else if bladder_status == 'decompressed'}}
+      BLADDER: Decompressed, limiting evaluation.
+      {{else}}
+      BLADDER: {{bladder_status}}{{#if present(pre_vol)}} Pre-void volume {{pre_vol}}.{{/if}} {{bladder_findings | sentence}} {{jets}}{{#if present(post_vol)}} Post-void residual volume {{post_vol}}.{{else if post_void == 'unable'}} The patient was unable to void.{{/if}}
+      {{/if}}
+
+  - id: prostate
+    title: Prostate
+    show_if: "patient.sex == 'M'"
+    fields:
+      - id: prostate_dims
+        type: dims
+        label: Prostate (optional)
+        help: Transabdominal, through the distended bladder
+        min: 1
+        max: 12
+      - id: prostate_vol
+        type: calc
+        label: Prostate volume
+        formula: ellipsoid(prostate_dims)
+        unit: mL
+        decimals: 0
+    report: |
+      {{#if present(prostate_vol)}}
+      PROSTATE: Measures {{prostate_dims}} (volume {{prostate_vol}}).
+      {{/if}}
+
+  - id: impression
+    title: Tech impression (preliminary)
+    report: false
+    fields:
+      - id: tech_impression
+        type: choice
+        label: Overall
+        options:
+          - { value: normal, label: Normal study }
+          - { value: abnormal, label: Abnormal – see findings }

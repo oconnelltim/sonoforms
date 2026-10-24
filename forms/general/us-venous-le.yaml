@@ -1,0 +1,371 @@
+# Starter form. Review wording with your radiologists before clinical use.
+id: us-venous-le
+title: US Venous Duplex Lower Extremity
+description: Lower extremity deep venous duplex for DVT (compression, color and spectral Doppler).
+study_match:
+  - VENOUS DUPLEX LOWER
+  - VENOUS LOWER EXTREMITY
+  - LOWER EXTREMITY VENOUS
+  - LOWER EXT VENOUS
+  - VENOUS LOWER EXT
+  - VENOUS LEG
+  - DVT LOWER
+  - DVT LEG
+
+sections:
+  - id: clinical
+    title: Clinical
+    fields:
+      - id: side
+        type: choice
+        label: Side
+        required: true
+        options:
+          - { value: right, label: Right, text: right lower extremity }
+          - { value: left, label: Left, text: left lower extremity }
+          - { value: bilateral, label: Bilateral, text: bilateral lower extremities }
+      - id: indication
+        type: multi
+        label: Indication
+        required: true
+        other: true
+        options:
+          - { value: swelling, label: Leg swelling, text: leg swelling }
+          - { value: pain, label: Leg pain, text: leg pain }
+          - { value: erythema, label: Erythema / warmth, text: erythema }
+          - { value: ddimer, label: Elevated D-dimer, text: elevated D-dimer }
+          - { value: pe, label: Suspected or known PE, text: suspected pulmonary embolism }
+          - { value: followup, label: Follow-up of known DVT, text: follow-up of known deep venous thrombosis }
+      - id: comparison
+        type: text
+        label: Comparison
+        placeholder: "e.g. US venous LE 03/14/2025, or leave blank for none"
+    report: |
+      INDICATION: {{indication | cap}}.
+      COMPARISON: {{#if present(comparison)}}{{comparison}}{{else}}None{{/if}}.
+      TECHNIQUE: Grayscale compression, color, and spectral Doppler ultrasound of the deep veins of the {{side}} was performed.
+
+  - id: right_leg
+    title: Right lower extremity
+    show_if: "side in ['right', 'bilateral']"
+    fields:
+      - id: r_note
+        type: note
+        label: "For each segment: compressible with normal color filling = Normal."
+      - id: r_cfv
+        type: choice
+        label: "Common femoral vein (CFV)"
+        required: true
+        normal: normal
+        options:
+          - { value: normal, label: Normal }
+          - { value: occlusive, label: Occlusive thrombus }
+          - { value: nonocclusive, label: Non-occlusive thrombus }
+          - { value: not_seen, label: Not visualized }
+      - id: r_sfj
+        type: choice
+        label: "Saphenofemoral junction"
+        required: true
+        normal: normal
+        options:
+          - { value: normal, label: Normal }
+          - { value: occlusive, label: Occlusive thrombus }
+          - { value: nonocclusive, label: Non-occlusive thrombus }
+          - { value: not_seen, label: Not visualized }
+      - id: r_fv_prox
+        type: choice
+        label: "Femoral vein, proximal"
+        required: true
+        normal: normal
+        options:
+          - { value: normal, label: Normal }
+          - { value: occlusive, label: Occlusive thrombus }
+          - { value: nonocclusive, label: Non-occlusive thrombus }
+          - { value: not_seen, label: Not visualized }
+      - id: r_fv_mid
+        type: choice
+        label: "Femoral vein, mid"
+        required: true
+        normal: normal
+        options:
+          - { value: normal, label: Normal }
+          - { value: occlusive, label: Occlusive thrombus }
+          - { value: nonocclusive, label: Non-occlusive thrombus }
+          - { value: not_seen, label: Not visualized }
+      - id: r_fv_dist
+        type: choice
+        label: "Femoral vein, distal"
+        required: true
+        normal: normal
+        options:
+          - { value: normal, label: Normal }
+          - { value: occlusive, label: Occlusive thrombus }
+          - { value: nonocclusive, label: Non-occlusive thrombus }
+          - { value: not_seen, label: Not visualized }
+      - id: r_pop
+        type: choice
+        label: "Popliteal vein"
+        required: true
+        normal: normal
+        options:
+          - { value: normal, label: Normal }
+          - { value: occlusive, label: Occlusive thrombus }
+          - { value: nonocclusive, label: Non-occlusive thrombus }
+          - { value: not_seen, label: Not visualized }
+      - id: r_calf
+        type: choice
+        label: Calf veins
+        required: true
+        normal: imaged
+        options:
+          - { value: imaged, label: Imaged }
+          - { value: not_imaged, label: Not imaged (per protocol) }
+      - id: r_ptv
+        type: choice
+        label: "Posterior tibial veins"
+        required: true
+        show_if: "r_calf == 'imaged'"
+        normal: normal
+        options:
+          - { value: normal, label: Normal }
+          - { value: occlusive, label: Occlusive thrombus }
+          - { value: nonocclusive, label: Non-occlusive thrombus }
+          - { value: not_seen, label: Not visualized }
+      - id: r_per
+        type: choice
+        label: "Peroneal veins"
+        required: true
+        show_if: "r_calf == 'imaged'"
+        normal: normal
+        options:
+          - { value: normal, label: Normal }
+          - { value: occlusive, label: Occlusive thrombus }
+          - { value: nonocclusive, label: Non-occlusive thrombus }
+          - { value: not_seen, label: Not visualized }
+      - id: r_phasic
+        type: choice
+        label: CFV waveform (phasicity)
+        required: true
+        normal: phasic
+        options:
+          - { value: phasic, label: Phasic, text: Normal respiratory phasicity in the common femoral vein. }
+          - { value: continuous, label: Continuous / nonphasic, text: "Continuous, nonphasic flow in the common femoral vein, which can be seen with more central venous obstruction." }
+          - { value: pulsatile, label: Pulsatile, text: "Pulsatile common femoral venous waveform, which can be seen with elevated right heart pressure." }
+          - { value: absent, label: No flow, text: No flow in the common femoral vein. }
+      - id: r_aug
+        type: choice
+        label: Augmentation (calf compression)
+        required: true
+        normal: normal
+        options:
+          - { value: normal, label: Normal, text: Normal augmentation with calf compression. }
+          - { value: diminished, label: Diminished, text: Diminished augmentation with calf compression. }
+          - { value: absent, label: Absent, text: Absent augmentation with calf compression. }
+          - { value: not_assessed, label: Not assessed, text: "" }
+      - id: r_superficial
+        type: choice
+        label: Superficial vein thrombus
+        normal: none
+        options:
+          - { value: none, label: None, text: "" }
+          - { value: gsv, label: Great saphenous vein, text: great saphenous vein }
+          - { value: ssv, label: Small saphenous vein, text: small saphenous vein }
+        other: true
+      - id: r_baker
+        type: choice
+        label: Baker's cyst
+        required: true
+        normal: none
+        options:
+          - { value: none, label: None }
+          - { value: present, label: Present }
+          - { value: ruptured, label: "Present, ruptured / leaking" }
+      - id: r_baker_size
+        type: dims
+        label: Baker's cyst size
+        min: 0.5
+        max: 20
+        show_if: "r_baker in ['present', 'ruptured']"
+    report: |
+      {{#if r_cfv == 'normal' and r_sfj == 'normal' and r_fv_prox == 'normal' and r_fv_mid == 'normal' and r_fv_dist == 'normal' and r_pop == 'normal' and (r_calf != 'imaged' or (r_ptv == 'normal' and r_per == 'normal')) and r_phasic == 'phasic' and r_aug in ['normal', 'not_assessed']}}
+      RIGHT LOWER EXTREMITY: No evidence of deep venous thrombosis in the right lower extremity{{#if r_calf != 'imaged'}} from the common femoral vein through the popliteal vein. The calf veins were not imaged{{/if}}.{{#if r_superficial != 'none' and present(r_superficial)}} Superficial vein thrombosis in the {{r_superficial}}.{{/if}}{{#if r_baker == 'present'}} Baker's cyst{{#if present(r_baker_size)}} measuring {{r_baker_size}}{{/if}}.{{else if r_baker == 'ruptured'}} Baker's cyst{{#if present(r_baker_size)}} measuring {{r_baker_size}}{{/if}} with findings suggesting rupture or leakage.{{/if}}
+      {{else}}
+      RIGHT LOWER EXTREMITY: {{#if count([if(r_cfv == 'occlusive', 'common femoral vein'), if(r_sfj == 'occlusive', 'saphenofemoral junction'), if(r_fv_prox == 'occlusive', 'proximal femoral vein'), if(r_fv_mid == 'occlusive', 'mid femoral vein'), if(r_fv_dist == 'occlusive', 'distal femoral vein'), if(r_pop == 'occlusive', 'popliteal vein'), if(r_ptv == 'occlusive', 'posterior tibial veins'), if(r_per == 'occlusive', 'peroneal veins')]) > 0}}Occlusive thrombus in the {{ [if(r_cfv == 'occlusive', 'common femoral vein'), if(r_sfj == 'occlusive', 'saphenofemoral junction'), if(r_fv_prox == 'occlusive', 'proximal femoral vein'), if(r_fv_mid == 'occlusive', 'mid femoral vein'), if(r_fv_dist == 'occlusive', 'distal femoral vein'), if(r_pop == 'occlusive', 'popliteal vein'), if(r_ptv == 'occlusive', 'posterior tibial veins'), if(r_per == 'occlusive', 'peroneal veins')] }}.{{/if}} {{#if count([if(r_cfv == 'nonocclusive', 'common femoral vein'), if(r_sfj == 'nonocclusive', 'saphenofemoral junction'), if(r_fv_prox == 'nonocclusive', 'proximal femoral vein'), if(r_fv_mid == 'nonocclusive', 'mid femoral vein'), if(r_fv_dist == 'nonocclusive', 'distal femoral vein'), if(r_pop == 'nonocclusive', 'popliteal vein'), if(r_ptv == 'nonocclusive', 'posterior tibial veins'), if(r_per == 'nonocclusive', 'peroneal veins')]) > 0}}Non-occlusive thrombus in the {{ [if(r_cfv == 'nonocclusive', 'common femoral vein'), if(r_sfj == 'nonocclusive', 'saphenofemoral junction'), if(r_fv_prox == 'nonocclusive', 'proximal femoral vein'), if(r_fv_mid == 'nonocclusive', 'mid femoral vein'), if(r_fv_dist == 'nonocclusive', 'distal femoral vein'), if(r_pop == 'nonocclusive', 'popliteal vein'), if(r_ptv == 'nonocclusive', 'posterior tibial veins'), if(r_per == 'nonocclusive', 'peroneal veins')] }}.{{/if}} {{#if count([if(r_cfv == 'not_seen', 'common femoral vein'), if(r_sfj == 'not_seen', 'saphenofemoral junction'), if(r_fv_prox == 'not_seen', 'proximal femoral vein'), if(r_fv_mid == 'not_seen', 'mid femoral vein'), if(r_fv_dist == 'not_seen', 'distal femoral vein'), if(r_pop == 'not_seen', 'popliteal vein'), if(r_ptv == 'not_seen', 'posterior tibial veins'), if(r_per == 'not_seen', 'peroneal veins')]) > 0}}The {{ [if(r_cfv == 'not_seen', 'common femoral vein'), if(r_sfj == 'not_seen', 'saphenofemoral junction'), if(r_fv_prox == 'not_seen', 'proximal femoral vein'), if(r_fv_mid == 'not_seen', 'mid femoral vein'), if(r_fv_dist == 'not_seen', 'distal femoral vein'), if(r_pop == 'not_seen', 'popliteal vein'), if(r_ptv == 'not_seen', 'posterior tibial veins'), if(r_per == 'not_seen', 'peroneal veins')] }} could not be visualized.{{/if}} {{#if count([if(r_cfv == 'normal', 'common femoral vein'), if(r_sfj == 'normal', 'saphenofemoral junction'), if(r_fv_prox == 'normal', 'proximal femoral vein'), if(r_fv_mid == 'normal', 'mid femoral vein'), if(r_fv_dist == 'normal', 'distal femoral vein'), if(r_pop == 'normal', 'popliteal vein'), if(r_ptv == 'normal', 'posterior tibial veins'), if(r_per == 'normal', 'peroneal veins')]) > 0}}Normal compressibility of the {{ [if(r_cfv == 'normal', 'common femoral vein'), if(r_sfj == 'normal', 'saphenofemoral junction'), if(r_fv_prox == 'normal', 'proximal femoral vein'), if(r_fv_mid == 'normal', 'mid femoral vein'), if(r_fv_dist == 'normal', 'distal femoral vein'), if(r_pop == 'normal', 'popliteal vein'), if(r_ptv == 'normal', 'posterior tibial veins'), if(r_per == 'normal', 'peroneal veins')] }}.{{/if}}{{#if r_calf != 'imaged'}} The calf veins were not imaged.{{/if}} {{r_phasic}} {{r_aug}}{{#if count([if(r_cfv == 'occlusive', 'common femoral vein'), if(r_sfj == 'occlusive', 'saphenofemoral junction'), if(r_fv_prox == 'occlusive', 'proximal femoral vein'), if(r_fv_mid == 'occlusive', 'mid femoral vein'), if(r_fv_dist == 'occlusive', 'distal femoral vein'), if(r_pop == 'occlusive', 'popliteal vein'), if(r_ptv == 'occlusive', 'posterior tibial veins'), if(r_per == 'occlusive', 'peroneal veins')]) == 0 and count([if(r_cfv == 'nonocclusive', 'common femoral vein'), if(r_sfj == 'nonocclusive', 'saphenofemoral junction'), if(r_fv_prox == 'nonocclusive', 'proximal femoral vein'), if(r_fv_mid == 'nonocclusive', 'mid femoral vein'), if(r_fv_dist == 'nonocclusive', 'distal femoral vein'), if(r_pop == 'nonocclusive', 'popliteal vein'), if(r_ptv == 'nonocclusive', 'posterior tibial veins'), if(r_per == 'nonocclusive', 'peroneal veins')]) == 0}} No evidence of deep venous thrombosis in the visualized deep veins of the right lower extremity.{{/if}}{{#if r_superficial != 'none' and present(r_superficial)}} Superficial vein thrombosis in the {{r_superficial}}.{{/if}}{{#if r_baker == 'present'}} Baker's cyst{{#if present(r_baker_size)}} measuring {{r_baker_size}}{{/if}}.{{else if r_baker == 'ruptured'}} Baker's cyst{{#if present(r_baker_size)}} measuring {{r_baker_size}}{{/if}} with findings suggesting rupture or leakage.{{/if}}
+      {{/if}}
+
+  - id: left_leg
+    title: Left lower extremity
+    show_if: "side in ['left', 'bilateral']"
+    fields:
+      - id: l_note
+        type: note
+        label: "For each segment: compressible with normal color filling = Normal."
+      - id: l_cfv
+        type: choice
+        label: "Common femoral vein (CFV)"
+        required: true
+        normal: normal
+        options:
+          - { value: normal, label: Normal }
+          - { value: occlusive, label: Occlusive thrombus }
+          - { value: nonocclusive, label: Non-occlusive thrombus }
+          - { value: not_seen, label: Not visualized }
+      - id: l_sfj
+        type: choice
+        label: "Saphenofemoral junction"
+        required: true
+        normal: normal
+        options:
+          - { value: normal, label: Normal }
+          - { value: occlusive, label: Occlusive thrombus }
+          - { value: nonocclusive, label: Non-occlusive thrombus }
+          - { value: not_seen, label: Not visualized }
+      - id: l_fv_prox
+        type: choice
+        label: "Femoral vein, proximal"
+        required: true
+        normal: normal
+        options:
+          - { value: normal, label: Normal }
+          - { value: occlusive, label: Occlusive thrombus }
+          - { value: nonocclusive, label: Non-occlusive thrombus }
+          - { value: not_seen, label: Not visualized }
+      - id: l_fv_mid
+        type: choice
+        label: "Femoral vein, mid"
+        required: true
+        normal: normal
+        options:
+          - { value: normal, label: Normal }
+          - { value: occlusive, label: Occlusive thrombus }
+          - { value: nonocclusive, label: Non-occlusive thrombus }
+          - { value: not_seen, label: Not visualized }
+      - id: l_fv_dist
+        type: choice
+        label: "Femoral vein, distal"
+        required: true
+        normal: normal
+        options:
+          - { value: normal, label: Normal }
+          - { value: occlusive, label: Occlusive thrombus }
+          - { value: nonocclusive, label: Non-occlusive thrombus }
+          - { value: not_seen, label: Not visualized }
+      - id: l_pop
+        type: choice
+        label: "Popliteal vein"
+        required: true
+        normal: normal
+        options:
+          - { value: normal, label: Normal }
+          - { value: occlusive, label: Occlusive thrombus }
+          - { value: nonocclusive, label: Non-occlusive thrombus }
+          - { value: not_seen, label: Not visualized }
+      - id: l_calf
+        type: choice
+        label: Calf veins
+        required: true
+        normal: imaged
+        options:
+          - { value: imaged, label: Imaged }
+          - { value: not_imaged, label: Not imaged (per protocol) }
+      - id: l_ptv
+        type: choice
+        label: "Posterior tibial veins"
+        required: true
+        show_if: "l_calf == 'imaged'"
+        normal: normal
+        options:
+          - { value: normal, label: Normal }
+          - { value: occlusive, label: Occlusive thrombus }
+          - { value: nonocclusive, label: Non-occlusive thrombus }
+          - { value: not_seen, label: Not visualized }
+      - id: l_per
+        type: choice
+        label: "Peroneal veins"
+        required: true
+        show_if: "l_calf == 'imaged'"
+        normal: normal
+        options:
+          - { value: normal, label: Normal }
+          - { value: occlusive, label: Occlusive thrombus }
+          - { value: nonocclusive, label: Non-occlusive thrombus }
+          - { value: not_seen, label: Not visualized }
+      - id: l_phasic
+        type: choice
+        label: CFV waveform (phasicity)
+        required: true
+        normal: phasic
+        options:
+          - { value: phasic, label: Phasic, text: Normal respiratory phasicity in the common femoral vein. }
+          - { value: continuous, label: Continuous / nonphasic, text: "Continuous, nonphasic flow in the common femoral vein, which can be seen with more central venous obstruction." }
+          - { value: pulsatile, label: Pulsatile, text: "Pulsatile common femoral venous waveform, which can be seen with elevated right heart pressure." }
+          - { value: absent, label: No flow, text: No flow in the common femoral vein. }
+      - id: l_aug
+        type: choice
+        label: Augmentation (calf compression)
+        required: true
+        normal: normal
+        options:
+          - { value: normal, label: Normal, text: Normal augmentation with calf compression. }
+          - { value: diminished, label: Diminished, text: Diminished augmentation with calf compression. }
+          - { value: absent, label: Absent, text: Absent augmentation with calf compression. }
+          - { value: not_assessed, label: Not assessed, text: "" }
+      - id: l_superficial
+        type: choice
+        label: Superficial vein thrombus
+        normal: none
+        options:
+          - { value: none, label: None, text: "" }
+          - { value: gsv, label: Great saphenous vein, text: great saphenous vein }
+          - { value: ssv, label: Small saphenous vein, text: small saphenous vein }
+        other: true
+      - id: l_baker
+        type: choice
+        label: Baker's cyst
+        required: true
+        normal: none
+        options:
+          - { value: none, label: None }
+          - { value: present, label: Present }
+          - { value: ruptured, label: "Present, ruptured / leaking" }
+      - id: l_baker_size
+        type: dims
+        label: Baker's cyst size
+        min: 0.5
+        max: 20
+        show_if: "l_baker in ['present', 'ruptured']"
+    report: |
+      {{#if l_cfv == 'normal' and l_sfj == 'normal' and l_fv_prox == 'normal' and l_fv_mid == 'normal' and l_fv_dist == 'normal' and l_pop == 'normal' and (l_calf != 'imaged' or (l_ptv == 'normal' and l_per == 'normal')) and l_phasic == 'phasic' and l_aug in ['normal', 'not_assessed']}}
+      LEFT LOWER EXTREMITY: No evidence of deep venous thrombosis in the left lower extremity{{#if l_calf != 'imaged'}} from the common femoral vein through the popliteal vein. The calf veins were not imaged{{/if}}.{{#if l_superficial != 'none' and present(l_superficial)}} Superficial vein thrombosis in the {{l_superficial}}.{{/if}}{{#if l_baker == 'present'}} Baker's cyst{{#if present(l_baker_size)}} measuring {{l_baker_size}}{{/if}}.{{else if l_baker == 'ruptured'}} Baker's cyst{{#if present(l_baker_size)}} measuring {{l_baker_size}}{{/if}} with findings suggesting rupture or leakage.{{/if}}
+      {{else}}
+      LEFT LOWER EXTREMITY: {{#if count([if(l_cfv == 'occlusive', 'common femoral vein'), if(l_sfj == 'occlusive', 'saphenofemoral junction'), if(l_fv_prox == 'occlusive', 'proximal femoral vein'), if(l_fv_mid == 'occlusive', 'mid femoral vein'), if(l_fv_dist == 'occlusive', 'distal femoral vein'), if(l_pop == 'occlusive', 'popliteal vein'), if(l_ptv == 'occlusive', 'posterior tibial veins'), if(l_per == 'occlusive', 'peroneal veins')]) > 0}}Occlusive thrombus in the {{ [if(l_cfv == 'occlusive', 'common femoral vein'), if(l_sfj == 'occlusive', 'saphenofemoral junction'), if(l_fv_prox == 'occlusive', 'proximal femoral vein'), if(l_fv_mid == 'occlusive', 'mid femoral vein'), if(l_fv_dist == 'occlusive', 'distal femoral vein'), if(l_pop == 'occlusive', 'popliteal vein'), if(l_ptv == 'occlusive', 'posterior tibial veins'), if(l_per == 'occlusive', 'peroneal veins')] }}.{{/if}} {{#if count([if(l_cfv == 'nonocclusive', 'common femoral vein'), if(l_sfj == 'nonocclusive', 'saphenofemoral junction'), if(l_fv_prox == 'nonocclusive', 'proximal femoral vein'), if(l_fv_mid == 'nonocclusive', 'mid femoral vein'), if(l_fv_dist == 'nonocclusive', 'distal femoral vein'), if(l_pop == 'nonocclusive', 'popliteal vein'), if(l_ptv == 'nonocclusive', 'posterior tibial veins'), if(l_per == 'nonocclusive', 'peroneal veins')]) > 0}}Non-occlusive thrombus in the {{ [if(l_cfv == 'nonocclusive', 'common femoral vein'), if(l_sfj == 'nonocclusive', 'saphenofemoral junction'), if(l_fv_prox == 'nonocclusive', 'proximal femoral vein'), if(l_fv_mid == 'nonocclusive', 'mid femoral vein'), if(l_fv_dist == 'nonocclusive', 'distal femoral vein'), if(l_pop == 'nonocclusive', 'popliteal vein'), if(l_ptv == 'nonocclusive', 'posterior tibial veins'), if(l_per == 'nonocclusive', 'peroneal veins')] }}.{{/if}} {{#if count([if(l_cfv == 'not_seen', 'common femoral vein'), if(l_sfj == 'not_seen', 'saphenofemoral junction'), if(l_fv_prox == 'not_seen', 'proximal femoral vein'), if(l_fv_mid == 'not_seen', 'mid femoral vein'), if(l_fv_dist == 'not_seen', 'distal femoral vein'), if(l_pop == 'not_seen', 'popliteal vein'), if(l_ptv == 'not_seen', 'posterior tibial veins'), if(l_per == 'not_seen', 'peroneal veins')]) > 0}}The {{ [if(l_cfv == 'not_seen', 'common femoral vein'), if(l_sfj == 'not_seen', 'saphenofemoral junction'), if(l_fv_prox == 'not_seen', 'proximal femoral vein'), if(l_fv_mid == 'not_seen', 'mid femoral vein'), if(l_fv_dist == 'not_seen', 'distal femoral vein'), if(l_pop == 'not_seen', 'popliteal vein'), if(l_ptv == 'not_seen', 'posterior tibial veins'), if(l_per == 'not_seen', 'peroneal veins')] }} could not be visualized.{{/if}} {{#if count([if(l_cfv == 'normal', 'common femoral vein'), if(l_sfj == 'normal', 'saphenofemoral junction'), if(l_fv_prox == 'normal', 'proximal femoral vein'), if(l_fv_mid == 'normal', 'mid femoral vein'), if(l_fv_dist == 'normal', 'distal femoral vein'), if(l_pop == 'normal', 'popliteal vein'), if(l_ptv == 'normal', 'posterior tibial veins'), if(l_per == 'normal', 'peroneal veins')]) > 0}}Normal compressibility of the {{ [if(l_cfv == 'normal', 'common femoral vein'), if(l_sfj == 'normal', 'saphenofemoral junction'), if(l_fv_prox == 'normal', 'proximal femoral vein'), if(l_fv_mid == 'normal', 'mid femoral vein'), if(l_fv_dist == 'normal', 'distal femoral vein'), if(l_pop == 'normal', 'popliteal vein'), if(l_ptv == 'normal', 'posterior tibial veins'), if(l_per == 'normal', 'peroneal veins')] }}.{{/if}}{{#if l_calf != 'imaged'}} The calf veins were not imaged.{{/if}} {{l_phasic}} {{l_aug}}{{#if count([if(l_cfv == 'occlusive', 'common femoral vein'), if(l_sfj == 'occlusive', 'saphenofemoral junction'), if(l_fv_prox == 'occlusive', 'proximal femoral vein'), if(l_fv_mid == 'occlusive', 'mid femoral vein'), if(l_fv_dist == 'occlusive', 'distal femoral vein'), if(l_pop == 'occlusive', 'popliteal vein'), if(l_ptv == 'occlusive', 'posterior tibial veins'), if(l_per == 'occlusive', 'peroneal veins')]) == 0 and count([if(l_cfv == 'nonocclusive', 'common femoral vein'), if(l_sfj == 'nonocclusive', 'saphenofemoral junction'), if(l_fv_prox == 'nonocclusive', 'proximal femoral vein'), if(l_fv_mid == 'nonocclusive', 'mid femoral vein'), if(l_fv_dist == 'nonocclusive', 'distal femoral vein'), if(l_pop == 'nonocclusive', 'popliteal vein'), if(l_ptv == 'nonocclusive', 'posterior tibial veins'), if(l_per == 'nonocclusive', 'peroneal veins')]) == 0}} No evidence of deep venous thrombosis in the visualized deep veins of the left lower extremity.{{/if}}{{#if l_superficial != 'none' and present(l_superficial)}} Superficial vein thrombosis in the {{l_superficial}}.{{/if}}{{#if l_baker == 'present'}} Baker's cyst{{#if present(l_baker_size)}} measuring {{l_baker_size}}{{/if}}.{{else if l_baker == 'ruptured'}} Baker's cyst{{#if present(l_baker_size)}} measuring {{l_baker_size}}{{/if}} with findings suggesting rupture or leakage.{{/if}}
+      {{/if}}
+
+  - id: contralateral
+    title: Contralateral common femoral vein
+    show_if: "side in ['right', 'left']"
+    fields:
+      - id: contra_cfv
+        type: choice
+        label: Contralateral CFV waveform
+        normal: phasic
+        options:
+          - { value: phasic, label: Phasic, text: Normal respiratory phasicity. }
+          - { value: continuous, label: Continuous / nonphasic, text: "Continuous, nonphasic flow, which can be seen with more central venous obstruction." }
+          - { value: pulsatile, label: Pulsatile, text: Pulsatile waveform. }
+          - { value: not_assessed, label: Not assessed }
+    report: |
+      {{#if present(contra_cfv) and contra_cfv != 'not_assessed'}}
+      {{#if side == 'right'}}LEFT{{else}}RIGHT{{/if}} COMMON FEMORAL VEIN: {{contra_cfv}}
+      {{/if}}
+
+  - id: impression
+    title: Tech impression (preliminary)
+    report: false
+    fields:
+      - id: tech_impression
+        type: choice
+        label: Overall
+        options:
+          - { value: normal, label: Normal study }
+          - { value: abnormal, label: Abnormal – see findings }

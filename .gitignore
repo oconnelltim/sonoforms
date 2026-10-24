@@ -1,0 +1,9 @@
+.dev/
+node_modules/
+.env
+secrets/
+backups/
+*.sfbak
+.DS_Store
+certs/
+*.log

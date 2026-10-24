@@ -1,0 +1,373 @@
+# Starter form. Review wording with your radiologists before clinical use.
+id: us-pelvis-female
+title: US Pelvis (female, non-OB)
+description: Transabdominal and/or endovaginal pelvic ultrasound, non-pregnant.
+study_match:
+  - US PELVIS
+  - TRANSVAGINAL
+  - ENDOVAGINAL
+  - /PELVI(S|C)/
+
+sections:
+  - id: clinical
+    title: Clinical
+    fields:
+      - id: indication
+        type: multi
+        label: Indication
+        required: true
+        other: true
+        options:
+          - { value: pain_r, label: Right pelvic pain, text: right pelvic pain }
+          - { value: pain_l, label: Left pelvic pain, text: left pelvic pain }
+          - { value: pain, label: Pelvic pain, text: pelvic pain }
+          - { value: aub, label: Abnormal uterine bleeding, text: abnormal uterine bleeding }
+          - { value: pmb, label: Postmenopausal bleeding, text: postmenopausal bleeding }
+          - { value: mass, label: Pelvic mass, text: pelvic mass }
+          - { value: amenorrhea, label: Amenorrhea, text: amenorrhea }
+          - { value: infertility, label: Infertility, text: infertility }
+          - { value: iud, label: IUD location, text: IUD localization }
+          - { value: followup, label: Follow-up, text: follow-up of prior finding }
+      - id: lmp_status
+        type: choice
+        label: Last menstrual period
+        required: true
+        options:
+          - { value: date, label: Date known }
+          - { value: postmenopausal, label: Postmenopausal }
+          - { value: unknown, label: Unknown }
+          - { value: na, label: "N/A (hysterectomy, contraception, etc.)" }
+      - id: lmp_date
+        type: date
+        label: LMP date
+        show_if: "lmp_status == 'date'"
+        required: true
+      - id: comparison
+        type: text
+        label: Comparison
+        placeholder: "e.g. US pelvis 03/14/2025, or leave blank for none"
+    report: |
+      INDICATION: {{indication | cap}}.
+      {{#if lmp_status == 'date'}}
+      LMP: {{lmp_date}}.
+      {{else if lmp_status == 'postmenopausal'}}
+      LMP: Postmenopausal.
+      {{/if}}
+      COMPARISON: {{#if present(comparison)}}{{comparison}}{{else}}None{{/if}}.
+
+  - id: technique
+    title: Technique
+    fields:
+      - id: approach
+        type: choice
+        label: Approach
+        required: true
+        default: both
+        options:
+          - { value: ta, label: Transabdominal, text: Transabdominal grayscale and color Doppler ultrasound of the pelvis was performed. }
+          - { value: tv, label: Endovaginal, text: Endovaginal grayscale and color Doppler ultrasound of the pelvis was performed. }
+          - { value: both, label: Both, text: Transabdominal and endovaginal grayscale and color Doppler ultrasound of the pelvis was performed. }
+      - id: tv_declined
+        type: boolean
+        label: Endovaginal exam declined by patient
+        show_if: "approach == 'ta'"
+      - id: duplex
+        type: boolean
+        label: Ovarian spectral Doppler performed (torsion protocol)
+    report: |
+      TECHNIQUE: {{approach}}{{#if tv_declined}} Endovaginal imaging was declined by the patient.{{/if}}{{#if duplex}} Spectral Doppler evaluation of both ovaries was performed.{{/if}}
+
+  - id: uterus
+    title: Uterus
+    fields:
+      - id: uterus_status
+        type: choice
+        label: Uterus
+        required: true
+        default: present
+        options:
+          - { value: present, label: Present }
+          - { value: absent, label: Surgically absent }
+          - { value: not_seen, label: Not visualized }
+      - id: uterus_dims
+        type: dims
+        label: Uterus size
+        axes: [L, AP, W]
+        min: 2
+        max: 15
+        required: true
+        show_if: "uterus_status == 'present'"
+      - id: uterus_position
+        type: choice
+        label: Position
+        show_if: "uterus_status == 'present'"
+        normal: anteverted
+        options:
+          - { value: anteverted, label: Anteverted, text: anteverted }
+          - { value: retroverted, label: Retroverted, text: retroverted }
+          - { value: axial, label: Axial, text: axial in position }
+      - id: myometrium
+        type: choice
+        label: Myometrium
+        required: true
+        show_if: "uterus_status == 'present'"
+        normal: normal
+        options:
+          - { value: normal, label: Normal, text: The myometrium is homogeneous. }
+          - { value: fibroids, label: Fibroid(s), text: "Fibroid(s) present, as below." }
+          - { value: adeno, label: Heterogeneous / ?adenomyosis, text: "The myometrium is heterogeneous, which can be seen with adenomyosis." }
+        other: true
+      - id: fibroids
+        type: repeat
+        label: Fibroids (largest / most relevant)
+        item_label: Fibroid
+        max_items: 6
+        show_if: "uterus_status == 'present' and myometrium == 'fibroids'"
+        required: true
+        fields:
+          - id: location
+            type: choice
+            label: Location
+            options: [Anterior, Posterior, Fundal, Right lateral, Left lateral, Cervical]
+          - id: type
+            type: choice
+            label: Type
+            options:
+              - { value: intramural, label: Intramural, text: intramural }
+              - { value: subserosal, label: Subserosal, text: subserosal }
+              - { value: submucosal, label: Submucosal, text: submucosal }
+              - { value: pedunculated, label: Pedunculated, text: pedunculated }
+          - id: size
+            type: dims
+            label: Size
+            required: true
+    report: |
+      {{#if uterus_status == 'absent'}}
+      UTERUS: Surgically absent.
+      {{else if uterus_status == 'not_seen'}}
+      UTERUS: Not visualized.
+      {{else}}
+      UTERUS: {{#if present(uterus_position)}}The uterus is {{uterus_position}} and {{else}}The uterus {{/if}}measures {{uterus_dims}}. {{myometrium}}
+      {{#each fibroids}}
+      - {{location | lower}} {{type}} fibroid measuring {{size}}.
+      {{/each}}
+      {{/if}}
+
+  - id: endometrium
+    title: Endometrium
+    show_if: "uterus_status == 'present'"
+    fields:
+      - id: endo_thickness
+        type: number
+        label: Endometrial thickness (double layer)
+        unit: mm
+        decimals: 1
+        min: 0
+        max: 30
+        required: true
+      - id: endo_appearance
+        type: choice
+        label: Appearance
+        required: true
+        normal: normal
+        options:
+          - { value: normal, label: Normal, text: normal in appearance }
+          - { value: fluid, label: Fluid in cavity, text: notable for fluid within the endometrial cavity }
+          - { value: thickened, label: Thickened / heterogeneous, text: thickened and heterogeneous }
+          - { value: polyp, label: Possible polyp, text: notable for a focal echogenic area which may represent a polyp }
+          - { value: not_seen, label: Not well seen, text: not well visualized }
+        other: true
+      - id: iud
+        type: choice
+        label: IUD
+        default: none
+        options:
+          - { value: none, label: None }
+          - { value: normal, label: In normal position, text: An IUD is present in normal position within the endometrial cavity. }
+          - { value: low, label: Low-lying, text: An IUD is present and is low-lying within the lower uterine segment / cervix. }
+          - { value: embedded, label: Embedded / malpositioned, text: An IUD is present and appears malpositioned. }
+    report: |
+      ENDOMETRIUM: Measures {{endo_thickness}} in thickness and is {{endo_appearance}}.{{#if iud != 'none'}} {{iud}}{{/if}}
+
+  - id: right_ovary
+    title: Right ovary
+    fields:
+      - id: r_ovary_status
+        type: choice
+        label: Right ovary
+        required: true
+        default: seen
+        options:
+          - { value: seen, label: Visualized }
+          - { value: not_seen, label: Not visualized }
+          - { value: absent, label: Surgically absent }
+      - id: r_ovary
+        type: dims
+        label: Size
+        required: true
+        show_if: "r_ovary_status == 'seen'"
+        min: 0.5
+        max: 10
+      - id: r_ovary_vol
+        type: calc
+        label: Volume
+        formula: ellipsoid(r_ovary)
+        unit: mL
+        decimals: 1
+        show_if: "r_ovary_status == 'seen'"
+      - id: r_ovary_findings
+        type: choice
+        label: Findings
+        required: true
+        show_if: "r_ovary_status == 'seen'"
+        normal: normal
+        options:
+          - { value: normal, label: Normal, text: normal in appearance }
+          - { value: follicles, label: Physiologic follicles, text: normal in appearance with physiologic follicles }
+          - { value: cl, label: Corpus luteum, text: notable for a corpus luteum }
+          - { value: cyst, label: Cyst / lesion (describe), text: notable for a lesion as described below }
+      - id: r_ovary_flow
+        type: choice
+        label: Doppler flow
+        show_if: "r_ovary_status == 'seen'"
+        normal: present
+        options:
+          - { value: present, label: Present, text: Arterial and venous flow is demonstrated. }
+          - { value: decreased, label: Decreased, text: Flow is decreased. }
+          - { value: absent, label: Absent, text: No flow is demonstrated. }
+    report: |
+      {{#if r_ovary_status == 'seen'}}
+      RIGHT OVARY: Measures {{r_ovary}} (volume {{r_ovary_vol}}) and is {{r_ovary_findings}}. {{r_ovary_flow}}
+      {{else if r_ovary_status == 'absent'}}
+      RIGHT OVARY: Surgically absent.
+      {{else}}
+      RIGHT OVARY: Not visualized.
+      {{/if}}
+
+  - id: left_ovary
+    title: Left ovary
+    fields:
+      - id: l_ovary_status
+        type: choice
+        label: Left ovary
+        required: true
+        default: seen
+        options:
+          - { value: seen, label: Visualized }
+          - { value: not_seen, label: Not visualized }
+          - { value: absent, label: Surgically absent }
+      - id: l_ovary
+        type: dims
+        label: Size
+        required: true
+        show_if: "l_ovary_status == 'seen'"
+        min: 0.5
+        max: 10
+      - id: l_ovary_vol
+        type: calc
+        label: Volume
+        formula: ellipsoid(l_ovary)
+        unit: mL
+        decimals: 1
+        show_if: "l_ovary_status == 'seen'"
+      - id: l_ovary_findings
+        type: choice
+        label: Findings
+        required: true
+        show_if: "l_ovary_status == 'seen'"
+        normal: normal
+        options:
+          - { value: normal, label: Normal, text: normal in appearance }
+          - { value: follicles, label: Physiologic follicles, text: normal in appearance with physiologic follicles }
+          - { value: cl, label: Corpus luteum, text: notable for a corpus luteum }
+          - { value: cyst, label: Cyst / lesion (describe), text: notable for a lesion as described below }
+      - id: l_ovary_flow
+        type: choice
+        label: Doppler flow
+        show_if: "l_ovary_status == 'seen'"
+        normal: present
+        options:
+          - { value: present, label: Present, text: Arterial and venous flow is demonstrated. }
+          - { value: decreased, label: Decreased, text: Flow is decreased. }
+          - { value: absent, label: Absent, text: No flow is demonstrated. }
+    report: |
+      {{#if l_ovary_status == 'seen'}}
+      LEFT OVARY: Measures {{l_ovary}} (volume {{l_ovary_vol}}) and is {{l_ovary_findings}}. {{l_ovary_flow}}
+      {{else if l_ovary_status == 'absent'}}
+      LEFT OVARY: Surgically absent.
+      {{else}}
+      LEFT OVARY: Not visualized.
+      {{/if}}
+
+  - id: adnexa
+    title: Adnexal lesions
+    fields:
+      - id: lesions
+        type: repeat
+        label: Adnexal / ovarian lesions
+        item_label: Lesion
+        max_items: 6
+        required: "r_ovary_findings == 'cyst' or l_ovary_findings == 'cyst'"
+        fields:
+          - id: side
+            type: choice
+            label: Side
+            required: true
+            options:
+              - { value: right_ovary, label: Right ovary, text: right ovary }
+              - { value: left_ovary, label: Left ovary, text: left ovary }
+              - { value: right_adnexa, label: Right adnexa (extra-ovarian), text: right adnexa }
+              - { value: left_adnexa, label: Left adnexa (extra-ovarian), text: left adnexa }
+          - id: kind
+            type: choice
+            label: Appearance
+            required: true
+            options:
+              - { value: simple, label: Simple cyst, text: simple-appearing cyst }
+              - { value: hemorrhagic, label: Hemorrhagic cyst, text: "cyst with lace-like internal echoes, likely hemorrhagic" }
+              - { value: endometrioma, label: Endometrioma-like, text: "cyst with homogeneous low-level internal echoes, which can represent an endometrioma" }
+              - { value: dermoid, label: Dermoid-like, text: "echogenic lesion with posterior shadowing, which can represent a dermoid" }
+              - { value: complex, label: Complex / solid component, text: complex lesion with solid component(s) }
+            other: true
+          - id: size
+            type: dims
+            label: Size
+            required: true
+          - id: vascular
+            type: choice
+            label: Internal flow
+            options:
+              - { value: none, label: None, text: No internal vascularity. }
+              - { value: present, label: Present, text: Internal vascularity is present. }
+      - id: free_fluid
+        type: choice
+        label: Free fluid
+        required: true
+        normal: none
+        options:
+          - { value: none, label: None, text: No free fluid. }
+          - { value: trace, label: Trace / physiologic, text: "Trace free fluid, likely physiologic." }
+          - { value: small, label: Small, text: Small amount of free fluid. }
+          - { value: moderate, label: Moderate, text: Moderate amount of free fluid. }
+          - { value: large, label: Large, text: Large amount of free fluid. }
+          - { value: complex, label: Complex / echogenic, text: Complex free fluid is present. }
+    report: |
+      {{#if count(lesions) == 0}}
+      ADNEXA: No adnexal mass. {{free_fluid}}
+      {{else}}
+      ADNEXA: {{free_fluid}}
+      {{#each lesions}}
+      - {{side | cap}}: {{kind}} measuring {{size}}. {{vascular}}
+      {{/each}}
+      {{/if}}
+
+  - id: impression
+    title: Tech impression (preliminary)
+    report: false
+    fields:
+      - id: tech_impression
+        type: choice
+        label: Overall
+        options:
+          - { value: normal, label: Normal study }
+          - { value: abnormal, label: Abnormal – see findings }
