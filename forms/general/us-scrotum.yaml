@@ -1,0 +1,390 @@
+# Starter form. Review wording with your radiologists before clinical use.
+id: us-scrotum
+title: US Scrotum
+description: Scrotal and testicular ultrasound with color Doppler.
+study_match:
+  - SCROTUM
+  - SCROTAL
+  - TESTICULAR
+  - TESTIS
+  - TESTES
+  - TESTICLE
+  - TESTICLES
+
+sections:
+  - id: clinical
+    title: Clinical
+    fields:
+      - id: indication
+        type: multi
+        label: Indication
+        required: true
+        other: true
+        options:
+          - { value: pain_r, label: Right scrotal pain, text: right scrotal pain }
+          - { value: pain_l, label: Left scrotal pain, text: left scrotal pain }
+          - { value: pain, label: Scrotal pain, text: scrotal pain }
+          - { value: swelling, label: Scrotal swelling, text: scrotal swelling }
+          - { value: mass, label: Palpable mass, text: palpable scrotal mass }
+          - { value: torsion, label: Rule out torsion, text: evaluation for torsion }
+          - { value: trauma, label: Trauma, text: trauma }
+          - { value: infertility, label: Infertility, text: infertility }
+          - { value: varicocele, label: Varicocele, text: varicocele }
+          - { value: followup, label: Follow-up, text: follow-up of prior finding }
+      - id: comparison
+        type: text
+        label: Comparison
+        placeholder: "e.g. US scrotum 03/14/2025, or leave blank for none"
+    report: |
+      INDICATION: {{indication | cap}}.
+      COMPARISON: {{#if present(comparison)}}{{comparison}}{{else}}None{{/if}}.
+      TECHNIQUE: Grayscale and color Doppler ultrasound of the scrotum was performed.
+
+  - id: right_scrotum
+    title: Right testis and epididymis
+    fields:
+      - id: r_testis_status
+        type: choice
+        label: Right testis
+        required: true
+        default: present
+        options:
+          - { value: present, label: Present }
+          - { value: absent, label: Surgically absent }
+          - { value: not_seen, label: Not in scrotum / not visualized }
+      - id: r_testis
+        type: dims
+        label: Right testis size
+        min: 0.5
+        max: 7
+        required: true
+        show_if: "r_testis_status == 'present'"
+      - id: r_testis_vol
+        type: calc
+        label: Right testis volume (Lambert)
+        formula: volume(r_testis, 0.71)
+        unit: mL
+        decimals: 1
+        show_if: "r_testis_status == 'present'"
+      - id: r_echo
+        type: choice
+        label: Echotexture
+        required: true
+        show_if: "r_testis_status == 'present'"
+        normal: homogeneous
+        options:
+          - { value: homogeneous, label: Homogeneous, text: homogeneous echotexture }
+          - { value: heterogeneous, label: Heterogeneous, text: heterogeneous echotexture }
+          - { value: microlithiasis, label: Microlithiasis (5 or more per image), text: homogeneous echotexture with innumerable punctate nonshadowing echogenic foci (microlithiasis) }
+          - { value: limited, label: Limited microliths (fewer than 5 per image), text: homogeneous echotexture with a few scattered microliths }
+      - id: r_lesion
+        type: choice
+        label: Focal lesion
+        required: true
+        show_if: "r_testis_status == 'present'"
+        normal: none
+        options:
+          - { value: none, label: None }
+          - { value: present, label: Present (describe) }
+      - id: r_lesion_type
+        type: choice
+        label: Lesion appearance
+        required: true
+        show_if: "r_testis_status == 'present' and r_lesion == 'present'"
+        options:
+          - { value: hypoechoic, label: Hypoechoic solid, text: hypoechoic solid-appearing lesion }
+          - { value: heterogeneous, label: Heterogeneous solid, text: heterogeneous solid-appearing lesion }
+          - { value: cyst, label: Simple cyst, text: simple-appearing intratesticular cyst }
+          - { value: rete, label: Tubular ectasia of rete testis, text: tubular ectasia of the rete testis }
+          - { value: calcified, label: Echogenic / calcified, text: echogenic shadowing focus }
+          - { value: wedge, label: Wedge-shaped hypoechoic area, text: wedge-shaped hypoechoic area }
+        other: true
+      - id: r_lesion_loc
+        type: choice
+        label: Lesion location
+        show_if: "r_testis_status == 'present' and r_lesion == 'present'"
+        options:
+          - { value: upper, label: Upper pole, text: upper pole }
+          - { value: mid, label: Mid, text: mid testis }
+          - { value: lower, label: Lower pole, text: lower pole }
+          - { value: mediastinum, label: Mediastinum, text: mediastinum testis }
+      - id: r_lesion_size
+        type: dims
+        label: Lesion size
+        min: 0.1
+        max: 7
+        required: true
+        show_if: "r_testis_status == 'present' and r_lesion == 'present'"
+      - id: r_lesion_flow
+        type: choice
+        label: Lesion internal flow
+        show_if: "r_testis_status == 'present' and r_lesion == 'present'"
+        options:
+          - { value: none, label: None, text: without internal vascularity }
+          - { value: present, label: Present, text: with internal vascularity }
+      - id: r_flow
+        type: choice
+        label: Testicular Doppler flow
+        required: true
+        show_if: "r_testis_status == 'present'"
+        normal: symmetric
+        options:
+          - { value: symmetric, label: Normal / symmetric, text: Normal arterial and venous flow. }
+          - { value: increased, label: Increased, text: Increased flow relative to the contralateral testis. }
+          - { value: decreased, label: Decreased, text: Decreased flow relative to the contralateral testis. }
+          - { value: absent, label: Absent, text: No arterial or venous flow is detected. }
+      - id: r_epi
+        type: choice
+        label: Right epididymis
+        required: true
+        show_if: "r_testis_status != 'absent'"
+        normal: normal
+        options:
+          - { value: normal, label: Normal, text: normal in size and echogenicity }
+          - { value: hyperemic, label: Enlarged / hyperemic, text: "enlarged and hyperemic, which can be seen with epididymitis" }
+          - { value: cyst, label: Cyst / spermatocele, text: epididymal cyst or spermatocele }
+          - { value: not_seen, label: Not well visualized, text: not well visualized }
+        other: true
+      - id: r_epi_cyst_size
+        type: number
+        label: Cyst size
+        unit: cm
+        decimals: 1
+        min: 0.1
+        max: 10
+        show_if: "r_testis_status != 'absent' and r_epi == 'cyst'"
+    report: |
+      {{#if r_testis_status == 'absent'}}
+      RIGHT TESTIS: Surgically absent.
+      {{else if r_testis_status == 'not_seen'}}
+      RIGHT TESTIS: Not visualized within the right hemiscrotum.
+      {{else}}
+      RIGHT TESTIS: Measures {{r_testis}} (volume {{r_testis_vol}}). {{r_echo | cap}}{{#if r_lesion == 'none'}} without focal lesion.{{else}}. {{r_lesion_type | cap}}{{#if present(r_lesion_loc)}} in the {{r_lesion_loc}}{{/if}}{{#if present(r_lesion_size)}} measuring {{r_lesion_size}}{{/if}}{{#if present(r_lesion_flow)}}, {{r_lesion_flow}}{{/if}}.{{/if}} {{r_flow}}
+      {{/if}}
+      {{#if r_testis_status != 'absent' and present(r_epi)}}
+      RIGHT EPIDIDYMIS: {{r_epi | cap}}{{#if present(r_epi_cyst_size)}} measuring {{r_epi_cyst_size}}{{/if}}.
+      {{/if}}
+
+  - id: left_scrotum
+    title: Left testis and epididymis
+    fields:
+      - id: l_testis_status
+        type: choice
+        label: Left testis
+        required: true
+        default: present
+        options:
+          - { value: present, label: Present }
+          - { value: absent, label: Surgically absent }
+          - { value: not_seen, label: Not in scrotum / not visualized }
+      - id: l_testis
+        type: dims
+        label: Left testis size
+        min: 0.5
+        max: 7
+        required: true
+        show_if: "l_testis_status == 'present'"
+      - id: l_testis_vol
+        type: calc
+        label: Left testis volume (Lambert)
+        formula: volume(l_testis, 0.71)
+        unit: mL
+        decimals: 1
+        show_if: "l_testis_status == 'present'"
+      - id: l_echo
+        type: choice
+        label: Echotexture
+        required: true
+        show_if: "l_testis_status == 'present'"
+        normal: homogeneous
+        options:
+          - { value: homogeneous, label: Homogeneous, text: homogeneous echotexture }
+          - { value: heterogeneous, label: Heterogeneous, text: heterogeneous echotexture }
+          - { value: microlithiasis, label: Microlithiasis (5 or more per image), text: homogeneous echotexture with innumerable punctate nonshadowing echogenic foci (microlithiasis) }
+          - { value: limited, label: Limited microliths (fewer than 5 per image), text: homogeneous echotexture with a few scattered microliths }
+      - id: l_lesion
+        type: choice
+        label: Focal lesion
+        required: true
+        show_if: "l_testis_status == 'present'"
+        normal: none
+        options:
+          - { value: none, label: None }
+          - { value: present, label: Present (describe) }
+      - id: l_lesion_type
+        type: choice
+        label: Lesion appearance
+        required: true
+        show_if: "l_testis_status == 'present' and l_lesion == 'present'"
+        options:
+          - { value: hypoechoic, label: Hypoechoic solid, text: hypoechoic solid-appearing lesion }
+          - { value: heterogeneous, label: Heterogeneous solid, text: heterogeneous solid-appearing lesion }
+          - { value: cyst, label: Simple cyst, text: simple-appearing intratesticular cyst }
+          - { value: rete, label: Tubular ectasia of rete testis, text: tubular ectasia of the rete testis }
+          - { value: calcified, label: Echogenic / calcified, text: echogenic shadowing focus }
+          - { value: wedge, label: Wedge-shaped hypoechoic area, text: wedge-shaped hypoechoic area }
+        other: true
+      - id: l_lesion_loc
+        type: choice
+        label: Lesion location
+        show_if: "l_testis_status == 'present' and l_lesion == 'present'"
+        options:
+          - { value: upper, label: Upper pole, text: upper pole }
+          - { value: mid, label: Mid, text: mid testis }
+          - { value: lower, label: Lower pole, text: lower pole }
+          - { value: mediastinum, label: Mediastinum, text: mediastinum testis }
+      - id: l_lesion_size
+        type: dims
+        label: Lesion size
+        min: 0.1
+        max: 7
+        required: true
+        show_if: "l_testis_status == 'present' and l_lesion == 'present'"
+      - id: l_lesion_flow
+        type: choice
+        label: Lesion internal flow
+        show_if: "l_testis_status == 'present' and l_lesion == 'present'"
+        options:
+          - { value: none, label: None, text: without internal vascularity }
+          - { value: present, label: Present, text: with internal vascularity }
+      - id: l_flow
+        type: choice
+        label: Testicular Doppler flow
+        required: true
+        show_if: "l_testis_status == 'present'"
+        normal: symmetric
+        options:
+          - { value: symmetric, label: Normal / symmetric, text: Normal arterial and venous flow. }
+          - { value: increased, label: Increased, text: Increased flow relative to the contralateral testis. }
+          - { value: decreased, label: Decreased, text: Decreased flow relative to the contralateral testis. }
+          - { value: absent, label: Absent, text: No arterial or venous flow is detected. }
+      - id: l_epi
+        type: choice
+        label: Left epididymis
+        required: true
+        show_if: "l_testis_status != 'absent'"
+        normal: normal
+        options:
+          - { value: normal, label: Normal, text: normal in size and echogenicity }
+          - { value: hyperemic, label: Enlarged / hyperemic, text: "enlarged and hyperemic, which can be seen with epididymitis" }
+          - { value: cyst, label: Cyst / spermatocele, text: epididymal cyst or spermatocele }
+          - { value: not_seen, label: Not well visualized, text: not well visualized }
+        other: true
+      - id: l_epi_cyst_size
+        type: number
+        label: Cyst size
+        unit: cm
+        decimals: 1
+        min: 0.1
+        max: 10
+        show_if: "l_testis_status != 'absent' and l_epi == 'cyst'"
+    report: |
+      {{#if l_testis_status == 'absent'}}
+      LEFT TESTIS: Surgically absent.
+      {{else if l_testis_status == 'not_seen'}}
+      LEFT TESTIS: Not visualized within the left hemiscrotum.
+      {{else}}
+      LEFT TESTIS: Measures {{l_testis}} (volume {{l_testis_vol}}). {{l_echo | cap}}{{#if l_lesion == 'none'}} without focal lesion.{{else}}. {{l_lesion_type | cap}}{{#if present(l_lesion_loc)}} in the {{l_lesion_loc}}{{/if}}{{#if present(l_lesion_size)}} measuring {{l_lesion_size}}{{/if}}{{#if present(l_lesion_flow)}}, {{l_lesion_flow}}{{/if}}.{{/if}} {{l_flow}}
+      {{/if}}
+      {{#if l_testis_status != 'absent' and present(l_epi)}}
+      LEFT EPIDIDYMIS: {{l_epi | cap}}{{#if present(l_epi_cyst_size)}} measuring {{l_epi_cyst_size}}{{/if}}.
+      {{/if}}
+
+  - id: extratesticular
+    title: Hydrocele, varicocele, hernia
+    fields:
+      - id: hydrocele
+        type: choice
+        label: Hydrocele
+        required: true
+        normal: none
+        options:
+          - { value: none, label: None }
+          - { value: right, label: Right, text: right }
+          - { value: left, label: Left, text: left }
+          - { value: bilateral, label: Bilateral, text: bilateral }
+      - id: hydrocele_size
+        type: choice
+        label: Hydrocele size
+        required: true
+        show_if: "hydrocele in ['right', 'left', 'bilateral']"
+        options:
+          - { value: small, label: Small, text: small }
+          - { value: moderate, label: Moderate, text: moderate }
+          - { value: large, label: Large, text: large }
+      - id: hydrocele_complex
+        type: boolean
+        label: Septations / internal debris
+        show_if: "hydrocele in ['right', 'left', 'bilateral']"
+      - id: varicocele
+        type: choice
+        label: Varicocele
+        required: true
+        normal: none
+        options:
+          - { value: none, label: None }
+          - { value: right, label: Right, text: right }
+          - { value: left, label: Left, text: left }
+          - { value: bilateral, label: Bilateral, text: bilateral }
+      - id: varicocele_size
+        type: number
+        label: Largest vein diameter
+        unit: mm
+        decimals: 1
+        min: 1
+        max: 10
+        show_if: "varicocele in ['right', 'left', 'bilateral']"
+      - id: valsalva
+        type: choice
+        label: With Valsalva
+        show_if: "varicocele in ['right', 'left', 'bilateral']"
+        options:
+          - { value: reflux, label: Reflux / augments, text: with reflux during Valsalva }
+          - { value: no_reflux, label: No reflux, text: without reflux during Valsalva }
+          - { value: only, label: Seen only with Valsalva, text: visible only during Valsalva }
+          - { value: not_assessed, label: Not assessed, text: "" }
+      - id: hernia
+        type: choice
+        label: Inguinal hernia
+        required: true
+        normal: none
+        options:
+          - { value: none, label: None }
+          - { value: right, label: Right, text: right }
+          - { value: left, label: Left, text: left }
+          - { value: bilateral, label: Bilateral, text: bilateral }
+          - { value: not_assessed, label: Not assessed }
+      - id: hernia_contents
+        type: choice
+        label: Hernia contents
+        show_if: "hernia in ['right', 'left', 'bilateral']"
+        options:
+          - { value: fat, label: Fat, text: fat }
+          - { value: bowel, label: Bowel, text: bowel }
+          - { value: fluid, label: Fluid, text: fluid }
+      - id: scrotal_wall
+        type: choice
+        label: Scrotal wall
+        required: true
+        normal: normal
+        options:
+          - { value: normal, label: Normal, text: "" }
+          - { value: thickened, label: Thickened / edematous, text: Scrotal wall thickening and edema. }
+          - { value: hyperemic, label: Thickened and hyperemic, text: Scrotal wall thickening with hyperemia. }
+    report: |
+      {{#if hydrocele == 'none' and varicocele == 'none' and hernia == 'none'}}
+      EXTRATESTICULAR: No hydrocele, varicocele, or inguinal hernia. {{scrotal_wall}}
+      {{else}}
+      EXTRATESTICULAR: {{#if hydrocele == 'none'}}No hydrocele.{{else if present(hydrocele)}}{{#if present(hydrocele_size)}}{{hydrocele_size | cap}} {{hydrocele}}{{else}}{{hydrocele | cap}}{{/if}} hydrocele{{#if hydrocele == 'bilateral'}}s{{/if}}{{#if hydrocele_complex}} with internal septations or debris{{/if}}.{{/if}} {{#if varicocele == 'none'}}No varicocele.{{else if present(varicocele)}}{{varicocele | cap}} varicocele{{#if varicocele == 'bilateral'}}s{{/if}}{{#if present(varicocele_size)}} with veins measuring up to {{varicocele_size}}{{/if}}{{#if present(valsalva) and valsalva != 'not_assessed'}}, {{valsalva}}{{/if}}.{{/if}} {{#if hernia == 'none'}}No inguinal hernia.{{else if present(hernia) and hernia != 'not_assessed'}}{{hernia | cap}} inguinal hernia{{#if hernia == 'bilateral'}}s{{/if}}{{#if present(hernia_contents)}} containing {{hernia_contents}}{{/if}}.{{/if}} {{scrotal_wall}}
+      {{/if}}
+
+  - id: impression
+    title: Tech impression (preliminary)
+    report: false
+    fields:
+      - id: tech_impression
+        type: choice
+        label: Overall
+        options:
+          - { value: normal, label: Normal study }
+          - { value: abnormal, label: Abnormal – see findings }

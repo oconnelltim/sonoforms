@@ -1,0 +1,390 @@
+# Starter form. Review wording with your radiologists before clinical use.
+id: us-ruq
+title: US Abdomen Limited (RUQ)
+description: "Right upper quadrant ultrasound: liver, gallbladder, bile ducts, pancreatic head and right kidney."
+study_match:
+  - RUQ
+  - RIGHT UPPER QUADRANT
+  - ABDOMEN LIMITED
+  - ABD LIMITED
+  - GALLBLADDER
+
+sections:
+  - id: clinical
+    title: Clinical
+    fields:
+      - id: indication
+        type: multi
+        label: Indication
+        required: true
+        other: true
+        options:
+          - { value: ruq_pain, label: RUQ pain, text: right upper quadrant pain }
+          - { value: cholecystitis, label: Suspected cholecystitis, text: suspected cholecystitis }
+          - { value: stones, label: Gallstones / biliary colic, text: suspected cholelithiasis }
+          - { value: lfts, label: Abnormal liver function tests, text: abnormal liver function tests }
+          - { value: jaundice, label: Jaundice, text: jaundice }
+          - { value: pancreatitis, label: Pancreatitis, text: pancreatitis }
+          - { value: nausea, label: Nausea / vomiting, text: nausea and vomiting }
+          - { value: fever, label: Fever, text: fever }
+      - id: comparison
+        type: text
+        label: Comparison
+        placeholder: "e.g. CT abdomen 03/14/2025, or leave blank for none"
+      - id: limited_by
+        type: multi
+        label: Exam limited by
+        options:
+          - { value: gas, label: Bowel gas, text: overlying bowel gas }
+          - { value: habitus, label: Body habitus, text: body habitus }
+          - { value: mobility, label: Limited patient mobility, text: limited patient mobility }
+          - { value: cooperation, label: Patient cooperation, text: limited patient cooperation }
+    report: |
+      INDICATION: {{indication | cap}}.
+      COMPARISON: {{#if present(comparison)}}{{comparison}}{{else}}None{{/if}}.
+      TECHNIQUE: Grayscale and color Doppler ultrasound of the right upper quadrant was performed.{{#if present(limited_by)}} The examination is limited by {{limited_by}}.{{/if}}
+
+  - id: liver
+    title: Liver
+    fields:
+      - id: liver_length
+        type: number
+        label: Liver length (midclavicular)
+        unit: cm
+        decimals: 1
+        min: 8
+        max: 25
+        required: true
+      - id: liver_echo
+        type: choice
+        label: Echotexture
+        required: true
+        normal: normal
+        options:
+          - { value: normal, label: Normal, text: Normal echotexture. }
+          - { value: steatosis, label: Increased echogenicity, text: "Diffusely increased echogenicity, consistent with hepatic steatosis." }
+          - { value: coarse, label: Coarsened / heterogeneous, text: Coarsened heterogeneous echotexture. }
+        other: true
+      - id: liver_contour
+        type: choice
+        label: Surface contour
+        required: true
+        normal: smooth
+        options:
+          - { value: smooth, label: Smooth, text: Smooth contour. }
+          - { value: nodular, label: Nodular, text: "Nodular contour, which can be seen with cirrhosis." }
+      - id: liver_lesion_status
+        type: choice
+        label: Focal lesions
+        required: true
+        normal: none
+        options:
+          - { value: none, label: None }
+          - { value: present, label: Present (describe) }
+      - id: liver_lesions
+        type: repeat
+        label: Liver lesions
+        item_label: Lesion
+        max_items: 6
+        required: true
+        show_if: "liver_lesion_status == 'present'"
+        fields:
+          - id: location
+            type: choice
+            label: Location
+            required: true
+            options:
+              - { value: right, label: Right lobe, text: right hepatic lobe }
+              - { value: left, label: Left lobe, text: left hepatic lobe }
+              - { value: caudate, label: Caudate lobe, text: caudate lobe }
+          - id: kind
+            type: choice
+            label: Appearance
+            required: true
+            options:
+              - { value: cyst, label: Simple cyst, text: simple-appearing cyst }
+              - { value: echogenic, label: Echogenic (hemangioma-like), text: "homogeneous echogenic lesion, which can represent a hemangioma" }
+              - { value: hypoechoic, label: Hypoechoic solid, text: hypoechoic solid-appearing lesion }
+              - { value: complex, label: Complex cystic, text: complex cystic lesion }
+              - { value: sparing, label: Focal fatty sparing / infiltration, text: "geographic area of altered echogenicity, likely focal fatty sparing or infiltration" }
+            other: true
+          - id: size
+            type: dims
+            label: Size
+            min: 0.2
+            max: 25
+            required: true
+          - id: vascular
+            type: choice
+            label: Internal flow
+            options:
+              - { value: none, label: None, text: No internal vascularity. }
+              - { value: present, label: Present, text: Internal vascularity is present. }
+      - id: pv_flow
+        type: choice
+        label: Main portal vein
+        required: true
+        normal: hepatopetal
+        options:
+          - { value: hepatopetal, label: Patent / hepatopetal, text: The main portal vein is patent with hepatopetal flow. }
+          - { value: hepatofugal, label: Hepatofugal (reversed), text: The main portal vein demonstrates hepatofugal (reversed) flow. }
+          - { value: absent, label: No flow / thrombus, text: "No flow is detected in the main portal vein, concerning for thrombosis." }
+          - { value: not_assessed, label: Not assessed, text: The portal vein was not assessed with Doppler. }
+      - id: ruq_fluid
+        type: choice
+        label: Free fluid (RUQ / Morison pouch)
+        required: true
+        normal: none
+        options:
+          - { value: none, label: None, text: None in the right upper quadrant. }
+          - { value: trace, label: Trace, text: Trace amount in the right upper quadrant. }
+          - { value: small, label: Small, text: Small amount in the right upper quadrant. }
+          - { value: moderate, label: Moderate / large, text: Moderate to large volume ascites. }
+    report: |
+      LIVER: Measures {{liver_length}} in length. {{liver_echo | sentence}} {{liver_contour}}{{#if liver_lesion_status == 'none'}} No focal hepatic lesion.{{/if}} {{pv_flow}}
+      {{#each liver_lesions}}
+      - {{location | cap}}: {{size}} {{kind}}. {{vascular}}
+      {{/each}}
+      {{#if present(ruq_fluid)}}
+      FREE FLUID: {{ruq_fluid}}
+      {{/if}}
+
+  - id: gallbladder
+    title: Gallbladder
+    fields:
+      - id: gb_status
+        type: choice
+        label: Gallbladder
+        required: true
+        default: present
+        options:
+          - { value: present, label: Present }
+          - { value: absent, label: Surgically absent }
+          - { value: contracted, label: Contracted (non-fasting) }
+          - { value: not_seen, label: Not visualized }
+      - id: gb_distension
+        type: choice
+        label: Distension
+        show_if: "gb_status == 'present'"
+        normal: normal
+        options:
+          - { value: normal, label: Normal, text: "" }
+          - { value: distended, label: Distended, text: The gallbladder is distended. }
+      - id: gb_stones
+        type: choice
+        label: Gallstones
+        required: true
+        show_if: "gb_status == 'present'"
+        normal: none
+        options:
+          - { value: none, label: None, text: No gallstones. }
+          - { value: single, label: Single, text: A single gallstone }
+          - { value: multiple, label: Multiple, text: Multiple gallstones }
+      - id: stone_size
+        type: number
+        label: Largest stone
+        unit: cm
+        decimals: 1
+        min: 0.1
+        max: 6
+        show_if: "gb_status == 'present' and gb_stones in ['single', 'multiple']"
+      - id: stone_mobility
+        type: choice
+        label: Stone mobility
+        show_if: "gb_status == 'present' and gb_stones in ['single', 'multiple']"
+        options:
+          - { value: mobile, label: Mobile, text: "" }
+          - { value: impacted, label: Non-mobile in neck / cystic duct, text: A non-mobile stone is present in the gallbladder neck. }
+          - { value: not_assessed, label: Not assessed, text: "" }
+      - id: gb_sludge
+        type: choice
+        label: Sludge
+        required: true
+        show_if: "gb_status == 'present'"
+        normal: none
+        options:
+          - { value: none, label: None, text: No sludge. }
+          - { value: present, label: Present, text: Layering sludge is present. }
+          - { value: tumefactive, label: Tumefactive sludge, text: Tumefactive sludge is present. }
+      - id: gb_polyp
+        type: choice
+        label: Polyp
+        show_if: "gb_status == 'present'"
+        normal: none
+        options:
+          - { value: none, label: None, text: "" }
+          - { value: single, label: Single polyp, text: A nonshadowing echogenic polyp }
+          - { value: multiple, label: Multiple polyps, text: Multiple nonshadowing echogenic polyps }
+      - id: gb_polyp_size
+        type: number
+        label: Largest polyp
+        unit: mm
+        decimals: 0
+        min: 1
+        max: 40
+        show_if: "gb_status == 'present' and gb_polyp in ['single', 'multiple']"
+      - id: gb_wall_mm
+        type: number
+        label: Wall thickness (anterior wall)
+        unit: mm
+        decimals: 1
+        min: 0
+        max: 20
+        required: true
+        show_if: "gb_status == 'present'"
+      - id: gb_wall_appearance
+        type: choice
+        label: Wall appearance
+        show_if: "gb_status == 'present'"
+        normal: normal
+        options:
+          - { value: normal, label: Normal, text: "" }
+          - { value: edema, label: Striated / edematous, text: with a striated edematous appearance }
+          - { value: hyperemic, label: Hyperemic, text: with hyperemia on color Doppler }
+          - { value: irregular, label: Irregular / focal thickening, text: with irregular or focal thickening }
+      - id: pericholecystic
+        type: choice
+        label: Pericholecystic fluid
+        required: true
+        show_if: "gb_status == 'present'"
+        normal: none
+        options:
+          - { value: none, label: None, text: No pericholecystic fluid. }
+          - { value: present, label: Present, text: Pericholecystic fluid is present. }
+      - id: gb_murphy
+        type: choice
+        label: Sonographic Murphy sign
+        required: true
+        show_if: "gb_status == 'present'"
+        normal: negative
+        options:
+          - { value: negative, label: Negative, text: Negative sonographic Murphy sign. }
+          - { value: positive, label: Positive, text: Positive sonographic Murphy sign. }
+          - { value: not_assessed, label: Not assessed (e.g. medicated), text: Sonographic Murphy sign could not be assessed. }
+    report: |
+      {{#if gb_status == 'absent'}}
+      GALLBLADDER: Surgically absent.
+      {{else if gb_status == 'contracted'}}
+      GALLBLADDER: Contracted, limiting evaluation.
+      {{else if gb_status == 'not_seen'}}
+      GALLBLADDER: Not visualized.
+      {{else}}
+      GALLBLADDER: {{gb_distension}} {{#if gb_stones == 'none' and gb_sludge == 'none'}}No gallstones or sludge.{{else}}{{gb_stones}}{{#if present(stone_size)}}{{#if gb_stones == 'multiple'}}, the largest{{/if}} measuring {{stone_size}}{{/if}}{{#if gb_stones in ['single', 'multiple']}}.{{/if}} {{stone_mobility}} {{gb_sludge}}{{/if}}{{#if gb_polyp in ['single', 'multiple']}} {{gb_polyp}}{{#if present(gb_polyp_size)}} measuring {{#if gb_polyp == 'multiple'}}up to {{/if}}{{gb_polyp_size}}{{/if}}.{{/if}}{{#if present(gb_wall_mm)}} The gallbladder wall measures {{gb_wall_mm}} in thickness{{#if gb_wall_appearance != 'normal'}} {{gb_wall_appearance}}{{/if}}.{{/if}} {{pericholecystic}} {{gb_murphy}}
+      {{/if}}
+
+  - id: bile_ducts
+    title: Bile ducts
+    fields:
+      - id: cbd_seen
+        type: choice
+        label: Common bile duct
+        required: true
+        default: seen
+        options:
+          - { value: seen, label: Visualized }
+          - { value: not_seen, label: Not visualized }
+      - id: cbd
+        type: number
+        label: CBD diameter
+        unit: mm
+        decimals: 1
+        min: 1
+        max: 25
+        required: true
+        show_if: "cbd_seen == 'seen'"
+      - id: cbd_stone
+        type: boolean
+        label: Choledocholithiasis seen
+        show_if: "cbd_seen == 'seen'"
+      - id: ihd
+        type: choice
+        label: Intrahepatic bile ducts
+        required: true
+        normal: normal
+        options:
+          - { value: normal, label: Not dilated, text: No intrahepatic biliary ductal dilatation. }
+          - { value: dilated, label: Dilated, text: Intrahepatic biliary ductal dilatation is present. }
+    report: |
+      BILE DUCTS: {{#if cbd_seen == 'seen'}}{{#if present(cbd)}}The common bile duct measures {{cbd}}.{{/if}}{{#if cbd_stone}} An echogenic shadowing focus within the common bile duct is compatible with choledocholithiasis.{{/if}}{{else}}The common bile duct is not visualized.{{/if}} {{ihd}}
+
+  - id: pancreas
+    title: Pancreatic head
+    fields:
+      - id: panc_head
+        type: choice
+        label: Pancreatic head
+        required: true
+        normal: normal
+        options:
+          - { value: normal, label: Normal, text: The visualized pancreatic head is unremarkable. }
+          - { value: obscured, label: Obscured by bowel gas, text: The pancreatic head is obscured by bowel gas. }
+          - { value: duct, label: Duct dilated, text: The pancreatic duct is dilated in the pancreatic head. }
+          - { value: lesion, label: Focal lesion, text: A focal lesion is present in the pancreatic head. }
+          - { value: edematous, label: Enlarged / hypoechoic, text: "The pancreatic head is enlarged and hypoechoic, which can be seen with pancreatitis." }
+        other: true
+    report: |
+      {{#if present(panc_head)}}
+      PANCREAS: {{panc_head | sentence}}
+      {{/if}}
+
+  - id: right_kidney
+    title: Right kidney (limited)
+    fields:
+      - id: r_kid_status
+        type: choice
+        label: Right kidney
+        required: true
+        default: seen
+        options:
+          - { value: seen, label: Visualized }
+          - { value: absent, label: Surgically absent }
+          - { value: not_seen, label: Not visualized }
+      - id: r_kid_length
+        type: number
+        label: Right kidney length (optional)
+        unit: cm
+        decimals: 1
+        min: 7
+        max: 15
+        show_if: "r_kid_status == 'seen'"
+      - id: r_hydro
+        type: choice
+        label: Hydronephrosis
+        required: true
+        show_if: "r_kid_status == 'seen'"
+        normal: none
+        options:
+          - { value: none, label: None, text: No hydronephrosis. }
+          - { value: mild, label: Mild, text: Mild hydronephrosis. }
+          - { value: moderate, label: Moderate, text: Moderate hydronephrosis. }
+          - { value: severe, label: Severe, text: Severe hydronephrosis. }
+      - id: r_kid_other
+        type: choice
+        label: Other findings
+        show_if: "r_kid_status == 'seen'"
+        normal: none
+        options:
+          - { value: none, label: None, text: "" }
+          - { value: cyst, label: Simple cyst, text: Simple renal cyst. }
+          - { value: stone, label: Stone, text: Nonobstructing renal calculus. }
+          - { value: echogenic, label: Increased echogenicity, text: Increased cortical echogenicity. }
+        other: true
+    report: |
+      {{#if r_kid_status == 'absent'}}
+      RIGHT KIDNEY: Surgically absent.
+      {{else if r_kid_status == 'not_seen'}}
+      RIGHT KIDNEY: Not visualized.
+      {{else}}
+      RIGHT KIDNEY: Limited evaluation.{{#if present(r_kid_length)}} Measures {{r_kid_length}} in length.{{/if}} {{r_hydro}} {{r_kid_other | sentence}}
+      {{/if}}
+
+  - id: impression
+    title: Tech impression (preliminary)
+    report: false
+    fields:
+      - id: tech_impression
+        type: choice
+        label: Overall
+        options:
+          - { value: normal, label: Normal study }
+          - { value: abnormal, label: Abnormal – see findings }

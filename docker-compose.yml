@@ -1,0 +1,92 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# SonoForms: Apache (HTTPS) -> Node.js app -> PostgreSQL.
+# Run ./install.sh for first-time setup; it creates .env and secrets/.
+#
+# Only the web container publishes ports. The database is on an internal
+# network with no outside access at all.
+
+name: sonoforms
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: sonoforms
+      POSTGRES_USER: sonoforms
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+    secrets: [db_password]
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks: [backend]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sonoforms -d sonoforms"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    security_opt: ["no-new-privileges:true"]
+
+  app:
+    build: .
+    image: sonoforms-app:latest
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    user: "${APP_UID:-1000}:${APP_GID:-1000}"
+    environment:
+      PGHOST: db
+      PGDATABASE: sonoforms
+      PGUSER: sonoforms
+      PGPASSWORD_FILE: /run/secrets/db_password
+      SONOFORMS_MASTER_KEY_FILE: /run/secrets/master_key
+      INITIAL_ADMIN_PASSWORD_FILE: /run/secrets/initial_admin_password
+      BACKUP_DIR: /backups
+      BACKUP_HOUR: "${BACKUP_HOUR:-2}"
+      BACKUP_KEEP: "${BACKUP_KEEP:-14}"
+      DICOM_MOCK: "${DICOM_MOCK:-false}"
+      TZ: "${TZ:-UTC}"
+      LOG_LEVEL: "${LOG_LEVEL:-info}"
+    secrets: [db_password, master_key, initial_admin_password]
+    volumes:
+      - ./backups:/backups
+    # backend: database. pacs: outbound DICOM queries to your PACS on the
+    # hospital network. The app never contacts anything else.
+    networks: [backend, pacs]
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+
+  web:
+    build: ./docker/apache
+    image: sonoforms-web:latest
+    restart: unless-stopped
+    depends_on: [app]
+    environment:
+      SERVER_NAME: "${SERVER_NAME:-localhost}"
+    ports:
+      - "${HTTPS_PORT:-443}:443"
+      - "${HTTP_PORT:-80}:80"
+    volumes:
+      - ./certs:/certs
+    networks: [backend, frontend]
+    security_opt: ["no-new-privileges:true"]
+
+networks:
+  backend:
+    internal: true
+  frontend: {}
+  pacs: {}
+
+volumes:
+  db-data: {}
+
+secrets:
+  db_password:
+    file: ./secrets/db_password
+  master_key:
+    file: ./secrets/master_key
+  initial_admin_password:
+    file: ./secrets/initial_admin_password
