@@ -14,6 +14,30 @@ import { FUNCTIONS, META_FUNCTIONS } from './functions.js';
 
 export class ExprError extends Error {}
 
+// Limits that keep a malicious or mistaken form definition from making
+// evaluation explode (e.g. calc fields that each double the previous one).
+export const LIMITS = { maxItems: 1000, maxString: 20000, maxDepth: 64 };
+
+// Returns v if it is within LIMITS, otherwise null.
+export function bounded(v) {
+  let items = 0;
+  let chars = 0;
+  const walk = (x, depth) => {
+    if (depth > 8) return false;
+    if (Array.isArray(x)) {
+      items += x.length;
+      if (items > LIMITS.maxItems) return false;
+      return x.every(y => walk(y, depth + 1));
+    }
+    if (typeof x === 'string') {
+      chars += x.length;
+      return chars <= LIMITS.maxString;
+    }
+    return true;
+  };
+  return walk(v, 0) ? v : null;
+}
+
 const OPERATORS = ['==', '!=', '<=', '>=', '&&', '||', '<', '>', '+', '-', '*', '/', '%', '!', '(', ')', ',', '[', ']'];
 
 export function tokenize(src) {
@@ -62,6 +86,7 @@ export function tokenize(src) {
 export function parse(src) {
   const tokens = tokenize(String(src));
   let pos = 0;
+  let depth = 0;
   const peek = () => tokens[pos];
   const isOp = v => peek() && peek().t === 'op' && peek().v === v;
   const expectOp = v => {
@@ -108,6 +133,10 @@ export function parse(src) {
     return parsePrimary();
   }
   function parsePrimary() {
+    if (++depth > LIMITS.maxDepth) throw new ExprError(`Expression is nested too deeply: ${String(src).slice(0, 80)}`);
+    try { return parsePrimaryInner(); } finally { depth--; }
+  }
+  function parsePrimaryInner() {
     const tk = peek();
     if (!tk) throw new ExprError(`Unexpected end of expression: ${src}`);
     if (tk.t === 'num' || tk.t === 'str' || tk.t === 'lit') { pos++; return { k: 'lit', v: tk.v }; }
@@ -182,7 +211,7 @@ export function evaluate(ast, ctx) {
   switch (ast.k) {
     case 'lit': return ast.v;
     case 'id': return ctx.lookup(ast.name);
-    case 'list': return ast.items.map(x => evaluate(x, ctx));
+    case 'list': return bounded(ast.items.map(x => evaluate(x, ctx)));
     case 'not': return !truthy(evaluate(ast.a, ctx));
     case 'and': return truthy(evaluate(ast.a, ctx)) && truthy(evaluate(ast.b, ctx));
     case 'or': {
@@ -205,7 +234,7 @@ export function evaluate(ast, ctx) {
         case '!=': return !looseEqual(a, b);
         case 'in': return Array.isArray(b) ? b.some(x => looseEqual(a, x)) : String(b ?? '').includes(String(a ?? ''));
         case '+':
-          if (typeof a === 'string' || typeof b === 'string') return `${a ?? ''}${b ?? ''}`;
+          if (typeof a === 'string' || typeof b === 'string') return bounded(`${a ?? ''}${b ?? ''}`);
           // fall through to numeric
         // eslint-disable-next-line no-fallthrough
         case '-': case '*': case '/': case '%': {

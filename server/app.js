@@ -5,7 +5,7 @@ import Fastify from 'fastify';
 import fastifyCookie from '@fastify/cookie';
 import fastifyStatic from '@fastify/static';
 import { config, ROOT } from './config.js';
-import { loadSession, HttpError } from './auth.js';
+import { loadSession, checkRequestOrigin, HttpError } from './auth.js';
 import authRoutes from './routes/auth.js';
 import techRoutes from './routes/tech.js';
 import radRoutes from './routes/rad.js';
@@ -35,7 +35,11 @@ export async function buildApp(opts = {}) {
   // Per-request log lines are noise in production; route logs show warnings and errors only.
   app.addHook('onRoute', (route) => { if (!route.logLevel) route.logLevel = process.env.REQUEST_LOG_LEVEL || 'warn'; });
 
+  // Only JSON bodies are accepted (a plain-text parser would let simple
+  // cross-site form posts reach the API).
+  app.removeContentTypeParser('text/plain');
   await app.register(fastifyCookie);
+  app.addHook('onRequest', async (req) => checkRequestOrigin(req));
   app.addHook('onRequest', loadSession);
 
   app.addHook('onSend', async (req, reply, payload) => {
@@ -56,6 +60,10 @@ export async function buildApp(opts = {}) {
     if (err instanceof HttpError) {
       return reply.status(err.statusCode).send({ error: err.message, ...(err.extra || {}) });
     }
+    // Malformed ids in URLs (e.g. /exams/abc) reach Postgres as invalid integers.
+    if (err.code === '22P02' || err.code === '22003') {
+      return reply.status(404).send({ error: 'Not found' });
+    }
     if (err.validation) {
       return reply.status(400).send({ error: `Invalid request: ${err.message}` });
     }
@@ -66,7 +74,7 @@ export async function buildApp(opts = {}) {
     return reply.status(500).send({ error: 'Something went wrong on the server. The error has been logged.' });
   });
 
-  app.get('/api/health', async () => ({ ok: true, version: config.version }));
+  app.get('/api/health', async () => ({ ok: true }));
 
   await app.register(authRoutes, { prefix: '/api' });
   await app.register(techRoutes, { prefix: '/api' });

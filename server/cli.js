@@ -7,6 +7,7 @@
 // Commands:
 //   generate-key                 print a new random master key
 //   reset-password <username>    set a temporary password and unlock the account
+//   unlock <username>            clear failed sign-in pauses for an account
 //   create-superuser <username>  create a superuser with a temporary password
 //   backup <file|->              write an encrypted backup
 //   restore <file> [--wipe]      restore a backup (needs the same master key)
@@ -51,18 +52,32 @@ async function main() {
         const hash = await hashPassword(password);
         if (cmd === 'reset-password') {
           const r = await pool.query(
-            `UPDATE users SET password_hash = $2, must_change_password = true, failed_logins = 0, locked_until = NULL, active = true
+            `UPDATE users SET password_hash = $2, must_change_password = true, active = true,
+               temp_password_expires_at = now() + interval '72 hours'
              WHERE lower(username) = lower($1) RETURNING id`, [username, hash]);
+          await pool.query('DELETE FROM login_failures WHERE key = $1', [(await import('./auth.js')).throttleKey('login', username)]);
           if (!r.rowCount) throw new Error(`No user named '${username}'.`);
           await pool.query('DELETE FROM sessions WHERE user_id = $1', [r.rows[0].id]);
           await audit({ action: 'user.reset_password_cli', institutionId: null, entityType: 'user', entityId: r.rows[0].id });
         } else {
           const r = await pool.query(
-            `INSERT INTO users (username, display_name, password_hash, roles, must_change_password)
-             VALUES ($1, $1, $2, '{superuser}', true) RETURNING id`, [username, hash]);
+            `INSERT INTO users (username, display_name, password_hash, roles, must_change_password, temp_password_expires_at)
+             VALUES ($1, $1, $2, '{superuser}', true, now() + interval '72 hours') RETURNING id`, [username, hash]);
           await audit({ action: 'user.create_cli', institutionId: null, entityType: 'user', entityId: r.rows[0].id, details: { username, roles: ['superuser'] } });
         }
         console.log(`Temporary password for ${username}: ${password}`);
+      });
+      return;
+    }
+    case 'unlock': {
+      const username = args[0];
+      if (!username) throw new Error('Usage: unlock <username>');
+      await withDb(async () => {
+        const { unlockAccount } = await import('./auth.js');
+        const { audit } = await import('./audit.js');
+        await unlockAccount(username);
+        await audit({ action: 'user.unlock_cli', institutionId: null, details: { username } });
+        console.log(`Cleared failed sign-in pauses for ${username}.`);
       });
       return;
     }
@@ -71,9 +86,11 @@ async function main() {
       if (!target) throw new Error('Usage: backup <file>   (use - for standard output)');
       await withDb(async () => {
         const { writeBackup } = await import('./backup.js');
+        const { audit } = await import('./audit.js');
         const out = target === '-' ? process.stdout : fs.createWriteStream(target, { mode: 0o600 });
         const result = await writeBackup(out);
         if (target !== '-') await new Promise(r => out.end(r));
+        await audit({ action: 'system.backup_cli', institutionId: null, details: { rows: result.rows } });
         log.info(`Backup complete: ${result.rows} rows`);
       });
       return;

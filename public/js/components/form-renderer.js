@@ -27,7 +27,7 @@ export function renderForm(def, answers, { env = {}, readOnly = false, onChange 
 
   function choiceWidget(field, get, set) {
     const otherInput = field.other ? h('input.input.other-input', {
-      placeholder: 'Describe…', disabled: readOnly,
+      placeholder: 'Describe…', disabled: readOnly, maxlength: 2000,
       oninput: (e) => { set(`${field.id}_other`, e.target.value, true); },
     }) : null;
     if (field.layout === 'dropdown') {
@@ -66,7 +66,7 @@ export function renderForm(def, answers, { env = {}, readOnly = false, onChange 
 
   function multiWidget(field, get, set) {
     const otherInput = field.other ? h('input.input.other-input', {
-      placeholder: 'Describe…', disabled: readOnly,
+      placeholder: 'Describe…', disabled: readOnly, maxlength: 2000,
       oninput: (e) => set(`${field.id}_other`, e.target.value, true),
     }) : null;
     const list = () => (Array.isArray(get(field.id)) ? get(field.id) : []);
@@ -142,7 +142,7 @@ export function renderForm(def, answers, { env = {}, readOnly = false, onChange 
   function textWidget(field, get, set) {
     const multiline = field.type === 'textarea';
     const input = h(multiline ? 'textarea.input' : 'input.input', {
-      disabled: readOnly, placeholder: field.placeholder || '', rows: multiline ? (field.rows || 3) : undefined,
+      disabled: readOnly, placeholder: field.placeholder || '', rows: multiline ? (field.rows || 3) : undefined, maxlength: multiline ? 10000 : 2000,
       oninput: (e) => set(field.id, e.target.value, true),
     });
     const sync = () => { if (document.activeElement !== input) input.value = get(field.id) ?? ''; };

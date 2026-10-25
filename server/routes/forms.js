@@ -28,7 +28,7 @@ async function assertCanView(req, form) {
 
 export default async function formRoutes(app) {
   const mgr = { preHandler: requireAuth(can.forms) };
-  const sourceBody = { type: 'object', required: ['source'], properties: { source: { type: 'string', maxLength: 500000 } } };
+  const sourceBody = { type: 'object', required: ['source'], properties: { source: { type: 'string', maxLength: 200000 } } };
 
   app.get('/forms', mgr, async (req) => {
     const institutions = await userInstitutions(req.user);

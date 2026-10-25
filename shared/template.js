@@ -17,30 +17,47 @@ import { createEvaluator, formatValue, naturalJoin } from './engine.js';
 
 export class TemplateError extends Error {}
 
-const TAG = /\{\{([\s\S]*?)\}\}/g;
+// Length of the run of spaces/tabs at the end (or start) of s. Written as
+// loops rather than regexes so long whitespace runs can't cause slow
+// backtracking (templates and answers are user-supplied).
+function trailingBlanks(s) {
+  let i = s.length;
+  while (i > 0 && (s[i - 1] === ' ' || s[i - 1] === '\t')) i--;
+  return s.length - i;
+}
+function leadingBlanks(s) {
+  let i = 0;
+  while (i < s.length && (s[i] === ' ' || s[i] === '\t')) i++;
+  return i;
+}
+
+function classifyTag(inner) {
+  if (inner.startsWith('!')) return { type: 'comment' };
+  if (/^#if\b/.test(inner)) return { type: 'if', expr: inner.slice(3).trim() };
+  if (/^else\s+if\b/.test(inner)) return { type: 'elseif', expr: inner.replace(/^else\s+if/, '').trim() };
+  if (inner === 'else') return { type: 'else' };
+  if (inner === '/if') return { type: 'endif' };
+  if (/^#each\b/.test(inner)) return { type: 'each', expr: inner.slice(5).trim() };
+  if (inner === '/each') return { type: 'endeach' };
+  return { type: 'expr', expr: inner };
+}
 
 function lex(src) {
   const parts = [];
-  let last = 0;
-  let m;
-  TAG.lastIndex = 0;
-  while ((m = TAG.exec(src))) {
-    if (m.index > last) parts.push({ type: 'text', value: src.slice(last, m.index) });
-    const inner = m[1].trim();
-    let tag;
-    if (inner.startsWith('!')) tag = { type: 'comment' };
-    else if (/^#if\b/.test(inner)) tag = { type: 'if', expr: inner.slice(3).trim() };
-    else if (/^else\s+if\b/.test(inner)) tag = { type: 'elseif', expr: inner.replace(/^else\s+if/, '').trim() };
-    else if (inner === 'else') tag = { type: 'else' };
-    else if (inner === '/if') tag = { type: 'endif' };
-    else if (/^#each\b/.test(inner)) tag = { type: 'each', expr: inner.slice(5).trim() };
-    else if (inner === '/each') tag = { type: 'endeach' };
-    else tag = { type: 'expr', expr: inner };
+  let pos = 0;
+  // Linear scan: find "{{", then the next "}}". An unclosed "{{" ends the scan.
+  for (;;) {
+    const open = src.indexOf('{{', pos);
+    if (open === -1) break;
+    const close = src.indexOf('}}', open + 2);
+    if (close === -1) throw new TemplateError('A "{{" has no matching "}}"');
+    if (open > pos) parts.push({ type: 'text', value: src.slice(pos, open) });
+    const tag = classifyTag(src.slice(open + 2, close).trim());
     tag.block = tag.type !== 'expr';
     parts.push(tag);
-    last = TAG.lastIndex;
+    pos = close + 2;
   }
-  if (last < src.length) parts.push({ type: 'text', value: src.slice(last) });
+  if (pos < src.length) parts.push({ type: 'text', value: src.slice(pos) });
 
   // Standalone block tags: strip the indentation before them and the newline after.
   // startsLine[i] is true when part i begins at the start of a line.
@@ -50,17 +67,28 @@ function lex(src) {
     if (p.block) {
       const prev = parts[i - 1];
       const next = parts[i + 1];
-      const prevOk = !prev || (prev.type === 'text' &&
-        (/\n[ \t]*$/.test(prev.value) || (startsLine[i - 1] && /^[ \t]*$/.test(prev.value))));
-      const nextOk = !next || (next.type === 'text' && /^[ \t]*(\r?\n|$)/.test(next.value));
+      let prevOk = !prev;
+      if (prev && prev.type === 'text') {
+        const before = prev.value.slice(0, prev.value.length - trailingBlanks(prev.value));
+        prevOk = before.endsWith('\n') || (startsLine[i - 1] && before === '');
+      }
+      let nextOk = !next;
+      if (next && next.type === 'text') {
+        const after = next.value.slice(leadingBlanks(next.value));
+        nextOk = after === '' || after.startsWith('\n') || after.startsWith('\r\n');
+      }
       if (prevOk && nextOk) {
-        if (prev) prev.value = prev.value.replace(/[ \t]*$/, '');
-        if (next) next.value = next.value.replace(/^[ \t]*\r?\n?/, '');
+        if (prev) prev.value = prev.value.slice(0, prev.value.length - trailingBlanks(prev.value));
+        if (next) {
+          let v = next.value.slice(leadingBlanks(next.value));
+          if (v.startsWith('\r\n')) v = v.slice(2); else if (v.startsWith('\n')) v = v.slice(1);
+          next.value = v;
+        }
         startsLine[i + 1] = true;
         continue;
       }
     }
-    startsLine[i + 1] = p.type === 'text' ? /\n$/.test(p.value) || (startsLine[i] && p.value === '') : false;
+    startsLine[i + 1] = p.type === 'text' ? p.value.endsWith('\n') || (startsLine[i] && p.value === '') : false;
   }
   return parts;
 }
@@ -178,12 +206,15 @@ function renderExpr(node, scope) {
 }
 
 // Tidy whitespace and punctuation left behind by empty conditionals.
+// Every pattern here is linear-time: runs of spaces/tabs are collapsed
+// first, and only single space/tab characters precede punctuation after that.
 export function tidy(text) {
   return text
     .split('\n')
     .map(line => {
-      const indent = /^\s*/.exec(line)[0];
-      return indent + line.slice(indent.length).replace(/[ \t]{2,}/g, ' ').replace(/\s+([.,;:])/g, '$1').replace(/([.,;:])\1+/g, '$1').replace(/\s+$/, '');
+      const n = leadingBlanks(line);
+      const body = line.slice(n).replace(/[ \t]{2,}/g, ' ').replace(/[ \t]([.,;:])/g, '$1').replace(/([.,;:])\1+/g, '$1');
+      return (line.slice(0, n) + body).trimEnd();
     })
     .join('\n')
     .replace(/\n{3,}/g, '\n\n')

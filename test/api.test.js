@@ -1,77 +1,17 @@
 // End-to-end API tests against a throwaway embedded PostgreSQL.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
-import crypto from 'node:crypto';
-import EmbeddedPostgres from 'embedded-postgres';
+import { startTestServer } from './helpers.js';
 
-const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'sonoforms-test-'));
-const port = 55000 + Math.floor(Math.random() * 5000);
-const pg = new EmbeddedPostgres({ databaseDir: path.join(dir, 'pg'), user: 'test', password: 'test', port, persistent: false, onLog: () => {} });
-
-Object.assign(process.env, {
-  PGHOST: 'localhost', PGPORT: String(port), PGDATABASE: 'sonoforms', PGUSER: 'test', PGPASSWORD: 'test',
-  SONOFORMS_MASTER_KEY: crypto.randomBytes(32).toString('base64'),
-  INITIAL_ADMIN_PASSWORD: 'initial-admin-pass', INSECURE_COOKIES: 'true', DICOM_MOCK: 'true', LOG_LEVEL: 'silent',
-});
-
-let app, pool;
+let t, app, client, pool;
 
 before(async () => {
-  await pg.initialise();
-  await pg.start();
-  await pg.createDatabase('sonoforms');
-  const { initKeys } = await import('../server/crypto.js');
-  const { migrate } = await import('../server/migrate.js');
-  const { checkMasterKey } = await import('../server/settings.js');
-  const { seedGeneralForms } = await import('../server/forms.js');
-  const { ensureFirstAdmin } = await import('../server/bootstrap.js');
-  const { buildApp } = await import('../server/app.js');
-  ({ pool } = await import('../server/db.js'));
-  const quiet = { info() {}, warn() {}, error() {} };
-  initKeys();
-  await migrate(quiet);
-  await checkMasterKey();
-  await seedGeneralForms(quiet);
-  await ensureFirstAdmin(quiet);
-  app = await buildApp({ logger: false });
+  t = await startTestServer();
+  ({ app, client } = t);
+  pool = t.db.pool;
 }, { timeout: 120000 });
 
-after(async () => {
-  await app?.close();
-  await pool?.end();
-  await pg.stop();
-  fs.rmSync(dir, { recursive: true, force: true });
-});
-
-// Minimal cookie-keeping client around fastify.inject.
-function client() {
-  let cookie = '';
-  let csrf = '';
-  const call = async (method, url, body) => {
-    const res = await app.inject({
-      method, url: `/api${url}`, payload: body,
-      headers: { cookie, ...(csrf && method !== 'GET' ? { 'x-csrf-token': csrf } : {}) },
-    });
-    const set = res.headers['set-cookie'];
-    if (set) cookie = (Array.isArray(set) ? set : [set]).map(c => c.split(';')[0]).join('; ');
-    return { status: res.statusCode, body: res.headers['content-type']?.includes('json') ? res.json() : res.body };
-  };
-  return {
-    call,
-    async login(username, password) {
-      const r = await call('POST', '/auth/login', { username, password });
-      assert.equal(r.status, 200, JSON.stringify(r.body));
-      csrf = (await call('GET', '/session')).body.csrf;
-    },
-    async changePassword(current, next) {
-      const r = await call('POST', '/auth/password', { current, next });
-      assert.equal(r.status, 200, JSON.stringify(r.body));
-    },
-  };
-}
+after(async () => { await t?.stop(); });
 
 test('full workflow: admin creates users, tech submits, radiologist dictates', async () => {
   const admin = client();
@@ -140,12 +80,12 @@ test('full workflow: admin creates users, tech submits, radiologist dictates', a
 
   // Nothing identifying is stored in plaintext.
   const rows = await pool.query('SELECT demographics_enc FROM patients');
-  assert.ok(rows.rows.every(x => x.demographics_enc.startsWith('v1.') && !x.demographics_enc.includes('SAMPLE')));
+  assert.ok(rows.rows.every(x => x.demographics_enc.startsWith('v2.') && !x.demographics_enc.includes('SAMPLE')));
 
   // The audit chain is intact and immutable.
   const { verifyAuditChain } = await import('../server/audit.js');
   assert.equal((await verifyAuditChain()).ok, true);
-  await assert.rejects(pool.query('DELETE FROM audit_log'), /append-only/);
+  await assert.rejects(pool.query('DELETE FROM audit_log'), /permission denied/, 'the app role cannot delete audit entries');
 });
 
 test('CSRF token is required for changes', async () => {

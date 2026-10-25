@@ -10,15 +10,17 @@ import { one, many, query, tx } from '../db.js';
 import { config, ROLES, ROLE_LABELS, DEFAULT_SETTINGS } from '../config.js';
 import { hashPassword, temporaryPassword } from '../crypto.js';
 import { audit, verifyAuditChain } from '../audit.js';
-import { requireAuth, can, HttpError } from '../auth.js';
+import { requireAuth, can, HttpError, lockStatus, unlockAccount } from '../auth.js';
 import { getSettings, updateSettings } from '../settings.js';
 import { echo, todaysStudies, clearCache } from '../dicom.js';
 import { writeBackup } from '../backup.js';
 import { backupFiles, backupToDir, backupDir } from '../maintenance.js';
 
-const USER_COLS = `u.id, u.username, u.display_name, u.roles, u.active, u.must_change_password, u.failed_logins,
-  u.locked_until, u.last_login_at, u.created_at,
+const USER_COLS = `u.id, u.username, u.display_name, u.roles, u.active, u.must_change_password,
+  u.temp_password_expires_at, u.last_login_at, u.created_at,
   COALESCE((SELECT array_agg(institution_id ORDER BY institution_id) FROM user_institutions WHERE user_id = u.id), '{}') AS institution_ids`;
+
+const TEMP_PASSWORD_HOURS = 72;
 
 const DICOM_KEYS = ['PatientName', 'PatientID', 'IssuerOfPatientID', 'AccessionNumber', 'StudyDescription', 'ReferringPhysicianName', 'InstitutionName'];
 
@@ -42,10 +44,14 @@ export default async function adminRoutes(app) {
 
   // ---- Users ------------------------------------------------------------
 
-  app.get('/users', admin, async () => ({
-    users: await many(`SELECT ${USER_COLS} FROM users u ORDER BY lower(u.display_name)`),
-    roles: ROLES.map(r => ({ id: r, label: ROLE_LABELS[r] })),
-  }));
+  app.get('/users', admin, async () => {
+    const users = await many(`SELECT ${USER_COLS} FROM users u ORDER BY lower(u.display_name)`);
+    const locks = await lockStatus(users.map(u => u.username), await getSettings());
+    return {
+      users: users.map(u => ({ ...u, locked: locks.get(u.username) })),
+      roles: ROLES.map(r => ({ id: r, label: ROLE_LABELS[r] })),
+    };
+  });
 
   const userBody = {
     type: 'object',
@@ -58,9 +64,20 @@ export default async function adminRoutes(app) {
     },
   };
 
+  // Only superusers may grant superuser or act on superuser accounts.
   function checkRoleChange(req, roles, target) {
     const touchesSuper = roles.includes('superuser') || target?.roles?.includes('superuser');
-    if (touchesSuper && !can.superuser(req.user)) throw new HttpError(403, 'Only a superuser can grant, remove, or edit superuser accounts.');
+    if (touchesSuper && !can.superuser(req.user)) throw new HttpError(403, 'Only a superuser can grant, remove, or manage superuser accounts.');
+  }
+
+  async function loadTarget(req) {
+    const target = await one('SELECT id, username, roles, active FROM users WHERE id = $1', [Number(req.params.id)]);
+    if (!target) throw new HttpError(404, 'User not found');
+    return target;
+  }
+
+  async function otherActiveSuperusers(id) {
+    return (await one("SELECT count(*)::int AS n FROM users WHERE active AND 'superuser' = ANY(roles) AND id <> $1", [id])).n;
   }
 
   async function setInstitutions(c, userId, ids) {
@@ -77,8 +94,9 @@ export default async function adminRoutes(app) {
     const password = temporaryPassword();
     const id = await tx(async (c) => {
       const row = (await c.query(
-        'INSERT INTO users (username, display_name, password_hash, roles, must_change_password) VALUES ($1, $2, $3, $4, true) RETURNING id',
-        [b.username.trim(), b.display_name.trim(), await hashPassword(password), b.roles])).rows[0];
+        `INSERT INTO users (username, display_name, password_hash, roles, must_change_password, temp_password_expires_at)
+         VALUES ($1, $2, $3, $4, true, now() + make_interval(hours => $5)) RETURNING id`,
+        [b.username.trim(), b.display_name.trim(), await hashPassword(password), b.roles, TEMP_PASSWORD_HOURS])).rows[0];
       await setInstitutions(c, row.id, b.institution_ids || []);
       return row.id;
     });
@@ -87,15 +105,23 @@ export default async function adminRoutes(app) {
   });
 
   app.put('/users/:id', { ...admin, schema: { body: userBody } }, async (req) => {
-    const id = Number(req.params.id);
-    const target = await one('SELECT id, username, roles FROM users WHERE id = $1', [id]);
-    if (!target) throw new HttpError(404, 'User not found');
+    const target = await loadTarget(req);
+    const id = target.id;
     const b = req.body;
-    if (b.roles) checkRoleChange(req, b.roles, target);
-    else checkRoleChange(req, [], target);
+    checkRoleChange(req, b.roles || [], target);
+    const sameRoles = b.roles === undefined || [...b.roles].sort().join() === [...target.roles].sort().join();
     if (id === req.user.id) {
       if (b.active === false) throw new HttpError(400, 'You cannot deactivate your own account.');
+      // Administrators can't widen their own access (e.g. give themselves a
+      // clinical role or more institutions); another administrator must.
+      if (!can.superuser(req.user) && (!sameRoles || b.institution_ids !== undefined)) {
+        throw new HttpError(403, 'You cannot change your own roles or institutions. Ask another administrator.');
+      }
       if (b.roles && !b.roles.some(r => r === 'admin' || r === 'superuser')) throw new HttpError(400, 'You cannot remove your own administrator access.');
+    }
+    const losesSuper = target.roles.includes('superuser') && ((b.roles && !b.roles.includes('superuser')) || b.active === false);
+    if (losesSuper && target.active && (await otherActiveSuperusers(id)) === 0) {
+      throw new HttpError(400, 'This is the last active superuser. Make someone else a superuser first.');
     }
     await tx(async (c) => {
       if (b.display_name !== undefined) await c.query('UPDATE users SET display_name = $2 WHERE id = $1', [id, b.display_name.trim()]);
@@ -113,26 +139,31 @@ export default async function adminRoutes(app) {
   });
 
   app.post('/users/:id/reset-password', admin, async (req) => {
-    const id = Number(req.params.id);
-    const target = await one('SELECT id, roles FROM users WHERE id = $1', [id]);
-    if (!target) throw new HttpError(404, 'User not found');
+    const target = await loadTarget(req);
+    const id = target.id;
     checkRoleChange(req, [], target);
     const password = temporaryPassword();
-    await query('UPDATE users SET password_hash = $2, must_change_password = true, failed_logins = 0, locked_until = NULL WHERE id = $1', [id, await hashPassword(password)]);
+    await query(
+      `UPDATE users SET password_hash = $2, must_change_password = true, temp_password_expires_at = now() + make_interval(hours => $3) WHERE id = $1`,
+      [id, await hashPassword(password), TEMP_PASSWORD_HOURS]);
+    await unlockAccount(target.username);
     await query('DELETE FROM sessions WHERE user_id = $1', [id]);
     await audit({ req, institutionId: null, action: 'user.reset_password', entityType: 'user', entityId: id });
     return { temporary_password: password };
   });
 
   app.post('/users/:id/unlock', admin, async (req) => {
-    const id = Number(req.params.id);
-    await query('UPDATE users SET failed_logins = 0, locked_until = NULL WHERE id = $1', [id]);
-    await audit({ req, institutionId: null, action: 'user.unlock', entityType: 'user', entityId: id });
+    const target = await loadTarget(req);
+    checkRoleChange(req, [], target);
+    await unlockAccount(target.username);
+    await audit({ req, institutionId: null, action: 'user.unlock', entityType: 'user', entityId: target.id });
     return { ok: true };
   });
 
   app.post('/users/:id/sign-out', admin, async (req) => {
-    const id = Number(req.params.id);
+    const target = await loadTarget(req);
+    checkRoleChange(req, [], target);
+    const id = target.id;
     const r = await query('DELETE FROM sessions WHERE user_id = $1', [id]);
     await audit({ req, institutionId: null, action: 'user.sign_out_all', entityType: 'user', entityId: id, details: { sessions: r.rowCount } });
     return { ok: true, sessions: r.rowCount };
@@ -196,7 +227,7 @@ export default async function adminRoutes(app) {
     const dicom = req.body?.dicom ? { ...cleanDicom(req.body.dicom), enabled: true } : inst.dicom;
     const settings = await getSettings();
     try {
-      const { studies } = await todaysStudies({ ...inst, dicom }, settings.worklist_show_hours, { force: true });
+      const { studies } = await todaysStudies({ ...inst, dicom }, settings.worklist_show_hours, { force: true, cache: !req.body?.dicom });
       await audit({ req, institutionId: inst.id, action: 'institution.test_query', entityType: 'institution', entityId: inst.id, details: { results: studies.length } });
       // Admins see counts and descriptions only, not patient details.
       const descriptions = {};
@@ -272,7 +303,7 @@ export default async function adminRoutes(app) {
       session_max_hours: { type: 'integer', minimum: 1, maximum: 24 },
       password_min_length: { type: 'integer', minimum: 8, maximum: 64 },
       max_failed_logins: { type: 'integer', minimum: 3, maximum: 20 },
-      lockout_minutes: { type: 'integer', minimum: 1, maximum: 1440 },
+      lockout_minutes: { type: 'integer', minimum: 1, maximum: 60 },
       retention_days: { type: 'integer', minimum: 0, maximum: 36500 },
       worklist_show_hours: { type: 'integer', minimum: 1, maximum: 168 },
       report_line_ending: { type: 'string', enum: ['crlf', 'lf'] },

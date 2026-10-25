@@ -16,6 +16,7 @@ import { normalizeForm, lintForm } from '../shared/formdef.js';
 import { HttpError } from './auth.js';
 
 export function parseSource(source) {
+  if (String(source || '').length > 200000) throw new HttpError(400, 'The form source is too large (200,000 characters at most).', { problems: [] });
   let raw;
   try {
     raw = YAML.parse(String(source || ''), { prettyErrors: true, maxAliasCount: 50 });

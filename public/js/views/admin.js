@@ -82,9 +82,12 @@ async function users(box, { session }) {
       h('tbody', rows.map(u => h('tr',
         h('td', h('div.strong', u.display_name), h('div.muted.small.mono', u.username)),
         h('td', u.roles.map(r => h('span.badge', roleLabel(r)))),
-        h('td.small', u.roles.includes('superuser') || u.roles.includes('admin') ? h('span.muted', 'all') : u.institution_ids.map(instName).join(', ') || h('span.muted', 'none')),
+        h('td.small', u.roles.includes('superuser') ? h('span.muted', 'all') : u.institution_ids.map(instName).join(', ') || h('span.muted', 'none')),
         h('td.small', u.last_login_at ? fmtDateTime(u.last_login_at) : h('span.muted', 'never')),
-        h('td', !u.active ? h('span.badge', 'Inactive') : u.locked_until && new Date(u.locked_until) > new Date() ? h('span.badge.status-returned', 'Locked') : u.must_change_password ? h('span.badge.accent', 'Temp password') : h('span.badge.status-submitted', 'Active')),
+        h('td', !u.active ? h('span.badge', 'Inactive')
+          : u.locked ? h('span.badge.status-returned', 'Locked out')
+            : u.must_change_password ? (u.temp_password_expires_at && new Date(u.temp_password_expires_at) < new Date() ? h('span.badge.status-returned', 'Temp password expired') : h('span.badge.accent', 'Temp password'))
+              : h('span.badge.status-submitted', 'Active')),
         h('td.right', h('button.btn.small', { type: 'button', onclick: () => edit(u) }, 'Edit'))))))));
   };
 
@@ -101,7 +104,7 @@ async function users(box, { session }) {
       h('label.label', { for: 'uf-n' }, 'Full name'), f.display_name,
       h('div.label', 'Roles'),
       h('div.check-list', roles.map((r, i) => h('label.check', f.roles[i], ` ${r.label}`))),
-      h('p.hint', 'Technologist: fill in forms. Tech manager: also edit forms. Radiologist: reading worklist. Administrator: this admin area (no patient data). Superuser: everything.'),
+      h('p.hint', 'Technologist: fill in forms. Tech manager: also edit forms. Radiologist: reading worklist. Administrator: this admin area. Superuser: everything, at every institution. Clinical access is limited to the institutions ticked below.'),
       h('div.label', 'Institutions'),
       h('div.check-list', insts.map((i, idx) => h('label.check', f.insts[idx], ` ${i.name}`))),
       u ? h('label.check', f.active, ' Account active') : null);
@@ -145,7 +148,7 @@ async function users(box, { session }) {
           try { const r = await post(`/admin/users/${u.id}/reset-password`); close(); await showPassword(u.username, r.temporary_password); await users(box, { session }); } catch (e) { toast(e.message, 'error'); }
           return false;
         } },
-        u.locked_until && new Date(u.locked_until) > new Date() ? { label: 'Unlock', onClick: async (close) => { await post(`/admin/users/${u.id}/unlock`); close(); toast('Unlocked', 'success'); await users(box, { session }); return false; } } : null,
+        u.locked ? { label: 'Unlock', onClick: async (close) => { await post(`/admin/users/${u.id}/unlock`); close(); toast('Unlocked', 'success'); await users(box, { session }); return false; } } : null,
         { label: 'Sign out everywhere', onClick: async () => { const r = await post(`/admin/users/${u.id}/sign-out`); toast(`Ended ${r.sessions} session(s)`, 'success'); return false; } },
         { label: 'Save', primary: true, onClick: async (close) => {
           try { await put(`/admin/users/${u.id}`, form.values()); close(); toast('Saved', 'success'); await users(box, { session }); } catch (e) { toast(e.message, 'error'); }
@@ -309,12 +312,14 @@ async function audit(box) {
     mount(verifyBox, h('div.loading.small', 'Checking every entry…'));
     const r = await get('/admin/audit/verify');
     mount(verifyBox, r.ok
-      ? h('div.alert.success', `✓ The audit log is intact (${r.checked} entries checked). No entries have been altered or removed.`)
-      : h('div.alert.error', `✖ The audit log has been tampered with at entry ${r.brokenAt}. Contact your security officer.`));
+      ? h('div.alert.success',
+        h('div', `✓ The audit log is intact (${r.checked} entries checked). No entries have been altered or removed.`),
+        r.head ? h('div.small', 'For an independent record, note the newest entry: ', h('code', `#${r.head.id} ${r.head.hash.slice(0, 16)}…`)) : null)
+      : h('div.alert.error', `✖ The audit log failed its integrity check at entry ${r.brokenAt}. ${r.reason || ''} Contact your security officer.`));
   }
 
   mount(box,
-    h('p.muted', 'Every sign-in, record view, change and export is recorded here. Entries cannot be edited or deleted, and each one is chained to the previous one, so tampering is detectable.'),
+    h('p.muted', 'Every sign-in, record view, change and export is recorded here. The application can only add entries, never edit or delete them, and each entry is sealed to the previous one with a key derived from the master key, so tampering is detectable. The check also runs every night.'),
     h('div.audit-filters',
       h('label.small', 'From ', from), h('label.small', 'To ', to), user, action, entity,
       h('button.btn', { type: 'button', onclick: () => { offset = 0; load(); } }, 'Search'),
@@ -334,8 +339,8 @@ async function settings(box, { refreshSession }) {
     ['session_idle_minutes', 'Sign out after inactivity (minutes)', 'number', 'Shared scanner workstations: keep this short.'],
     ['session_max_hours', 'Maximum session length (hours)', 'number', ''],
     ['password_min_length', 'Minimum password length', 'number', ''],
-    ['max_failed_logins', 'Failed sign-ins before lockout', 'number', ''],
-    ['lockout_minutes', 'Lockout duration (minutes)', 'number', ''],
+    ['max_failed_logins', 'Failed sign-ins before a pause', 'number', 'Counted per user and per computer.'],
+    ['lockout_minutes', 'Longest pause after failed sign-ins (minutes)', 'number', 'Pauses start at 1 minute and double with each further failure, up to this.'],
     ['worklist_show_hours', 'PACS worklist look-back (hours)', 'number', 'How far back the tech worklist looks for studies.'],
     ['retention_days', 'Delete dictated exams after (days)', 'number', '0 keeps everything. Deleted exams cannot be recovered except from backups.'],
     ['report_line_ending', 'Copied text line endings', 'select:crlf=Windows (CRLF, most dictation systems)|lf=Unix (LF)', ''],

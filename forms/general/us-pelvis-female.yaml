@@ -6,7 +6,8 @@ study_match:
   - US PELVIS
   - TRANSVAGINAL
   - ENDOVAGINAL
-  - /PELVI(S|C)/
+  - PELVIS
+  - PELVIC
 
 sections:
   - id: clinical

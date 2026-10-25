@@ -145,8 +145,7 @@ test('defaults, normals and study matching', () => {
   assert.ok(matchScore(sample, 'US PELVIS COMPLETE TRANSVAGINAL') > 0);
   assert.equal(matchScore(sample, 'US THYROID'), 0);
   assert.equal(matchScore({ study_match: ['RENAL'] }, 'US ADRENAL'), 0, 'whole words only');
-  assert.ok(matchScore({ study_match: ['/\\bRUQ\\b/'] }, 'US RUQ LIMITED') > 0, 'regex case preserved');
-  assert.ok(matchScore({ study_match: ['ABDOMEN PELVIS'] }, 'US ABDOMEN AND PELVIS') > matchScore({ study_match: ['/PELVI(S|C)/'] }, 'US ABDOMEN AND PELVIS'));
+  assert.equal(matchScore({ study_match: ['/(A+)+$/'] }, 'A'.repeat(40) + '!'), 0, 'regex entries are ignored');
 });
 
 test('template whitespace: standalone tags vanish, inline tags stay', () => {

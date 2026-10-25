@@ -13,6 +13,7 @@ const FIELD_KEYS = ['id', 'type', 'label', 'help', 'required', 'show_if', 'defau
   'true_text', 'false_text', 'conjunction', 'rows'];
 const OPTION_KEYS = ['value', 'label', 'text', 'points', 'help'];
 const SECTION_KEYS = ['id', 'title', 'show_if', 'fields', 'report', 'help'];
+const RESERVED_IDS = new Set(['__proto__', 'constructor', 'prototype', 'patient', 'exam', 'institution', 'true', 'false', 'null', 'and', 'or', 'not', 'in']);
 const TYPE_ALIASES = { radio: 'choice', select: 'choice', checkbox_group: 'multi', checkboxes: 'multi', checkbox: 'boolean', yesno: 'boolean', static: 'note', measurement: 'dims' };
 
 export function slugify(s) {
@@ -46,7 +47,7 @@ function normalizeField(f, i) {
     if (field.unit === undefined) field.unit = 'cm';
   }
   if (field.type === 'repeat') field.fields = (field.fields || []).map(normalizeField);
-  if (field.decimals !== undefined) field.decimals = Number(field.decimals);
+  if (field.decimals !== undefined) field.decimals = Math.min(10, Math.max(0, Math.trunc(Number(field.decimals)) || 0));
   for (const k of ['min', 'max', 'step']) if (field[k] !== undefined) field[k] = Number(field[k]);
   return field;
 }
@@ -76,6 +77,10 @@ export function lintForm(rawOrDef) {
   try { def = normalizeForm(rawOrDef); } catch (e) { err('', e.message); return problems; }
 
   if (!def.sections.length) err('sections', 'The form has no sections');
+  def.study_match.forEach(p => {
+    if (isRegexPattern(String(p).trim())) err('study_match', `Regular expressions are not supported in study_match ('${p}'). List the words to match instead, e.g. "US PELVIS".`);
+  });
+  if (def.study_match.length > 50) err('study_match', 'At most 50 study_match entries are allowed');
 
   const known = new Set();
   const repeatSubs = new Map(); // repeat id -> Set of sub-field ids
@@ -143,6 +148,8 @@ export function lintForm(rawOrDef) {
     for (const o of f.options || []) checkKeys(`${path}.${o.value}`, o, OPTION_KEYS, 'option');
     if (!FIELD_TYPES.includes(f.type)) err(path, `Unknown field type '${f.type}' (use one of: ${FIELD_TYPES.join(', ')})`);
     if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(f.id)) err(path, `Field id '${f.id}' may only contain letters, numbers and underscores, and must not start with a number`);
+    if (RESERVED_IDS.has(f.id) || f.id.startsWith('__')) err(path, `Field id '${f.id}' is reserved; choose another name`);
+    if (f.id.length > 64) err(path, `Field id '${f.id}' is too long (64 characters at most)`);
     if (['choice', 'multi'].includes(f.type)) {
       if (!f.options || !f.options.length) err(path, `'${f.id}' needs a list of options`);
       const values = new Set();
@@ -208,24 +215,23 @@ function structuredCloneSafe(v) {
 }
 
 // Score how well a form matches a DICOM study description (higher = better).
-// Each study_match entry is a set of whole words that must all appear, or a
-// /regular expression/. An entry equal to the whole description wins outright.
+// Each study_match entry is a set of whole words that must all appear. An
+// entry equal to the whole description wins outright. (Regular expressions
+// are deliberately not supported: they run on the server for every study,
+// and a badly written one can freeze it.)
 export function matchScore(def, studyDescription) {
-  const desc = String(studyDescription || '').toUpperCase().replace(/\s+/g, ' ').trim();
+  const desc = String(studyDescription || '').slice(0, 200).toUpperCase().replace(/\s+/g, ' ').trim();
   if (!desc) return 0;
   const descWords = new Set(desc.split(/[^A-Z0-9]+/).filter(Boolean));
   let best = 0;
-  for (const pattern of def.study_match || []) {
-    const raw = String(pattern).trim();
-    if (!raw) continue;
-    if (raw.startsWith('/') && raw.endsWith('/') && raw.length > 2) {
-      try { if (new RegExp(raw.slice(1, -1), 'i').test(desc)) best = Math.max(best, 10 + raw.length / 100); } catch { /* ignore bad regex */ }
-      continue;
-    }
-    const p = raw.toUpperCase().replace(/\s+/g, ' ');
+  for (const pattern of (def.study_match || []).slice(0, 50)) {
+    const p = String(pattern).slice(0, 200).trim().toUpperCase().replace(/\s+/g, ' ');
+    if (!p || isRegexPattern(p)) continue;
     if (desc === p) { best = Math.max(best, 1000); continue; }
     const words = p.split(/[^A-Z0-9]+/).filter(Boolean);
     if (words.length && words.every(w => descWords.has(w))) best = Math.max(best, 10 * words.length + p.length / 100);
   }
   return best;
 }
+
+const isRegexPattern = p => p.length > 2 && p.startsWith('/') && p.endsWith('/');

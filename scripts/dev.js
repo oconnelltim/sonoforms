@@ -74,10 +74,13 @@ const env = {
   PGDATABASE: 'sonoforms',
   PGUSER: 'sonoforms',
   PGPASSWORD: 'devpassword',
+  PGAPPUSER: 'sonoforms_app',
+  PGAPPPASSWORD: 'devapppassword',
   SONOFORMS_MASTER_KEY_FILE: keyFile,
   INSECURE_COOKIES: 'true',
   DICOM_MOCK: process.argv.includes('--pacs') ? 'false' : 'true',
   INITIAL_ADMIN_PASSWORD: process.env.INITIAL_ADMIN_PASSWORD || 'admin-dev-password',
+  TRUST_PROXY: 'false',
   BACKUP_DIR: path.join(DEV, 'backups'),
   PORT: process.env.PORT || '3000',
 };
