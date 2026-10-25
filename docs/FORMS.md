@@ -1,11 +1,42 @@
 # Writing forms
 
-Each form is a single YAML document. It describes two things side by side:
+Each form describes two things side by side:
 
-1. **What the technologist fills in.** Sections of fields: choices, measurements, check boxes.
-2. **What the radiologist gets.** A report template for each section that turns the answers into findings text.
+1. **What the technologist fills in.** Sections of questions: choices, measurements, check boxes.
+2. **What the radiologist gets.** Report text for each section that turns the answers into findings.
 
-Forms are edited in **Forms** inside the app. The editor shows a live preview of the tech's form and of the generated report as you type. Every save is a *draft*. Techs keep using the last *published* version until you publish the draft. Old exams always keep the version they were filled in with.
+Forms are edited in **Forms** inside the app. The live previews show the tech's form (which you can fill in) and the findings it produces, as you edit.
+
+**Drafts and publishing:**
+- Changes save automatically as a *draft*. Undo and redo cover everything since you opened the form.
+- Technologists keep using the last *published* version until someone presses **Publish**.
+- Old exams always keep the version they were filled in with.
+
+## Using the builder
+
+The **Builder** tab lets you edit a form without writing any code.
+
+- **Outline (left):** the form's sections and questions.
+  - Click one to change it.
+  - Drag to reorder, or use *Move up* / *Move down*.
+  - *+ Add field* and *+ Add section* are at the bottom of each list.
+  - A red dot marks something that needs fixing; select it to see what.
+- **Questions:**
+  - Type the question and pick an **answer type**, e.g. *Pick one*, *Pick several*, *Measurement (L × AP × W)*, *Number*, *Calculated*, *Yes/no check box*, *Repeating group* (such as nodules) or *Instruction note*.
+  - For choices, the table holds what the tech taps and the words that go into the report. Leave *Report text* blank to use the button text. *Normal* marks the answer the section's **Normal** button fills in.
+  - Tick *Choices score points* for scoring systems like TI-RADS.
+- **Show only when:** builds rules from drop-downs, e.g. *Uterus is Present*, or *Patient sex is Female*.
+- **Calculated fields:** choose a recipe, e.g. *Ellipsoid volume of a measurement*, *Measurement × correction factor*, *Total points*, or *ACR TI-RADS level*.
+- **Report text** (select a section): type the sentence, and insert answers with the blue buttons; they appear as chips such as `[Size]`.
+  - *If… otherwise…* adds wording that depends on an answer. Click its "If…" chip later to change the rule.
+  - *Start from the fields* writes a simple first draft for the section.
+  - The line underneath shows the result with the sample answers from the preview.
+- **Click to select:** clicking a question in the tech-form preview selects it in the builder.
+- **Safety nets:**
+  - Each question's internal name is created from its text and kept under *Advanced*. Renaming it there updates every rule and report text that uses it.
+  - Deleting a question that something else depends on warns you first.
+
+The **Source** tab shows the same form as YAML text, for anyone who prefers to work that way. Both tabs edit the same form, and comments in the YAML are kept when you use the builder. The rest of this guide describes the YAML format.
 
 Starter forms live in `forms/general/` and are loaded into the general library on first start. These starter forms have not been clinically validated. Have your radiologists review the wording before going live.
 

@@ -93,7 +93,7 @@ sections:
       - id: uterus_dims
         type: dims
         label: Uterus size
-        axes: [L, AP, W]
+        axes: [ L, AP, W ]
         min: 2
         max: 15
         required: true
@@ -129,7 +129,7 @@ sections:
           - id: location
             type: choice
             label: Location
-            options: [Anterior, Posterior, Fundal, Right lateral, Left lateral, Cervical]
+            options: [ Anterior, Posterior, Fundal, Right lateral, Left lateral, Cervical ]
           - id: type
             type: choice
             label: Type

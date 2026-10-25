@@ -6,6 +6,17 @@ All notable changes to SonoForms are documented here. The format follows [Keep a
 
 ### Added
 
+- **Visual form builder.** Tech managers can edit forms without writing YAML:
+  - An outline of sections and questions, with drag-to-reorder and problem markers.
+  - Plain-language settings for each question, with friendly answer-type names and a choices table (button text, report text, normal answer, points).
+  - "Show only when" rules built from drop-downs.
+  - Recipes for calculated fields (ellipsoid volume, correction factor, points total, TI-RADS level, ratio).
+  - Report-text editing with insertable answer chips, "If… otherwise…" blocks, a "Start from the fields" first draft, and a live preview line.
+  - Clicking a question in the tech-form preview selects it in the builder.
+  - Safe renaming that updates every reference, and warnings before deleting something other parts depend on.
+  - The builder edits the same YAML as the Source tab, keeping comments and formatting: an edit changes only the lines it touches.
+- **Form editor:** undo and redo, and automatic draft saving (the "Save draft" button is gone; Ctrl+S still saves immediately). Leaving the editor saves pending changes instead of discarding them.
+
 - **PACS query guardrails:**
   - Worklist queries stop at a per-institution maximum (default 500, settable from 50 to 2000). The app asks PACS to cancel the rest and disconnects if PACS ignores the cancel. Technologists and the admin "Test query" are told when the list was cut short.
   - A worklist query must be narrowed by a modality or by an institution filter that PACS applies. Admin › Institutions refuses to save a configuration without one, and the server refuses to run it.
@@ -16,6 +27,7 @@ All notable changes to SonoForms are documented here. The format follows [Keep a
 
 - A study lookup by UID never sends a blank UID (which would match every study) and fetches at most a handful of results.
 - Automatic backup file names use local time, like manual backups.
+- The starter forms were respaced to one consistent YAML style, so builder edits produce minimal changes. Only spacing inside `[ ]` lists changed.
 
 ### Fixed
 

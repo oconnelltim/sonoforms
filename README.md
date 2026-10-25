@@ -14,7 +14,7 @@ The problem it solves: tech notes come in random order and often miss items, so 
 |---|---|---|
 | **Technologist** | Picks today's study from the PACS worklist, so demographics come from PACS. Or enters a patient by hand. The matching form is suggested from the study description. They fill it in with section **Normal** buttons and automatic volumes (ovaries, thyroid lobes, bladder, testes, prostate, TI-RADS…), then submit. | Light, for bright scan rooms |
 | **Radiologist** | Works a queue of submitted exams. Each shows the generated findings (editable), the tech's note and what was entered. **Copy**, or **Copy & mark dictated**, then on to the next case. Exams can be returned to the tech with a reason. | Dark, for reading rooms |
-| **Tech manager** | Edits forms in a three-pane editor: the form source, a live fillable preview of the tech's form, and the generated findings. Forms are versioned with draft and publish steps. A general library is shared by all institutions, and each institution can copy and customize forms. | Light |
+| **Tech manager** | Edits forms in a visual builder, no code needed: an outline of questions, plain-language settings, drop-down rules, calculation recipes, and report text with insertable answer chips. A live fillable preview of the tech's form and the findings it produces sit alongside. A YAML source view is available for power users. Changes autosave as drafts, are undoable, and go live on **Publish**. A general library is shared by all institutions, and each institution can copy and customize forms. | Light |
 | **Administrator** | Manages users and roles, institutions and their PACS settings, the tamper-evident audit log, settings, backups and system status. | Light |
 
 Users can have several roles. A **superuser** can do everything. One installation can serve **several institutions**, each with its own worklist, patients, forms and users.
@@ -47,7 +47,7 @@ See [docs/SECURITY.md](docs/SECURITY.md) for the security design, and [docs/SECU
 
 ## Writing forms
 
-Forms are YAML documents that pair what the tech fills in with the report template for each section. See [docs/FORMS.md](docs/FORMS.md). The starter forms in `forms/general/` are a starting point and **must be reviewed by your radiologists before clinical use**.
+Forms pair what the tech fills in with the report text for each section. Build them in the app's visual builder, or write them as YAML. See [docs/FORMS.md](docs/FORMS.md). The starter forms in `forms/general/` are a starting point and **must be reviewed by your radiologists before clinical use**.
 
 Starter library: US pelvis (female), thyroid with ACR TI-RADS, abdomen complete, RUQ, renal/bladder (with prostate volume), scrotum, lower-extremity venous duplex.
 

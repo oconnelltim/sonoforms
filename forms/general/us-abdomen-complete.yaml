@@ -251,7 +251,7 @@ sections:
       - id: pancreas_vis
         type: multi
         label: Portions visualized
-        normal: [head, body, tail]
+        normal: [ head, body, tail ]
         options:
           - { value: head, label: Head, text: head }
           - { value: body, label: Body, text: body }

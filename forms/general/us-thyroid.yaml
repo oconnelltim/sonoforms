@@ -309,7 +309,7 @@ sections:
           - id: size
             type: dims
             label: Size
-            axes: [Long, Short]
+            axes: [ Long, Short ]
             min: 0.2
             max: 8
             required: true

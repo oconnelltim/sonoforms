@@ -1,16 +1,24 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //
-// Form editor: YAML source on the left, a live, fillable preview of the
-// tech's form in the middle, and the generated findings on the right.
+// Form editor. The left pane edits the form, either in the visual Builder
+// or as YAML Source (both edit the same text). The middle pane is a live,
+// fillable preview of the tech's form; the right pane shows the findings it
+// produces. Changes are undoable and saved automatically as a draft;
+// technologists only see them once someone presses Publish.
 
 import { h, mount, toast, modal, confirmDialog, promptDialog, debounce, fmtDateTime, downloadUrl } from '../dom.js';
 import { get, post, put, del } from '../api.js';
 import { renderForm } from '../components/form-renderer.js';
+import { formBuilder } from '../components/form-builder.js';
 import { normalizeForm, lintForm, initialAnswers, normalAnswers } from '/shared/formdef.js';
 import { generateReport } from '/shared/template.js';
 import YAML from '/vendor/yaml/index.js';
 
 const SAMPLE_ENV = { patient: { age: 45, sex: 'F' }, exam: { date: new Date().toISOString().slice(0, 10), study_description: '' }, institution: { name: 'Preview', code: 'PREVIEW' } };
+
+function storedMode() {
+  try { return localStorage.getItem('sf.formsMode') === 'source' ? 'source' : 'builder'; } catch { return 'builder'; }
+}
 
 export async function render({ root, params, navigate, session }) {
   const id = Number(params[0]);
@@ -28,9 +36,63 @@ export async function render({ root, params, navigate, session }) {
   let sample = {};            // preview answers, kept across edits by field id
   let def = null;
   let dirty = false;
+  let changeCount = 0;
   let lastProblems = [];
+  let mode = storedMode();
 
-  // Tab key inserts two spaces instead of leaving the editor.
+  // ---- undo / redo ----------------------------------------------------------
+  // Snapshots of the source, taken when typing pauses.
+  const history = [data.source];
+  let at = 0;
+  const snapshot = debounce(() => {
+    if (history[at] === editor.value) return;
+    history.splice(at + 1);
+    history.push(editor.value);
+    if (history.length > 200) history.shift();
+    at = history.length - 1;
+    drawUndo();
+  }, 700);
+
+  function travel(delta) {
+    snapshot.flush();
+    const next = at + delta;
+    if (next < 0 || next >= history.length) return;
+    at = next;
+    applySource(history[at], 'history');
+    drawUndo();
+  }
+
+  const undoBtn = h('button.btn.small', { type: 'button', title: 'Undo (Ctrl+Z)', onclick: () => travel(-1) }, '↶ Undo');
+  const redoBtn = h('button.btn.small', { type: 'button', title: 'Redo (Ctrl+Shift+Z)', onclick: () => travel(1) }, '↷ Redo');
+  function drawUndo() {
+    undoBtn.disabled = at === 0;
+    redoBtn.disabled = at >= history.length - 1;
+  }
+
+  // ---- source changes -------------------------------------------------------
+
+  // Every change (builder, Source tab, undo) comes through here.
+  function applySource(src, from) {
+    if (from !== 'source') editor.value = src;
+    if (from !== 'builder') builder.refresh(src);
+    if (from !== 'history') {
+      snapshot();
+      // There's now something to undo, even before the snapshot is taken.
+      undoBtn.disabled = false;
+      redoBtn.disabled = true;
+    }
+    changeCount++;
+    if (!dirty) { dirty = true; setState('Unsaved changes'); }
+    publishBtn.disabled = true;
+    (from === 'builder' ? quickRebuild : liveRebuild)();
+    if (canEdit) autosave();
+  }
+
+  function setState(text, kind = '') {
+    saveState.textContent = text;
+    saveState.className = `save-state ${kind}`;
+  }
+
   editor.addEventListener('keydown', (e) => {
     if (e.key === 'Tab' && !e.shiftKey && !editor.readOnly) {
       e.preventDefault();
@@ -38,8 +100,8 @@ export async function render({ root, params, navigate, session }) {
       editor.setRangeText('  ', s, t, 'end');
       editor.dispatchEvent(new Event('input'));
     }
-    if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); saveDraft(); }
   });
+  editor.addEventListener('input', () => applySource(editor.value, 'source'));
 
   function parse() {
     let raw;
@@ -61,7 +123,7 @@ export async function render({ root, params, navigate, session }) {
     const errors = problems.filter(p => p.level === 'error');
     mount(problemsBox, problems.length
       ? problems.map(p => h(`div.problem.${p.level}`, {
-        onclick: () => { if (p.line) goToLine(p.line); },
+        onclick: () => { if (p.line && mode === 'source') goToLine(p.line); },
       }, h('span.problem-level', p.level === 'error' ? '✖' : '⚠'), p.path ? h('code', p.path) : null, ' ', p.message))
       : h('div.problem.ok', '✓ No problems found'));
     publishBtn.disabled = !canEdit || errors.length > 0 || (!form.draft_version && !dirty);
@@ -76,6 +138,7 @@ export async function render({ root, params, navigate, session }) {
   }
 
   let formView = null;
+  let selected = null;
   function rebuild() {
     const { def: d, problems } = parse();
     drawProblems(problems);
@@ -86,6 +149,7 @@ export async function render({ root, params, navigate, session }) {
     try {
       formView = renderForm(def, sample, { env, onChange: updateReport, compact: true });
       mount(formPane, formView.el);
+      highlight(selected);
     } catch (e) {
       mount(formPane, h('div.alert.error', `Preview failed: ${e.message}`));
     }
@@ -101,34 +165,50 @@ export async function render({ root, params, navigate, session }) {
     } catch (e) {
       mount(reportErrors, h('div.alert.error.small', e.message));
     }
+    builder.refreshPreview();
   }
 
   const liveRebuild = debounce(rebuild, 400);
-  editor.addEventListener('input', () => {
-    if (!dirty) { dirty = true; saveState.textContent = 'Unsaved changes'; saveState.className = 'save-state'; }
-    liveRebuild();
-  });
+  const quickRebuild = debounce(rebuild, 120);
 
-  async function saveDraft() {
+  // The text one section produces with the current sample answers.
+  function sectionPreview(index) {
+    if (!def?.sections[index]) return '';
+    try {
+      const r = generateReport(def, sample, env);
+      return r.sections.find(s => s.id === def.sections[index].id)?.text || '';
+    } catch (e) {
+      return `(error: ${e.message})`;
+    }
+  }
+
+  // ---- saving ---------------------------------------------------------------
+
+  async function saveDraft({ quiet = false } = {}) {
     if (!canEdit) return false;
+    const savingCount = changeCount;
+    if (!quiet) setState('Saving…');
     try {
       const r = await put(`/forms/${id}/draft`, { source: editor.value });
-      dirty = false;
-      saveState.textContent = `Draft saved ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
-      saveState.className = 'save-state ok';
+      dirty = changeCount !== savingCount;
+      if (!dirty) setState(`Draft saved ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`, 'ok');
       data = await get(`/forms/${id}`);
       Object.assign(form, data.form);
       drawHeader();
       drawProblems(r.problems || lastProblems);
       return true;
     } catch (e) {
-      toast(e.message, 'error', 8000);
+      // A form that doesn't parse can't be saved; the problems list explains why.
       if (e.body?.problems) drawProblems(e.body.problems);
+      setState(quiet ? 'Not saved: fix the problems listed' : 'Not saved', 'error');
+      if (!quiet) toast(e.message, 'error', 8000);
       return false;
     }
   }
+  const autosave = debounce(() => saveDraft({ quiet: true }), 2000);
 
   async function publish() {
+    autosave.cancel();
     if (dirty && !(await saveDraft())) return;
     const notes = await promptDialog('Publish this version', 'What changed? (shown in the version history)', { required: false, confirmLabel: 'Publish' });
     if (notes === null) return;
@@ -151,6 +231,7 @@ export async function render({ root, params, navigate, session }) {
       neverPublished ? 'This form was never published, so discarding the draft deletes it.' : 'The editor will go back to the published version.',
       { confirmLabel: neverPublished ? 'Delete form' : 'Discard draft', danger: true });
     if (!ok) return;
+    autosave.cancel();
     try {
       const r = await del(`/forms/${id}/draft`);
       dirty = false;
@@ -159,7 +240,7 @@ export async function render({ root, params, navigate, session }) {
     } catch (e) { toast(e.message, 'error'); }
   }
 
-  async function history() {
+  async function showHistory() {
     const rows = form.versions.map(v => h('tr',
       h('td', `v${v.version}`), h('td', h(`span.badge${v.status === 'published' ? '.status-submitted' : v.status === 'draft' ? '.accent' : ''}`, v.status)),
       h('td.small', fmtDateTime(v.published_at || v.created_at)), h('td.small', v.published_by_name || v.created_by_name || ''),
@@ -168,7 +249,7 @@ export async function render({ root, params, navigate, session }) {
         h('button.btn.small', { type: 'button', onclick: async () => {
           const full = await get(`/forms/${id}/versions/${v.id}`);
           modal({ title: `${form.title}: version ${v.version}`, wide: true, body: h('pre.code-view', full.source), actions: [
-            canEdit ? { label: 'Load into editor', onClick: () => { editor.value = full.source; editor.dispatchEvent(new Event('input')); toast('Loaded. Save the draft and publish to restore this version.', 'info', 5000); } } : null,
+            canEdit ? { label: 'Load into editor', onClick: () => { applySource(full.source, 'load'); toast('Loaded into the draft. Publish to make it live again.', 'info', 5000); } } : null,
             { label: 'Close', primary: true },
           ].filter(Boolean) });
         } }, 'View'),
@@ -209,6 +290,39 @@ export async function render({ root, params, navigate, session }) {
     updateReport();
   }
 
+  // ---- builder <-> preview ----------------------------------------------------
+
+  function highlight(sel) {
+    selected = sel;
+    formPane.querySelectorAll('.builder-selected').forEach(x => x.classList.remove('builder-selected'));
+    if (!sel || mode !== 'builder') return;
+    const target = sel.kind === 'field' ? formPane.querySelector(`[data-field="${CSS.escape(sel.id || '')}"]`)
+      : sel.kind === 'section' ? formPane.querySelector(`[data-section="${CSS.escape(sel.sectionId || '')}"]`) : null;
+    if (target) {
+      target.classList.add('builder-selected');
+      target.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  }
+
+  const builder = formBuilder({
+    source: data.source,
+    readOnly: !canEdit,
+    onChange: src => applySource(src, 'builder'),
+    onSelect: highlight,
+    sectionPreview,
+  });
+
+  // Clicking something in the preview selects it in the builder.
+  formPane.addEventListener('click', (e) => {
+    if (mode !== 'builder') return;
+    const f = e.target.closest('[data-field]');
+    if (f) return builder.selectField(f.dataset.field);
+    const s = e.target.closest('[data-section]');
+    if (s) builder.selectSection(s.dataset.section);
+  });
+
+  // ---- layout -----------------------------------------------------------------
+
   const publishBtn = h('button.btn.primary', { type: 'button', onclick: publish }, 'Publish');
   const header = h('div.editor-head');
   function drawHeader() {
@@ -220,27 +334,38 @@ export async function render({ root, params, navigate, session }) {
         h('div.muted.small', `${scope} · ${form.current_version ? `published v${form.current_version}` : 'not yet published'}${form.draft_version ? ` · editing draft v${form.draft_version}` : ''}`)),
       h('div.page-actions',
         saveState,
-        h('button.btn', { type: 'button', onclick: history }, 'History'),
+        h('button.btn', { type: 'button', onclick: showHistory }, 'History'),
         h('button.btn', { type: 'button', onclick: () => downloadUrl(`/api/forms/${id}/export`), disabled: !form.current_version_id }, 'Export'),
         !canEdit ? h('button.btn.primary', { type: 'button', onclick: copyToInstitution }, 'Copy to my institution') : null,
         canEdit && form.current_version_id ? h('button.btn.ghost', { type: 'button', onclick: toggleActive }, form.active ? 'Deactivate' : 'Activate') : null,
         canEdit && (form.draft_version || !form.current_version_id) ? h('button.btn.ghost', { type: 'button', onclick: discard }, form.current_version_id ? 'Discard draft' : 'Delete') : null,
-        canEdit ? h('button.btn', { type: 'button', onclick: saveDraft }, 'Save draft') : null,
         canEdit ? publishBtn : null));
   }
 
-  // Narrow screens show one pane at a time.
+  const editPane = h('div.edit-pane-body');
+  const modeTabs = h('div.seg');
   const panes = h('div.editor-panes');
+  function setMode(next) {
+    mode = next;
+    try { localStorage.setItem('sf.formsMode', mode); } catch { /* ignore */ }
+    mount(modeTabs, ['builder', 'source'].map(m => h(`button.seg-btn${m === mode ? '.on' : ''}`, { type: 'button', onclick: () => setMode(m) }, m === 'builder' ? 'Builder' : 'Source')));
+    if (mode === 'builder') builder.refresh(editor.value);
+    mount(editPane, mode === 'builder' ? builder.el : editor, problemsBox);
+    panes.classList.toggle('builder-mode', mode === 'builder');
+    highlight(mode === 'builder' ? selected : null);
+  }
+
+  // Narrow screens show one pane at a time.
   const tabs = h('div.seg.pane-tabs', ['source', 'form', 'report'].map(p => h(`button.seg-btn${p === 'source' ? '.on' : ''}`, {
     type: 'button', onclick: (e) => { panes.dataset.show = p; tabs.querySelectorAll('.seg-btn').forEach(b => b.classList.toggle('on', b === e.currentTarget)); },
-  }, { source: 'Source', form: 'Tech form', report: 'Report' }[p])));
+  }, { source: 'Edit', form: 'Tech form', report: 'Report' }[p])));
   panes.dataset.show = 'source';
 
   mount(panes,
     h('section.pane.pane-source',
-      h('div.pane-head', h('h3', 'Form source'), h('a.small', { href: '/help.html?doc=FORMS', target: '_blank', rel: 'noopener' }, 'Help')),
+      h('div.pane-head', modeTabs, h('div.pane-tools', canEdit ? [undoBtn, redoBtn] : null, h('a.small', { href: '/help.html?doc=FORMS', target: '_blank', rel: 'noopener' }, 'Help'))),
       !canEdit ? h('div.alert.info.small', 'General-library forms can only be edited by a superuser. Copy it to your institution to customize it.') : null,
-      editor, problemsBox),
+      editPane),
     h('section.pane.pane-form',
       h('div.pane-head', h('h3', 'What the tech fills in'),
         h('div', h('button.btn.small', { type: 'button', onclick: fillNormals }, 'Fill normals'), h('button.btn.small.ghost', { type: 'button', onclick: clearSample }, 'Clear'))),
@@ -253,13 +378,26 @@ export async function render({ root, params, navigate, session }) {
       reportErrors, reportPane));
 
   drawHeader();
+  drawUndo();
+  setMode(mode);
+  if (canEdit) setState(form.draft_version ? 'Editing the draft; changes save automatically' : 'Changes save automatically as a draft');
   mount(root, h('div.editor-page', header, tabs, panes));
   rebuild();
 
+  const onKey = (e) => {
+    const inField = e.target.closest?.('input, textarea, select, [contenteditable="true"]');
+    if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); autosave.cancel(); saveDraft(); return; }
+    if (inField || !canEdit || !(e.ctrlKey || e.metaKey)) return;
+    if (e.key.toLowerCase() === 'z') { e.preventDefault(); travel(e.shiftKey ? 1 : -1); }
+    if (e.key.toLowerCase() === 'y') { e.preventDefault(); travel(1); }
+  };
+  window.addEventListener('keydown', onKey);
   const beforeUnload = (e) => { if (dirty) { e.preventDefault(); e.returnValue = ''; } };
   window.addEventListener('beforeunload', beforeUnload);
   return () => {
+    window.removeEventListener('keydown', onKey);
     window.removeEventListener('beforeunload', beforeUnload);
-    if (dirty && canEdit) toast('Unsaved form changes were discarded', 'info');
+    // Leaving the editor saves any pending changes rather than dropping them.
+    if (dirty && canEdit) { autosave.cancel(); saveDraft({ quiet: true }); }
   };
 }
