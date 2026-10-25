@@ -176,6 +176,13 @@ async function institutions(box, { refreshSession }) {
       called_ae: h('input.input', { value: d.called_ae || '', placeholder: 'PACS AE title', id: 'd-cae', maxlength: 16 }),
       calling_ae: h('input.input', { value: d.calling_ae || 'SONOFORMS', id: 'd-sae', maxlength: 16 }),
       modality: h('input.input', { value: d.modality ?? 'US', id: 'd-mod' }),
+      modality_key: h('select.input', { id: 'd-modkey' },
+        h('option', { value: 'ModalitiesInStudy', selected: (d.modality_key || 'ModalitiesInStudy') === 'ModalitiesInStudy' }, 'Modalities in Study (most PACS)'),
+        h('option', { value: 'Modality', selected: d.modality_key === 'Modality' }, 'Modality')),
+      date_mode: h('select.input', { id: 'd-date' },
+        h('option', { value: 'range', selected: d.date_mode !== 'single' }, 'Date range (most PACS)'),
+        h('option', { value: 'single', selected: d.date_mode === 'single' }, 'One day at a time')),
+      max_results: h('input.input', { value: d.max_results || 500, inputmode: 'numeric', id: 'd-max' }),
     };
     const filters = (d.filters || []).map(x => ({ ...x }));
     const filterBox = h('div');
@@ -193,6 +200,7 @@ async function institutions(box, { refreshSession }) {
     const values = () => ({
       enabled: f.enabled.checked, host: f.host.value.trim(), port: Number(f.port.value) || 104,
       called_ae: f.called_ae.value.trim(), calling_ae: f.calling_ae.value.trim(), modality: f.modality.value.trim(), filters,
+      modality_key: f.modality_key.value, date_mode: f.date_mode.value, max_results: Number(f.max_results.value) || 500,
     });
     const el = h('div.form-stack',
       mock ? h('div.alert.warn.small', 'DICOM_MOCK is on, so worklists show demo data whatever is set here. The Test buttons still contact the real PACS.') : null,
@@ -202,7 +210,10 @@ async function institutions(box, { refreshSession }) {
         h('div', h('label.label', { for: 'd-port' }, 'Port'), f.port),
         h('div', h('label.label', { for: 'd-cae' }, 'PACS AE title (called)'), f.called_ae),
         h('div', h('label.label', { for: 'd-sae' }, 'Our AE title (calling)'), f.calling_ae),
-        h('div', h('label.label', { for: 'd-mod' }, 'Modality'), f.modality, h('p.hint', 'Matched against Modalities in Study. Leave blank for all.'))),
+        h('div', h('label.label', { for: 'd-mod' }, 'Modality'), f.modality, h('p.hint', 'Usually US. May be left blank only if an institution filter below is applied by PACS.')),
+        h('div', h('label.label', { for: 'd-modkey' }, 'Send modality as'), f.modality_key),
+        h('div', h('label.label', { for: 'd-date' }, 'Date matching'), f.date_mode, h('p.hint', 'Choose "one day at a time" if your PACS rejects date ranges.')),
+        h('div', h('label.label', { for: 'd-max' }, 'Most studies to fetch'), f.max_results, h('p.hint', '50–2000. Larger queries are stopped at this number.'))),
       h('div.label', 'Limit to this institution'),
       h('p.hint', 'Many PACS hold studies for several sites. Add a filter, e.g. InstitutionName = GENERAL HOSP*. If your PACS ignores a filter, switch it to "Filter results here". * matches anything.'),
       filterBox,
@@ -222,7 +233,7 @@ async function institutions(box, { refreshSession }) {
         const r = await post(`/admin/institutions/${inst.id}/${kind}`, { dicom: dicom.values() });
         if (kind === 'echo') mount(dicom.result, h(`div.alert.${r.ok ? 'success' : 'error'}`, r.message));
         else mount(dicom.result, r.ok
-          ? h('div.alert.success', `Found ${r.count} studies.`, h('ul.small', Object.entries(r.descriptions).slice(0, 15).map(([d, n]) => h('li', `${d}: ${n}`))))
+          ? h(`div.alert.${r.truncated ? 'warn' : 'success'}`, r.truncated ? `Stopped at ${r.count} studies (the limit). Narrow the filter or raise the limit.` : `Found ${r.count} studies.`, h('ul.small', Object.entries(r.descriptions).slice(0, 15).map(([d, n]) => h('li', `${d}: ${n}`))))
           : h('div.alert.error', r.message));
       } catch (e) { mount(dicom.result, h('div.alert.error', e.message)); }
     };

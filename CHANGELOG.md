@@ -2,6 +2,29 @@
 
 All notable changes to SonoForms are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/). While the version is below 1.0, minor versions may include changes that need action when upgrading; these are listed under **Upgrading**.
 
+## [Unreleased]
+
+### Added
+
+- **PACS query guardrails:**
+  - Worklist queries stop at a per-institution maximum (default 500, settable from 50 to 2000). The app asks PACS to cancel the rest and disconnects if PACS ignores the cancel. Technologists and the admin "Test query" are told when the list was cut short.
+  - A worklist query must be narrowed by a modality or by an institution filter that PACS applies. Admin › Institutions refuses to save a configuration without one, and the server refuses to run it.
+  - Simultaneous worklist loads at an institution share one PACS query, and the **Refresh** button reuses a result less than 10 seconds old.
+- **Per-institution PACS compatibility settings:** which attribute carries the modality (Modalities in Study, or Modality), and whether PACS accepts date ranges or needs one query per day.
+
+### Changed
+
+- A study lookup by UID never sends a blank UID (which would match every study) and fetches at most a handful of results.
+- Automatic backup file names use local time, like manual backups.
+
+### Fixed
+
+Found by the first full Docker install test of 0.2.0:
+- **Apache crash at startup:** it couldn't write its PID file, because the container's scratch areas were writable only by root and Apache now runs unprivileged.
+- **Installer health check:** it checked the app directly, so it reported success even when Apache was down. It now checks the full HTTPS path through Apache.
+- **Self-signed certificate:** it was marked as a certificate authority rather than a server certificate (Apache warned about this).
+- **Time zone:** Apache logged in UTC instead of the configured time zone.
+
 ## [0.2.0] - 2026-10-25
 
 Security release addressing the October 2026 OWASP Top 10 review. Details of every finding, how it was tested and how it was fixed are in [docs/SECURITY-REVIEW-2026-10.md](docs/SECURITY-REVIEW-2026-10.md).

@@ -88,16 +88,25 @@ docker compose pull db
 docker compose build --pull
 docker compose up -d
 
-bold "Waiting for SonoForms to start"
-ok=""
-for i in $(seq 1 60); do
-  if docker compose exec -T app wget -qO- http://127.0.0.1:3000/api/health >/dev/null 2>&1; then ok=1; break; fi
-  sleep 2
-done
-[ "$ok" = 1 ] || { docker compose logs --tail 50 migrate app; fail "SonoForms did not start. See the log above."; }
-
 SERVER_NAME="$(grep ^SERVER_NAME= .env | cut -d= -f2)"
 HTTPS_PORT="$(grep ^HTTPS_PORT= .env | cut -d= -f2)"
+
+bold "Waiting for SonoForms to start"
+# Check the whole path users take: HTTPS through Apache to the app.
+web_ok() {
+  if command -v curl >/dev/null 2>&1; then
+    curl -ksf --max-time 5 "https://127.0.0.1:${HTTPS_PORT}/api/health" >/dev/null 2>&1
+  else
+    [ "$(docker inspect -f '{{.State.Running}} {{.RestartCount}}' sonoforms-web-1 2>/dev/null)" = "true 0" ] &&
+      docker compose exec -T app wget -qO- http://127.0.0.1:3000/api/health >/dev/null 2>&1
+  fi
+}
+ok=""
+for i in $(seq 1 60); do
+  if web_ok; then ok=1; break; fi
+  sleep 2
+done
+[ "$ok" = 1 ] || { docker compose ps -a; docker compose logs --tail 30 migrate app web; fail "SonoForms did not start. See the log above."; }
 URL="https://${SERVER_NAME}"; [ "${HTTPS_PORT}" != "443" ] && URL="${URL}:${HTTPS_PORT}"
 FINGERPRINT="$(docker compose logs web 2>/dev/null | grep -o 'fingerprint: .*' | tail -1 | cut -d' ' -f2 || true)"
 

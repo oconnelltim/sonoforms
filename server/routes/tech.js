@@ -59,10 +59,11 @@ export default async function techRoutes(app) {
     }
     const settings = await getSettings();
     const institution = await one('SELECT id, name, code, dicom FROM institutions WHERE id = $1', [institutionId]);
-    const pacs = { configured: false, error: null, studies: [] };
+    const pacs = { configured: false, error: null, studies: [], truncated: false };
     try {
       const result = await todaysStudies(institution, settings.worklist_show_hours, { force: req.query.refresh === '1' });
       pacs.configured = result.configured;
+      pacs.truncated = !!result.truncated;
       const existing = await examsByStudyUids(institutionId, result.studies.map(s => s.study_uid));
       const forms = await availableForms(institutionId);
       pacs.studies = result.studies.map(s => {

@@ -216,6 +216,31 @@ Severity reflects impact in a hospital deployment and how easily an attacker cou
 4. A TLS scan (e.g. `testssl.sh https://your-server`) reports only TLS 1.2/1.3 and forward-secret ciphers.
 5. `./manage.sh backup`, `./manage.sh verify-audit` and a restore onto a scratch install all succeed.
 
+### Addendum, 25 October 2026: Docker deployment verified
+
+A full `./install.sh` run on Docker Desktop 29.9 (macOS, Apple Silicon) went through the checklist above. It found four deployment bugs, all now fixed:
+- Apache failed to start (its scratch space wasn't writable by its unprivileged user).
+- The installer's health check bypassed Apache, so it didn't notice.
+- The self-signed certificate was marked as a certificate authority.
+- Apache ignored the configured time zone.
+
+After the fixes, everything passed:
+
+- **Containers:** `db`, `app` and `web` running and healthy, `migrate` exited with code 0. Apache and the app run as the unprivileged installing user with read-only root filesystems.
+- **Database role:** the app connects as `sonoforms_app`, which gets "permission denied" when trying to change the audit log. The app container holds only its own database password and the master key.
+- **Client addresses:** the audit log records the real client address, never Apache's address or a forged `X-Forwarded-For` value.
+- **Logs:** the access log records paths without query strings. A test secret sent in a query string appeared in no log.
+- **TLS and headers:**
+  - TLS 1.0 and 1.1 are refused by the server, and only forward-secret cipher suites are accepted on TLS 1.2. TLS 1.3 works.
+  - HTTP redirects to HTTPS.
+  - The HSTS, CSP and frame headers are present, and the session cookie carries the `__Host-` prefix.
+- **Installer:** the initial admin password is shown once and then scrubbed from disk. The certificate fingerprint is shown at install.
+- **Backup and audit:** `./manage.sh backup` and `verify-audit` succeed.
+- **Restore:** a restore removed changes made after the backup, took a safety backup first, brought the app back up, and was itself audited.
+- **Update:** `./manage.sh update` made a pre-update backup, pulled fresh base images, rebuilt, migrated and restarted cleanly.
+
+Still to do on the production server: a TLS scan with the hospital's real certificate, and a test against the real PACS.
+
 ## Recommendations for operators
 
 - Install your hospital's TLS certificate rather than the self-signed one.

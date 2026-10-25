@@ -92,7 +92,8 @@ export async function render({ root, session, navigate }) {
     const p = data.pacs;
     const parts = [h('div.list-head', h('h2.list-title', 'Today’s studies', p.studies?.length ? h('span.count', p.studies.length) : null), updated)];
     if (p.error) parts.push(h('div.alert.warn', h('strong', 'PACS query failed. '), p.error, h('div.small', 'You can still add a patient by hand with "New patient".')));
-    else if (!p.configured) parts.push(h('div.alert.info', 'The PACS worklist is not set up for this institution. Use "New patient" to start a form, or ask an administrator to configure PACS in Admin › Institutions.'));
+    else if (p.truncated) parts.push(h('div.alert.warn', `PACS returned more studies than the worklist shows (only the first ${p.studies.length} are listed). Ask an administrator to narrow the PACS filter in Admin › Institutions.`));
+    if (!p.error && !p.configured) parts.push(h('div.alert.info', 'The PACS worklist is not set up for this institution. Use "New patient" to start a form, or ask an administrator to configure PACS in Admin › Institutions.'));
     const rows = (p.studies || []).filter(s => matches(q, patientName(s.patient), s.patient.mrn, s.accession, s.description));
     if (p.configured && !p.error) {
       parts.push(rows.length ? h('div.table-wrap', h('table.table.worklist',

@@ -51,7 +51,16 @@ SonoForms reads today's ultrasound studies with a study-level DICOM C-FIND, the 
 3. In **Admin › Institutions › Edit**, enter these, tick *Show today's studies*, and press **Test connection** (C-ECHO), then **Test query**.
 4. If your PACS holds studies for several sites, add a filter so each institution sees only its own studies, e.g. `InstitutionName = GENERAL HOSP*`. Some PACS ignore filters on some fields. If *Test query* still shows other sites' studies, switch the filter to **Filter results here**.
 
-The worklist refreshes every minute. It looks back 24 hours by default (Admin › Settings).
+The worklist refreshes every minute. It looks back 24 hours by default (Admin › Settings, at most 7 days).
+
+**Safeguards for your PACS:**
+- **Narrowed queries:** every worklist query carries a date limit, and a modality (usually `US`) or an institution filter that PACS applies. SonoForms won't save or run a query without one, so it can never ask PACS for "every study".
+- **Result limit:** a query stops at *Most studies to fetch* (default 500). If that happens, the worklist and *Test query* say so.
+- **Shared queries:** however many technologists have the worklist open, each institution sends at most one query at a time, and **Refresh** reuses a result less than 10 seconds old.
+
+**If your PACS behaves differently:**
+- *Send modality as*: most PACS match the modality on *Modalities in Study*. Some only accept *Modality*.
+- *Date matching*: if your PACS rejects date ranges, choose *One day at a time*. SonoForms then sends one query per day of the look-back period.
 
 ## Users and roles
 

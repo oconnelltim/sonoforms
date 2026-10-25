@@ -12,6 +12,9 @@ if [ ! -s "$CERT" ] || [ ! -s "$KEY" ]; then
   openssl req -x509 -nodes -newkey rsa:3072 -days 825 \
     -subj "/CN=${SERVER_NAME:-localhost}" \
     -addext "subjectAltName=DNS:${SERVER_NAME:-localhost},DNS:localhost,IP:127.0.0.1" \
+    -addext "basicConstraints=critical,CA:FALSE" \
+    -addext "keyUsage=critical,digitalSignature,keyEncipherment" \
+    -addext "extendedKeyUsage=serverAuth" \
     -keyout "$KEY" -out "$CERT"
 fi
 echo "TLS certificate SHA-256 fingerprint: $(openssl x509 -noout -fingerprint -sha256 -in "$CERT" | cut -d= -f2)"

@@ -3,8 +3,8 @@
 # Runs as an unprivileged user (set in docker-compose) on ports 8443/8080.
 FROM httpd:2.4-alpine
 # Drop the stock port-80 listener and the default access log (which records
-# query strings); sonoforms.conf defines its own.
-RUN apk add --no-cache openssl \
+# query strings); sonoforms.conf defines its own. tzdata makes TZ in .env work.
+RUN apk add --no-cache openssl tzdata \
  && sed -i -e 's/^Listen 80$/# Listen 80 (see sonoforms.conf)/' \
            -e 's/^\([[:space:]]*CustomLog .*\)$/# \1/' /usr/local/apache2/conf/httpd.conf \
  && echo 'Include conf/sonoforms.conf' >> /usr/local/apache2/conf/httpd.conf

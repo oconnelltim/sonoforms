@@ -12,7 +12,7 @@ import { hashPassword, temporaryPassword } from '../crypto.js';
 import { audit, verifyAuditChain } from '../audit.js';
 import { requireAuth, can, HttpError, lockStatus, unlockAccount } from '../auth.js';
 import { getSettings, updateSettings } from '../settings.js';
-import { echo, todaysStudies, clearCache } from '../dicom.js';
+import { echo, todaysStudies, clearCache, queryIsConstrained, MODALITY_KEYS, DEFAULT_MAX_RESULTS } from '../dicom.js';
 import { writeBackup } from '../backup.js';
 import { backupFiles, backupToDir, backupDir } from '../maintenance.js';
 
@@ -33,6 +33,9 @@ function cleanDicom(d = {}) {
     called_ae: ae(d.called_ae),
     calling_ae: ae(d.calling_ae) || 'SONOFORMS',
     modality: d.modality === undefined ? 'US' : String(d.modality).trim().toUpperCase().slice(0, 16),
+    modality_key: MODALITY_KEYS.includes(d.modality_key) ? d.modality_key : 'ModalitiesInStudy',
+    date_mode: d.date_mode === 'single' ? 'single' : 'range',
+    max_results: Math.min(Math.max(Number(d.max_results) || DEFAULT_MAX_RESULTS, 50), 2000),
     filters: (Array.isArray(d.filters) ? d.filters : [])
       .filter(f => f && DICOM_KEYS.includes(f.tag) && String(f.value || '').trim())
       .map(f => ({ tag: f.tag, value: String(f.value).trim().slice(0, 64), mode: f.mode === 'local' ? 'local' : 'query' })),
@@ -188,7 +191,14 @@ export default async function adminRoutes(app) {
     },
   };
 
+  function assertSafeQuery(dicom) {
+    if (dicom.enabled && !queryIsConstrained(dicom)) {
+      throw new HttpError(400, 'Set a modality (e.g. US) or an institution filter applied by PACS, so a worklist query can never ask PACS for every study.');
+    }
+  }
+
   app.post('/institutions', { ...admin, schema: { body: { ...instBody, required: ['code', 'name'] } } }, async (req) => {
+    assertSafeQuery(cleanDicom(req.body.dicom));
     if (await one('SELECT 1 FROM institutions WHERE lower(code) = lower($1)', [req.body.code])) throw new HttpError(409, 'That code is already used.');
     const row = await one('INSERT INTO institutions (code, name, dicom) VALUES ($1, $2, $3) RETURNING id',
       [req.body.code.toUpperCase(), req.body.name.trim(), cleanDicom(req.body.dicom)]);
@@ -201,6 +211,7 @@ export default async function adminRoutes(app) {
     const cur = await one('SELECT * FROM institutions WHERE id = $1', [id]);
     if (!cur) throw new HttpError(404, 'Institution not found');
     const b = req.body;
+    if (b.dicom) assertSafeQuery(cleanDicom(b.dicom));
     await query('UPDATE institutions SET name = $2, active = $3, dicom = $4, updated_at = now() WHERE id = $1',
       [id, b.name?.trim() ?? cur.name, b.active ?? cur.active, b.dicom ? cleanDicom(b.dicom) : cur.dicom]);
     clearCache();
@@ -227,12 +238,12 @@ export default async function adminRoutes(app) {
     const dicom = req.body?.dicom ? { ...cleanDicom(req.body.dicom), enabled: true } : inst.dicom;
     const settings = await getSettings();
     try {
-      const { studies } = await todaysStudies({ ...inst, dicom }, settings.worklist_show_hours, { force: true, cache: !req.body?.dicom });
+      const { studies, truncated } = await todaysStudies({ ...inst, dicom }, settings.worklist_show_hours, { force: true, cache: !req.body?.dicom });
       await audit({ req, institutionId: inst.id, action: 'institution.test_query', entityType: 'institution', entityId: inst.id, details: { results: studies.length } });
       // Admins see counts and descriptions only, not patient details.
       const descriptions = {};
       for (const s of studies) descriptions[s.description || '(none)'] = (descriptions[s.description || '(none)'] || 0) + 1;
-      return { ok: true, count: studies.length, descriptions };
+      return { ok: true, count: studies.length, truncated: !!truncated, max_results: dicom.max_results || DEFAULT_MAX_RESULTS, descriptions };
     } catch (e) {
       return { ok: false, message: e.message };
     }

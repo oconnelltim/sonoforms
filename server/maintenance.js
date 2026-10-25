@@ -31,7 +31,12 @@ export function backupFiles() {
     .sort((a, b) => b.mtime - a.mtime);
 }
 
-const stamp = () => new Date().toISOString().replace(/[:T]/g, '-').slice(0, 19);
+// Local time (TZ), matching the names ./manage.sh gives manual backups.
+const stamp = () => {
+  const d = new Date();
+  const p = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`;
+};
 
 export async function backupToDir(log = console, { automatic = false } = {}) {
   if (!BACKUP_DIR) throw new Error('BACKUP_DIR is not set');
