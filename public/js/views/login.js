@@ -33,7 +33,7 @@ export async function renderLogin(root, { onLogin, message } = {}) {
       }
     },
   },
-  h('div.login-brand', h('span.brand-mark.big', '◐'), h('h1', info.app_name)),
+  h('div.login-brand', h('span.brand-mark.big', { 'aria-hidden': 'true' }), h('h1', info.app_name)),
   h('p.muted', 'Ultrasound worksheets'),
   error,
   h('label.label', { for: 'u' }, 'Username'), Object.assign(username, { id: 'u' }),

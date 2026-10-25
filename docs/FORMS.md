@@ -31,6 +31,7 @@ The **Builder** tab lets you edit a form without writing any code.
   - *If… otherwise…* adds wording that depends on an answer. Click its "If…" chip later to change the rule.
   - *Start from the fields* writes a simple first draft for the section.
   - The line underneath shows the result with the sample answers from the preview.
+  - *Goes into the report's … field* picks the dictation field the text belongs to (Findings unless you change it). *+ Text for another report field* lets one section fill several, e.g. the clinical section writes both Indication and Comparison. See [Report fields](#report-fields).
 - **Click to select:** clicking a question in the tech-form preview selects it in the builder.
 - **Safety nets:**
   - Each question's internal name is created from its text and kept under *Advanced*. Renaming it there updates every rule and report text that uses it.
@@ -192,6 +193,34 @@ report: |
 Lines containing only `{{#if}}`, `{{else}}`, `{{/if}}`, `{{#each}}` or `{{/each}}` disappear from the output, so lay templates out one tag per line. Doubled spaces and spaces before punctuation left behind by empty values are cleaned up automatically. A section whose template produces nothing is left out of the report.
 
 If a section has no `report:`, a plain "TITLE: Label: value. Label: value." line is generated. That's handy while drafting. Use `report: false` to leave a section (e.g. a tech-only checklist) out of the report entirely.
+
+### Report fields
+
+Speech-recognition templates usually have separate fields for **Indication**, **Comparison**, **Technique**, **Findings** and **Impression**. SonoForms builds the report the same way: the radiologist sees one card per field, each with its own Copy button, and pastes each card into the matching field of their template.
+
+A section's text goes into Findings unless it says otherwise. To send it somewhere else, add `report_field:`:
+
+```yaml
+  - id: technique
+    title: Technique
+    report_field: technique
+    report: |
+      {{approach}}{{#if duplex}} Spectral Doppler of both ovaries was performed.{{/if}}
+```
+
+To fill several fields from one section, give `report:` one entry per field instead of a single block of text:
+
+```yaml
+  - id: clinical
+    title: Clinical
+    report:
+      indication: |-
+        {{indication | cap}}.
+      comparison: |-
+        {{#if present(comparison)}}{{comparison}}{{else}}None{{/if}}.
+```
+
+Field names are `indication`, `comparison`, `technique`, `findings` and `impression`. Texts for the same field from different sections are joined in section order, with the form's `separator`. The form's `header` and `footer` go into Findings. Don't put headings such as "INDICATION:" in the text: the field itself is the heading. When the radiologist uses *Copy all as one block*, each field gets a heading automatically.
 
 ## Worked example: scoring
 

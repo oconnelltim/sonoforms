@@ -12,6 +12,8 @@ import { parse as parseExpr } from '/shared/expr.js';
 import { createDocTools } from '/shared/builder/yamldoc.js';
 import { findReferences, uniqueFieldId, uniqueSectionId, renameInExpression, renameInTemplate } from '/shared/builder/refs.js';
 import { defaultSectionTemplate, fieldTag } from '/shared/builder/template-tokens.js';
+import { sectionReportParts } from '/shared/template.js';
+import { REPORT_FIELDS, REPORT_FIELD_IDS, DEFAULT_REPORT_FIELD, reportFieldLabel } from '/shared/report-fields.js';
 import { conditionEditor } from './condition-editor.js';
 import { templateEditor } from './template-editor.js';
 
@@ -118,7 +120,7 @@ export function formBuilder({ source, readOnly = false, onChange, onSelect = () 
   const problemsFor = (path) => {
     const s = def.sections[path[0]];
     if (!s) return [];
-    if (path.length === 1) return problems.filter(p => p.level === 'error' && (p.path === s.id || p.path === `${s.id}.report`));
+    if (path.length === 1) return problems.filter(p => p.level === 'error' && (p.path === s.id || p.path.startsWith(`${s.id}.report`)));
     const ids = [s.id, s.fields[path[1]]?.id, path.length === 3 ? s.fields[path[1]]?.fields?.[path[2]]?.id : null].filter(Boolean).join('.');
     return problems.filter(p => p.level === 'error' && (p.path === ids || p.path.startsWith(`${ids}.`)) && (path.length === 3 || p.path.split('.').length <= 3));
   };
@@ -342,7 +344,7 @@ export function formBuilder({ source, readOnly = false, onChange, onSelect = () 
     commit(() => {
       tools.setProp(doc, path, 'id', newId);
       tools.rewriteStrings(doc, ['show_if', 'required', 'formula'], v => renameInExpression(v, oldId, newId));
-      tools.rewriteStrings(doc, ['report', 'header', 'footer'], v => renameInTemplate(v, oldId, newId));
+      tools.rewriteStrings(doc, ['report', 'header', 'footer', ...REPORT_FIELD_IDS], v => renameInTemplate(v, oldId, newId));
     }, { redraw: false });
     if (fresh.delete(oldId)) fresh.add(newId);
     return true;
@@ -416,7 +418,7 @@ export function formBuilder({ source, readOnly = false, onChange, onSelect = () 
         commit(() => {
           if (on) tools.setProp(doc, path, 'report', savedReports.get(s.id) ?? defaultSectionTemplate(s));
           else {
-            if (typeof s.report === 'string') savedReports.set(s.id, s.report);
+            if (s.report !== undefined && s.report !== null) savedReports.set(s.id, s.report);
             tools.setProp(doc, path, 'report', false);
           }
         });
@@ -431,54 +433,119 @@ export function formBuilder({ source, readOnly = false, onChange, onSelect = () 
     return parts;
   }
 
+  // Report text for a section. Usually one block that goes into Findings;
+  // a section can instead send text to another dictation field, or to
+  // several (e.g. the clinical section fills Indication and Comparison).
   function reportEditor(path, s, si) {
-    const save = debounce(v => commit(() => tools.setProp(doc, path, 'report', v), { redraw: false }), 250);
-    let editor;
-    const editCondition = async (token, chipEl) => {
+    const parts = sectionReportParts(s).map(([field, tpl]) => ({ field, text: tpl ?? '', written: tpl !== null }));
+    const multi = parts.length > 1;
+    // Writes every part: one part is plain `report:` text (+ report_field
+    // when it isn't Findings); several parts are a map of field → text.
+    const writeAll = () => {
+      if (parts.length === 1) {
+        const [p] = parts;
+        tools.setProp(doc, path, 'report', p.written || p.text ? p.text : undefined);
+        tools.setProp(doc, path, 'report_field', p.field === DEFAULT_REPORT_FIELD ? undefined : p.field);
+      } else {
+        tools.setProp(doc, path, 'report', Object.fromEntries(parts.map(p => [p.field, p.text])));
+        tools.setProp(doc, path, 'report_field', undefined);
+      }
+    };
+    const saveText = debounce((p) => commit(() => {
+      if (multi) tools.setReportPart(doc, path, p.field, p.text);
+      else tools.setProp(doc, path, 'report', p.text);
+    }, { redraw: false }), 250);
+
+    let active = null;  // the part editor the toolbar inserts into
+    const editCondition = editor => async (token, chipEl) => {
       if (token.type !== 'if' && token.type !== 'elseif') return;
       const expr = await conditionDialog(token.expr, conditionFields([si]));
       if (expr === null || expr === undefined) return;
       editor.replaceChip(chipEl, token.type === 'if' ? `{{#if ${expr}}}` : `{{else if ${expr}}}`);
     };
-    editor = templateEditor({
-      value: typeof s.report === 'string' ? s.report : '', lookup: lookupField, readOnly,
-      placeholder: 'Type the report text. Use the buttons above to insert answers.',
-      onChange: (v) => save(v), onChipClick: editCondition,
+    const unused = except => REPORT_FIELDS.filter(f => f.id === except || !parts.some(p => p.field === f.id));
+
+    const partEls = parts.map((p, i) => {
+      let editor = null;
+      editor = templateEditor({
+        value: p.text, lookup: lookupField, readOnly,
+        placeholder: 'Type the report text. Use the buttons above to insert answers.',
+        onChange: (v) => { p.text = v; p.written = true; saveText(p); },
+        onChipClick: (token, chipEl) => editCondition(editor)(token, chipEl),
+      });
+      p.editor = editor;
+      editor.el.addEventListener('focusin', () => { active = p; });
+      const picker = h('select.input.tiny-select', {
+        disabled: readOnly, 'aria-label': 'Report field this text goes into',
+        onchange: (e) => { p.field = e.target.value; commit(writeAll); },
+      }, unused(p.field).map(f => h('option', { value: f.id, selected: f.id === p.field }, f.label)));
+      return h('div.fb-report-part',
+        h('div.fb-report-part-head',
+          h('span.small.muted', 'Goes into the report’s'), picker, h('span.small.muted', 'field'),
+          h('span.spacer'),
+          multi && !readOnly ? h('button.btn.small.ghost', {
+            type: 'button',
+            onclick: async () => {
+              if (p.text.trim() && !(await confirmDialog(`Remove the ${reportFieldLabel(p.field)} text?`, 'You can undo this.', { confirmLabel: 'Remove', danger: true }))) return;
+              parts.splice(i, 1);
+              commit(writeAll);
+            },
+          }, 'Remove') : null),
+        editor.el);
     });
+    active = parts[0];
+
+    const insert = tpl => (active || parts[0]).editor.insertTemplate(tpl);
     const others = def.sections.flatMap((x, i) => (i === si ? [] : x.fields.filter(f => f.type !== 'note').map(f => ({ f, s: x }))));
     const toolbar = readOnly ? null : h('div.fb-chip-bar',
       h('span.small.muted', 'Insert:'),
       s.fields.filter(f => f.type !== 'note').map(f => (f.type === 'repeat'
-        ? h('button.fb-insert.loop', { type: 'button', onclick: () => editor.insertTemplate(`{{#each ${f.id}}}\n${(f.fields || []).map(x => fieldTag(x.id)).join(' ')}\n{{/each}}`) }, `For each ${String(f.item_label || 'item').toLowerCase()}`)
-        : h('button.fb-insert', { type: 'button', title: TYPE_INFO[f.type]?.label, onclick: () => editor.insertTemplate(fieldTag(f.id)) }, f.label || f.id))),
+        ? h('button.fb-insert.loop', { type: 'button', onclick: () => insert(`{{#each ${f.id}}}\n${(f.fields || []).map(x => fieldTag(x.id)).join(' ')}\n{{/each}}`) }, `For each ${String(f.item_label || 'item').toLowerCase()}`)
+        : h('button.fb-insert', { type: 'button', title: TYPE_INFO[f.type]?.label, onclick: () => insert(fieldTag(f.id)) }, f.label || f.id))),
       others.length ? h('select.input.tiny-select', {
         'aria-label': 'Insert an answer from another section',
-        onchange: (e) => { if (e.target.value) editor.insertTemplate(fieldTag(e.target.value)); e.target.value = ''; },
+        onchange: (e) => { if (e.target.value) insert(fieldTag(e.target.value)); e.target.value = ''; },
       }, h('option', { value: '' }, 'Other sections…'), others.map(({ f, s: x }) => h('option', { value: f.id }, `${x.title} › ${f.label || f.id}`))) : null,
       h('button.fb-insert.logic', {
         type: 'button',
         onclick: async () => {
           const expr = await conditionDialog('', conditionFields([si]));
-          if (expr) editor.insertTemplate(`{{#if ${expr}}}…{{else}}…{{/if}}`);
+          if (expr) insert(`{{#if ${expr}}}…{{else}}…{{/if}}`);
         },
       }, 'If… otherwise…'),
       h('button.btn.small.ghost', {
         type: 'button',
         onclick: async () => {
-          if (editor.getValue().trim() && !(await confirmDialog('Replace the report text?', 'This writes a simple first draft from the section\'s fields, replacing what is there now. You can undo it.', { confirmLabel: 'Replace' }))) return;
+          const p = active || parts[0];
+          if (p.editor.getValue().trim() && !(await confirmDialog('Replace the report text?', 'This writes a simple first draft from the section\'s fields, replacing what is there now. You can undo it.', { confirmLabel: 'Replace' }))) return;
           const draft = defaultSectionTemplate(s);
-          editor.setValue(draft);
-          save(draft);
+          p.editor.setValue(draft);
+          p.text = draft;
+          p.written = true;
+          saveText(p);
         },
       }, 'Start from the fields'));
+
+    const addPart = readOnly || !unused(null).length ? null : h('button.btn.small.ghost', {
+      type: 'button',
+      onclick: () => {
+        // The existing text is kept as written; a section that relied on the
+        // automatic "Question: answer" line gets that as a starting draft.
+        if (parts.length === 1 && !parts[0].written) parts[0].text = defaultSectionTemplate(s);
+        const free = unused(null);
+        parts.push({ field: (free.find(f => f.id === 'impression') || free[0]).id, text: '' });
+        commit(writeAll);
+      },
+    }, '+ Text for another report field');
+
     previewLine = h('div.fb-preview-line', { 'aria-live': 'polite' });
     refreshPreviewLine();
     return h('div.fb-field.fb-report',
       h('span.fb-field-label', 'Report text for this section'),
-      typeof s.report !== 'string' ? h('p.hint', 'No report text yet, so a plain "Question: answer" line is used. Write your own below, or press "Start from the fields".') : null,
-      toolbar, editor.el,
+      parts.length === 1 && !parts[0].written ? h('p.hint', 'No report text yet, so a plain "Question: answer" line is used. Write your own below, or press "Start from the fields".') : null,
+      toolbar, partEls, addPart,
       h('div.fb-preview-wrap', h('span.small.muted', 'With the sample answers on the right:'), previewLine),
-      h('p.hint', 'Tip: click an "If…" chip to change its condition. Text between the chips appears only in that case.'));
+      h('p.hint', 'Each report field is a separate box the radiologist copies into their dictation template. Tip: click an "If…" chip to change its condition.'));
   }
 
   function refreshPreviewLine() {

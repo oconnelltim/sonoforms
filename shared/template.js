@@ -14,6 +14,7 @@
 
 import { compile, evaluate, truthy, isEmpty } from './expr.js';
 import { createEvaluator, formatValue, naturalJoin } from './engine.js';
+import { REPORT_FIELDS, REPORT_FIELD_IDS, DEFAULT_REPORT_FIELD, reportText } from './report-fields.js';
 
 export class TemplateError extends Error {}
 
@@ -237,33 +238,59 @@ function defaultSectionText(section, scope) {
   return `${(section.title || '').toUpperCase()}: ${bits.join('. ')}.`;
 }
 
-// Build the full findings text for an exam.
-// Returns { text, sections: [{id, title, text, error?}], errors: [] }
+// The report parts a section contributes: [[reportFieldId, template]].
+// `report` is a template string (going to the section's report_field,
+// Findings by default), a map of { reportFieldId: template }, or false.
+// A missing template means "use the default text".
+export function sectionReportParts(section) {
+  const r = section.report;
+  if (r === false) return [];
+  if (r && typeof r === 'object') {
+    return Object.entries(r).map(([field, tpl]) => [REPORT_FIELD_IDS.includes(field) ? field : DEFAULT_REPORT_FIELD, tpl ?? '']);
+  }
+  const field = REPORT_FIELD_IDS.includes(section.report_field) ? section.report_field : DEFAULT_REPORT_FIELD;
+  return [[field, r ?? null]];
+}
+
+// Build the report for an exam.
+// Returns {
+//   fields:   [{ id, label, text }]  one per report field that has text, in report order
+//   text:     the whole report as one block (headings added when there are several fields)
+//   sections: [{ id, title, text, parts: [{ field, text }], error? }]
+//   errors:   []
+// }
 export function generateReport(def, data, env = {}) {
   const scope = createEvaluator(def, data, env);
   const sections = [];
   const errors = [];
+  const byField = new Map(REPORT_FIELD_IDS.map(id => [id, []]));
   const render = (src, label) => {
     try { return renderTemplate(src, scope); } catch (e) { errors.push(`${label}: ${e.message}`); return ''; }
   };
   for (const section of def.sections || []) {
-    if (section.report === false) continue;
-    let text = '';
+    const partsSpec = sectionReportParts(section);
+    if (!partsSpec.length) continue;
     try {
       if (!scope.sectionVisible(section)) continue;
-      text = section.report ? renderTemplate(section.report, scope) : defaultSectionText(section, scope);
+      const parts = [];
+      for (const [field, tpl] of partsSpec) {
+        const text = tpl === null ? defaultSectionText(section, scope) : renderTemplate(tpl, scope);
+        if (text) parts.push({ field, text });
+      }
+      for (const p of parts) byField.get(p.field).push(p.text);
+      if (parts.length) sections.push({ id: section.id, title: section.title, text: parts.map(p => p.text).join('\n'), parts });
     } catch (e) {
       errors.push(`${section.title || section.id}: ${e.message}`);
-      sections.push({ id: section.id, title: section.title, text: '', error: e.message });
-      continue;
+      sections.push({ id: section.id, title: section.title, text: '', parts: [], error: e.message });
     }
-    if (text) sections.push({ id: section.id, title: section.title, text });
   }
   const report = def.report || {};
-  const pieces = [];
-  if (report.header) { const h = render(report.header, 'Report header'); if (h) pieces.push(h); }
-  pieces.push(...sections.map(s => s.text));
-  if (report.footer) { const f = render(report.footer, 'Report footer'); if (f) pieces.push(f); }
+  const findings = byField.get(DEFAULT_REPORT_FIELD);
+  if (report.header) { const h = render(report.header, 'Report header'); if (h) findings.unshift(h); }
+  if (report.footer) { const f = render(report.footer, 'Report footer'); if (f) findings.push(f); }
   const separator = report.separator ?? '\n\n';
-  return { text: pieces.join(separator).trim(), sections, errors };
+  const fields = REPORT_FIELDS
+    .map(f => ({ id: f.id, label: f.label, text: byField.get(f.id).join(separator).trim() }))
+    .filter(f => f.text);
+  return { fields, text: reportText(fields), sections, errors };
 }

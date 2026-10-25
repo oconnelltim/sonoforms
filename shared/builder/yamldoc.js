@@ -9,7 +9,7 @@
 
 const KEY_ORDER = {
   form: ['id', 'title', 'description', 'study_match', 'report', 'sections'],
-  section: ['id', 'title', 'help', 'show_if', 'fields', 'report'],
+  section: ['id', 'title', 'help', 'show_if', 'fields', 'report', 'report_field'],
   field: ['id', 'type', 'label', 'help', 'placeholder', 'layout', 'width', 'required', 'show_if', 'default', 'normal',
     'unit', 'axes', 'decimals', 'min', 'max', 'step', 'formula', 'true_text', 'false_text', 'conjunction', 'rows',
     'item_label', 'min_items', 'max_items', 'options', 'other', 'fields'],
@@ -54,6 +54,10 @@ export function createDocTools(YAML) {
   function makeNode(doc, value, { flow = false } = {}) {
     const n = doc.createNode(value);
     if (typeof value === 'string' && value.includes('\n')) n.type = 'BLOCK_LITERAL';
+    // Multi-line text anywhere inside (e.g. report text per field) stays a readable block.
+    if (YAML.isCollection(n)) {
+      YAML.visit(n, { Scalar(_, sc) { if (typeof sc.value === 'string' && sc.value.includes('\n')) sc.type = 'BLOCK_LITERAL'; } });
+    }
     if (flow && (YAML.isMap(n) || YAML.isSeq(n))) {
       n.flow = true;
       for (const item of n.items || []) if (YAML.isMap(item)) item.flow = true;
@@ -87,6 +91,20 @@ export function createDocTools(YAML) {
     const at = map.items.findIndex(p => rank(String(p.key?.value ?? p.key)) > rank(key));
     if (at === -1) map.items.push(pair);
     else map.items.splice(at, 0, pair);
+  }
+
+  // Updates one part of a section's per-field report text, e.g. its
+  // "comparison" text, without rewriting the other parts.
+  function setReportPart(doc, path, field, text) {
+    const report = node(doc, path).get('report', true);
+    if (!YAML.isMap(report)) throw new Error('This section has no per-field report text.');
+    const existing = report.get(field, true);
+    if (YAML.isScalar(existing)) {
+      existing.value = text;
+      if (text.includes('\n')) existing.type = 'BLOCK_LITERAL';
+      return;
+    }
+    report.set(field, makeNode(doc, text));
   }
 
   function getProp(doc, path, key) {
@@ -151,5 +169,5 @@ export function createDocTools(YAML) {
     });
   }
 
-  return { parse, stringify, setProp, getProp, setOptions, insert, remove, move, rewriteStrings, node };
+  return { parse, stringify, setProp, getProp, setReportPart, setOptions, insert, remove, move, rewriteStrings, node };
 }

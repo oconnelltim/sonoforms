@@ -39,10 +39,13 @@ sections:
           - { value: habitus, label: Body habitus, text: body habitus }
           - { value: mobility, label: Limited patient mobility, text: limited patient mobility }
           - { value: cooperation, label: Patient cooperation, text: limited patient cooperation }
-    report: |
-      INDICATION: {{indication | cap}}.
-      COMPARISON: {{#if present(comparison)}}{{comparison}}{{else}}None{{/if}}.
-      TECHNIQUE: Grayscale and color Doppler ultrasound of the right upper quadrant was performed.{{#if present(limited_by)}} The examination is limited by {{limited_by}}.{{/if}}
+    report:
+      indication: |-
+        {{indication | cap}}.
+      comparison: |-
+        {{#if present(comparison)}}{{comparison}}{{else}}None{{/if}}.
+      technique: |-
+        Grayscale and color Doppler ultrasound of the right upper quadrant was performed.{{#if present(limited_by)}} The examination is limited by {{limited_by}}.{{/if}}
 
   - id: liver
     title: Liver

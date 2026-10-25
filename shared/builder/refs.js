@@ -82,7 +82,8 @@ export function findReferences(def, id) {
   for (const [si, s] of (def.sections || []).entries()) {
     const sTitle = s.title || s.id;
     if (uses(exprIds(s.show_if))) hits.push({ where: `"${sTitle}" section's show-only-when rule`, path: [si] });
-    if (typeof s.report === 'string' && uses(templateIds(s.report))) hits.push({ where: `"${sTitle}" report text`, path: [si] });
+    const reportTexts = typeof s.report === 'string' ? [s.report] : (s.report && typeof s.report === 'object' ? Object.values(s.report) : []);
+    if (reportTexts.some(t => typeof t === 'string' && uses(templateIds(t)))) hits.push({ where: `"${sTitle}" report text`, path: [si] });
     for (const [fi, f] of (s.fields || []).entries()) {
       const check = (field, path, prefix = '') => {
         if (field.id === id) return;

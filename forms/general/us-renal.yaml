@@ -32,10 +32,13 @@ sections:
         type: text
         label: Comparison
         placeholder: "e.g. CT abdomen 03/14/2025, or leave blank for none"
-    report: |
-      INDICATION: {{indication | cap}}.
-      COMPARISON: {{#if present(comparison)}}{{comparison}}{{else}}None{{/if}}.
-      TECHNIQUE: Grayscale and color Doppler ultrasound of the kidneys and urinary bladder was performed.
+    report:
+      indication: |-
+        {{indication | cap}}.
+      comparison: |-
+        {{#if present(comparison)}}{{comparison}}{{else}}None{{/if}}.
+      technique: |-
+        Grayscale and color Doppler ultrasound of the kidneys and urinary bladder was performed.
 
   - id: right_kidney
     title: Right kidney

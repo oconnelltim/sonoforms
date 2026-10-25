@@ -114,7 +114,7 @@ function renderShell(workflow, content) {
     : h('span.inst-name', session.institutions[0]?.name || 'No institution');
 
   const header = h('header.topbar',
-    h('a.brand', { href: '#/' }, h('span.brand-mark', '◐'), session.settings.app_name),
+    h('a.brand', { href: '#/' }, h('span.brand-mark', { 'aria-hidden': 'true' }), session.settings.app_name),
     tabs.length > 1 ? h('nav.tabs', tabs.map(t => h(`a.tab${t.id === workflow ? '.active' : ''}`, { href: t.href }, t.label))) : h('div.spacer'),
     h('div.topbar-right',
       instSelect,

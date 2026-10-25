@@ -137,3 +137,35 @@ test('YAML edits: renaming rewrites references across the form', () => {
   assert.ok(!out.includes('uterus_status'));
   assert.deepEqual(lintForm(YAML.parse(out)).filter(p => p.level === 'error'), []);
 });
+
+test('YAML edits: per-field report text', () => {
+  // Edit one part of the clinical section's report; the others are untouched.
+  const doc = tools.parse(pelvisSrc);
+  tools.setReportPart(doc, [0], 'comparison', 'Compared with {{comparison}}.');
+  let out = tools.stringify(doc);
+  assert.ok(out.includes('Compared with {{comparison}}.'));
+  assert.ok(out.includes('      indication: |-\n        {{indication | cap}}.'), 'other parts keep their block style');
+  let def = normalizeForm(YAML.parse(out));
+  assert.equal(def.sections[0].report.comparison, 'Compared with {{comparison}}.');
+  assert.ok(def.sections[0].report.indication.includes('LMP'));
+
+  // A section switched from one block to several gets readable block text.
+  tools.setProp(doc, [2], 'report', { findings: 'Uterus {{uterus_status}}.\nMore.', impression: 'Uterus seen.' });
+  out = tools.stringify(doc);
+  assert.match(out, /findings: \|-\n\s+Uterus \{\{uterus_status\}\}\.\n\s+More\./);
+  assert.deepEqual(lintForm(YAML.parse(out)).filter(p => p.level === 'error'), []);
+
+  // Renaming and "what uses this field" both see text inside per-field reports.
+  def = normalizeForm(YAML.parse(out));
+  assert.ok(findReferences(def, 'uterus_status').some(r => r.where.includes('report text')));
+  assert.ok(findReferences(def, 'lmp_date').some(r => r.where.includes('report text')));
+  tools.rewriteStrings(doc, ['report', 'indication', 'comparison', 'technique', 'findings', 'impression'], v => renameInTemplate(v, 'lmp_date', 'last_period'));
+  out = tools.stringify(doc);
+  assert.ok(!out.includes('{{lmp_date}}') && out.includes('{{last_period}}'));
+
+  // Sending one block of text to another field.
+  tools.setProp(doc, [1], 'report_field', 'impression');
+  def = normalizeForm(YAML.parse(tools.stringify(doc)));
+  assert.equal(def.sections[1].report_field, 'impression');
+  assert.throws(() => tools.setReportPart(doc, [1], 'findings', 'x'), /no per-field report text/);
+});

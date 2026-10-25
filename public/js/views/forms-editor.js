@@ -12,6 +12,7 @@ import { renderForm } from '../components/form-renderer.js';
 import { formBuilder } from '../components/form-builder.js';
 import { normalizeForm, lintForm, initialAnswers, normalAnswers } from '/shared/formdef.js';
 import { generateReport } from '/shared/template.js';
+import { DEFAULT_REPORT_FIELD, reportFieldLabel } from '/shared/report-fields.js';
 import YAML from '/vendor/yaml/index.js';
 
 const SAMPLE_ENV = { patient: { age: 45, sex: 'F' }, exam: { date: new Date().toISOString().slice(0, 10), study_description: '' }, institution: { name: 'Preview', code: 'PREVIEW' } };
@@ -176,7 +177,11 @@ export async function render({ root, params, navigate, session }) {
     if (!def?.sections[index]) return '';
     try {
       const r = generateReport(def, sample, env);
-      return r.sections.find(s => s.id === def.sections[index].id)?.text || '';
+      const sec = r.sections.find(s => s.id === def.sections[index].id);
+      if (!sec) return '';
+      // Say which dictation field each part goes into, unless it is all Findings.
+      if (sec.parts.every(p => p.field === DEFAULT_REPORT_FIELD)) return sec.text;
+      return sec.parts.map(p => `${reportFieldLabel(p.field).toUpperCase()}: ${p.text}`).join('\n');
     } catch (e) {
       return `(error: ${e.message})`;
     }

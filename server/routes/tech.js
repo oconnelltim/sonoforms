@@ -244,7 +244,9 @@ export default async function techRoutes(app) {
     const rowVersion = await updateExam(exam.id, {
       answers: { ...answers, __calcs: computeCalcs(definition, answers, env) },
       tech_note: req.body.tech_note ?? exam.tech_note,
-      report: report.text,
+      // Stored per report field (Indication, Comparison, Findings…) so the
+      // radiologist can copy each into its own dictation field.
+      report: { fields: report.fields },
       final_report: null,
       return_reason: null,
       status: 'submitted',

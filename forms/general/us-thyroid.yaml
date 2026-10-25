@@ -30,10 +30,13 @@ sections:
         type: text
         label: Comparison
         placeholder: "e.g. US thyroid 03/14/2025, or leave blank for none"
-    report: |
-      INDICATION: {{indication | cap}}.
-      COMPARISON: {{#if present(comparison)}}{{comparison}}{{else}}None{{/if}}.
-      TECHNIQUE: Grayscale and color Doppler ultrasound of the thyroid gland and neck was performed.
+    report:
+      indication: |-
+        {{indication | cap}}.
+      comparison: |-
+        {{#if present(comparison)}}{{comparison}}{{else}}None{{/if}}.
+      technique: |-
+        Grayscale and color Doppler ultrasound of the thyroid gland and neck was performed.
 
   - id: gland
     title: Thyroid gland

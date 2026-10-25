@@ -40,10 +40,13 @@ sections:
         type: text
         label: Comparison
         placeholder: "e.g. US venous LE 03/14/2025, or leave blank for none"
-    report: |
-      INDICATION: {{indication | cap}}.
-      COMPARISON: {{#if present(comparison)}}{{comparison}}{{else}}None{{/if}}.
-      TECHNIQUE: Grayscale compression, color, and spectral Doppler ultrasound of the deep veins of the {{side}} was performed.
+    report:
+      indication: |-
+        {{indication | cap}}.
+      comparison: |-
+        {{#if present(comparison)}}{{comparison}}{{else}}None{{/if}}.
+      technique: |-
+        Grayscale compression, color, and spectral Doppler ultrasound of the deep veins of the {{side}} was performed.
 
   - id: right_leg
     title: Right lower extremity

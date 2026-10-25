@@ -4,6 +4,10 @@ All notable changes to SonoForms are documented here. The format follows [Keep a
 
 ## [Unreleased]
 
+### Upgrading
+
+- **Starter forms already in your general library are not updated automatically**, because admins may have edited them. Until they are replaced, their Indication and Comparison lines stay inside the Findings card. To pick up the new versions, open each form in the editor, paste the matching file from `forms/general/` into the Source tab, and publish.
+
 ### Added
 
 - **Visual form builder.** Tech managers can edit forms without writing YAML:
@@ -15,6 +19,11 @@ All notable changes to SonoForms are documented here. The format follows [Keep a
   - Clicking a question in the tech-form preview selects it in the builder.
   - Safe renaming that updates every reference, and warnings before deleting something other parts depend on.
   - The builder edits the same YAML as the Source tab, keeping comments and formatting: an edit changes only the lines it touches.
+- **Report fields.** A report is now split into the fields dictation templates use (Indication, Comparison, Technique, Findings, Impression):
+  - Radiologists see one card per field, each with its own Copy button (Ctrl+Shift+1, 2, 3… copies the first, second, third card), a "Copied" mark and "Reset to generated". Edits are saved per field. *Copy all as one block* is still there, with a heading per field. *Mark dictated* is highlighted once every card has been copied.
+  - Forms say where each section's text goes with `report_field:`, or give `report:` one entry per field. In the builder, pick *Goes into the report's … field*, or add *Text for another report field*. See "Report fields" in [docs/FORMS.md](docs/FORMS.md).
+  - The starter forms send their clinical section to Indication and Comparison, and the pelvis technique section to Technique.
+  - Copying a card is recorded in the audit log with the field copied.
 - **Form editor:** undo and redo, and automatic draft saving (the "Save draft" button is gone; Ctrl+S still saves immediately). Leaving the editor saves pending changes instead of discarding them.
 
 - **PACS query guardrails:**
@@ -25,6 +34,8 @@ All notable changes to SonoForms are documented here. The format follows [Keep a
 
 ### Changed
 
+- The logo is now a small ultrasound probe, in the header, on the sign-in page and as the browser tab icon.
+- **API:** `PUT /api/exams/:id/report` and `POST /api/exams/:id/dictated` take `fields` (an object of edited text per report field, or `null`) instead of a single `report` string. `POST /api/exams/:id/copied` takes `field`. Exams store their report as `{ fields: [...] }`; reports saved before this change still display, as one Findings card.
 - A study lookup by UID never sends a blank UID (which would match every study) and fetches at most a handful of results.
 - Automatic backup file names use local time, like manual backups.
 - The starter forms were respaced to one consistent YAML style, so builder edits produce minimal changes. Only spacing inside `[ ]` lists changed.

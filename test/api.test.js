@@ -71,11 +71,21 @@ test('full workflow: admin creates users, tech submits, radiologist dictates', a
   const queue = (await rad.call('GET', '/worklist/rad')).body;
   assert.equal(queue.length, 1);
   ({ exam } = (await rad.call('GET', `/exams/${created.id}`)).body);
-  assert.match(exam.report, /RIGHT LOBE: Measures 4.5 x 1.5 x 1.4 cm/);
+  // The report is stored per field, so each can go into its own dictation field.
+  const field = id => exam.report.fields.find(f => f.id === id)?.text || '';
+  assert.match(field('findings'), /RIGHT LOBE: Measures 4.5 x 1.5 x 1.4 cm/);
+  assert.ok(field('technique'), 'technique has its own field');
+  assert.ok(!field('findings').includes('TECHNIQUE'), 'technique is not mixed into findings');
+  // Edits are saved per field, keeping the others as generated.
+  let er = await rad.call('PUT', `/exams/${exam.id}/report`, { fields: { indication: 'Edited indication.' }, row_version: exam.row_version });
+  assert.equal(er.status, 200, JSON.stringify(er.body));
+  ({ exam } = (await rad.call('GET', `/exams/${created.id}`)).body);
+  assert.equal(exam.final_report.fields.find(f => f.id === 'indication').text, 'Edited indication.');
+  assert.equal(exam.final_report.fields.find(f => f.id === 'findings').text, field('findings'));
 
   // Stale row_version is rejected.
   assert.equal((await rad.call('POST', `/exams/${exam.id}/dictated`, { row_version: exam.row_version - 1 })).status, 409);
-  assert.equal((await rad.call('POST', `/exams/${exam.id}/dictated`, { row_version: exam.row_version, text: 'edited' })).status, 200);
+  assert.equal((await rad.call('POST', `/exams/${exam.id}/dictated`, { row_version: exam.row_version, fields: { findings: 'edited' } })).status, 200);
   assert.equal((await tech.call('POST', `/exams/${exam.id}/reopen`, { row_version: exam.row_version + 1 })).status, 409);
 
   // Nothing identifying is stored in plaintext.

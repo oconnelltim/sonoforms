@@ -6,13 +6,14 @@
 
 import { compile, identifiers } from './expr.js';
 import { parseTemplate } from './template.js';
+import { REPORT_FIELD_IDS } from './report-fields.js';
 
 export const FIELD_TYPES = ['text', 'textarea', 'number', 'choice', 'multi', 'boolean', 'date', 'dims', 'calc', 'repeat', 'note'];
 const FIELD_KEYS = ['id', 'type', 'label', 'help', 'required', 'show_if', 'default', 'normal', 'unit', 'decimals', 'min', 'max', 'step',
   'options', 'other', 'layout', 'placeholder', 'width', 'axes', 'formula', 'fields', 'item_label', 'min_items', 'max_items',
   'true_text', 'false_text', 'conjunction', 'rows'];
 const OPTION_KEYS = ['value', 'label', 'text', 'points', 'help'];
-const SECTION_KEYS = ['id', 'title', 'show_if', 'fields', 'report', 'help'];
+const SECTION_KEYS = ['id', 'title', 'show_if', 'fields', 'report', 'report_field', 'help'];
 const RESERVED_IDS = new Set(['__proto__', 'constructor', 'prototype', 'patient', 'exam', 'institution', 'true', 'false', 'null', 'and', 'or', 'not', 'in']);
 const TYPE_ALIASES = { radio: 'choice', select: 'choice', checkbox_group: 'multi', checkboxes: 'multi', checkbox: 'boolean', yesno: 'boolean', static: 'note', measurement: 'dims' };
 
@@ -177,7 +178,17 @@ export function lintForm(rawOrDef) {
   for (const s of def.sections) {
     checkKeys(s.id, s, SECTION_KEYS, 'section');
     if (s.show_if) checkExpr(`${s.id}`, s.show_if);
-    if (s.report) checkTemplate(`${s.id}.report`, s.report);
+    const fieldList = REPORT_FIELD_IDS.join(', ');
+    if (s.report_field !== undefined && !REPORT_FIELD_IDS.includes(s.report_field)) err(`${s.id}.report_field`, `Unknown report field '${s.report_field}' (use one of: ${fieldList})`);
+    if (typeof s.report === 'string') checkTemplate(`${s.id}.report`, s.report);
+    else if (s.report && typeof s.report === 'object' && !Array.isArray(s.report)) {
+      if (s.report_field !== undefined) warn(`${s.id}.report_field`, 'report_field is ignored when report lists its report fields');
+      for (const [field, tpl] of Object.entries(s.report)) {
+        if (!REPORT_FIELD_IDS.includes(field)) err(`${s.id}.report`, `Unknown report field '${field}' (use one of: ${fieldList})`);
+        else if (typeof tpl !== 'string') err(`${s.id}.report.${field}`, `The ${field} text must be text`);
+        else checkTemplate(`${s.id}.report`, tpl);
+      }
+    } else if (s.report !== undefined && s.report !== false && s.report !== null) err(`${s.id}.report`, 'report must be text, false, or a list of report fields');
     for (const f of s.fields) {
       checkField(`${s.id}.${f.id}`, f, new Set());
       if (f.type === 'repeat') {

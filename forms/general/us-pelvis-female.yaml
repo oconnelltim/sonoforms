@@ -47,14 +47,16 @@ sections:
         type: text
         label: Comparison
         placeholder: "e.g. US pelvis 03/14/2025, or leave blank for none"
-    report: |
-      INDICATION: {{indication | cap}}.
-      {{#if lmp_status == 'date'}}
-      LMP: {{lmp_date}}.
-      {{else if lmp_status == 'postmenopausal'}}
-      LMP: Postmenopausal.
-      {{/if}}
-      COMPARISON: {{#if present(comparison)}}{{comparison}}{{else}}None{{/if}}.
+    report:
+      indication: |-
+        {{indication | cap}}.
+        {{#if lmp_status == 'date'}}
+        LMP: {{lmp_date}}.
+        {{else if lmp_status == 'postmenopausal'}}
+        LMP: Postmenopausal.
+        {{/if}}
+      comparison: |-
+        {{#if present(comparison)}}{{comparison}}{{else}}None{{/if}}.
 
   - id: technique
     title: Technique
@@ -75,8 +77,9 @@ sections:
       - id: duplex
         type: boolean
         label: Ovarian spectral Doppler performed (torsion protocol)
+    report_field: technique
     report: |
-      TECHNIQUE: {{approach}}{{#if tv_declined}} Endovaginal imaging was declined by the patient.{{/if}}{{#if duplex}} Spectral Doppler evaluation of both ovaries was performed.{{/if}}
+      {{approach}}{{#if tv_declined}} Endovaginal imaging was declined by the patient.{{/if}}{{#if duplex}} Spectral Doppler evaluation of both ovaries was performed.{{/if}}
 
   - id: uterus
     title: Uterus

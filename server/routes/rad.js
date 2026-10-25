@@ -7,6 +7,27 @@ import { audit, auditOnce } from '../audit.js';
 import { requireAuth, can, userInstitutions, HttpError } from '../auth.js';
 import { listExams, updateExam } from '../records.js';
 import { loadExamFor } from './tech.js';
+import { REPORT_FIELD_IDS, reportFields, reportFieldLabel } from '../../shared/report-fields.js';
+
+// Request body for the radiologist's edited report: { fields: { indication: '…', findings: '…' } },
+// or null to go back to the generated text.
+const editedFieldsSchema = {
+  type: ['object', 'null'],
+  additionalProperties: false,
+  properties: Object.fromEntries(REPORT_FIELD_IDS.map(id => [id, { type: 'string', maxLength: 50000 }])),
+};
+
+// Edited text for each field, kept in the generated report's field order.
+function editedReport(exam, edits) {
+  if (edits === null || edits === undefined) return null;
+  const generated = reportFields(exam.report);
+  const order = [...generated.map(f => f.id), ...REPORT_FIELD_IDS.filter(id => !generated.some(f => f.id === id))];
+  return {
+    fields: order
+      .filter(id => edits[id] !== undefined || generated.some(f => f.id === id))
+      .map(id => ({ id, label: reportFieldLabel(id), text: edits[id] ?? generated.find(f => f.id === id)?.text ?? '' })),
+  };
+}
 
 const versionBody = { row_version: { type: 'integer' } };
 
@@ -40,29 +61,32 @@ export default async function radRoutes(app) {
 
   app.put('/exams/:id/report', {
     ...rad,
-    schema: { body: { type: 'object', required: ['row_version'], properties: { ...versionBody, text: { type: ['string', 'null'], maxLength: 50000 } } } },
+    schema: { body: { type: 'object', required: ['row_version'], properties: { ...versionBody, fields: editedFieldsSchema } } },
   }, async (req) => {
     const exam = await loadExamFor(req, Number(req.params.id));
     if (exam.status !== 'submitted') throw new HttpError(409, `This exam is ${exam.status}; the findings can no longer be edited.`);
-    const rowVersion = await updateExam(exam.id, { final_report: req.body.text }, req.body.row_version);
+    const rowVersion = await updateExam(exam.id, { final_report: editedReport(exam, req.body.fields) }, req.body.row_version);
     await auditOnce(`report:${req.user.id}:${exam.id}`, 15 * 60000, { req, institutionId: exam.institution_id, action: 'exam.report_edit', entityType: 'exam', entityId: exam.id });
     return { row_version: rowVersion };
   });
 
-  app.post('/exams/:id/copied', rad, async (req) => {
+  app.post('/exams/:id/copied', {
+    ...rad,
+    schema: { body: { type: ['object', 'null'], properties: { field: { type: 'string', enum: [...REPORT_FIELD_IDS, 'all'] } } } },
+  }, async (req) => {
     const exam = await loadExamFor(req, Number(req.params.id));
-    await audit({ req, institutionId: exam.institution_id, action: 'exam.copy_findings', entityType: 'exam', entityId: exam.id });
+    await audit({ req, institutionId: exam.institution_id, action: 'exam.copy_findings', entityType: 'exam', entityId: exam.id, details: req.body?.field ? { field: req.body.field } : null });
     return { ok: true };
   });
 
   app.post('/exams/:id/dictated', {
     ...rad,
-    schema: { body: { type: 'object', required: ['row_version'], properties: { ...versionBody, text: { type: ['string', 'null'], maxLength: 50000 } } } },
+    schema: { body: { type: 'object', required: ['row_version'], properties: { ...versionBody, fields: editedFieldsSchema } } },
   }, async (req) => {
     const exam = await loadExamFor(req, Number(req.params.id));
     if (exam.status !== 'submitted') throw new HttpError(409, `This exam is ${exam.status} and cannot be marked dictated.`);
     const fields = { status: 'dictated', rad_id: req.user.id, dictated_at: new Date() };
-    if (req.body.text !== undefined) fields.final_report = req.body.text;
+    if (req.body.fields !== undefined) fields.final_report = editedReport(exam, req.body.fields);
     const rowVersion = await updateExam(exam.id, fields, req.body.row_version);
     await audit({ req, institutionId: exam.institution_id, action: 'exam.dictated', entityType: 'exam', entityId: exam.id });
     return { row_version: rowVersion };
