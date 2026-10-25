@@ -18,6 +18,24 @@ function env(name, fallback) {
 }
 
 const bool = v => ['1', 'true', 'yes', 'on'].includes(String(v).toLowerCase());
+
+// Which reverse proxies may tell the app the real client address (via
+// X-Forwarded-For): a comma-separated list of addresses or CIDR ranges, e.g.
+// the Docker network Apache sits on. Only the entry added by such a proxy is
+// used; entries the client sent itself are ignored. "true" means proxies on
+// this machine (loopback). Hop counts are not accepted: they can't check who
+// is actually connecting.
+function parseTrustProxy(v) {
+  const s = String(v ?? '').trim().toLowerCase();
+  if (!s || s === 'false' || s === '0' || s === 'no' || s === 'off') return false;
+  if (s === 'true' || s === 'yes' || s === 'on') return 'loopback';
+  if (/^\d+$/.test(s)) {
+    console.warn('TRUST_PROXY must be an address or CIDR range (e.g. 172.31.250.0/28), not a hop count; ignoring it.');
+    return false;
+  }
+  return s.split(',').map(x => x.trim()).filter(Boolean).join(',');
+}
+
 const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
 
 export const config = {
@@ -33,11 +51,19 @@ export const config = {
     user: env('PGUSER', 'sonoforms'),
     password: env('PGPASSWORD', undefined),
   },
+  // Restricted role the app runs as after setup (see server/dbroles.js).
+  dbApp: {
+    user: env('PGAPPUSER', undefined),
+    password: env('PGAPPPASSWORD', undefined),
+  },
+  // all = migrate then serve (development); migrate = set up and exit;
+  // serve = run only, as the restricted role (Docker app container).
+  mode: env('SONOFORMS_MODE', 'all'),
   masterKey: env('SONOFORMS_MASTER_KEY', undefined),
   initialAdminPassword: env('INITIAL_ADMIN_PASSWORD', undefined),
   // Cookies are marked Secure unless explicitly disabled (only for local development over http).
   secureCookies: !bool(env('INSECURE_COOKIES', 'false')),
-  trustProxy: bool(env('TRUST_PROXY', 'true')),
+  trustProxy: parseTrustProxy(env('TRUST_PROXY', 'false')),
   formsDir: env('FORMS_DIR', path.join(ROOT, 'forms')),
   dicomMock: bool(env('DICOM_MOCK', 'false')),
   logLevel: env('LOG_LEVEL', 'info'),

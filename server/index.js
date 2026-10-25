@@ -1,8 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //
-// Starts SonoForms: checks the encryption key, applies database migrations,
-// loads the general form library, creates the first admin if needed, then
-// serves the app.
+// Starts SonoForms. SONOFORMS_MODE selects what this process does:
+//   all      check the key, migrate, load forms, create the first admin,
+//            then serve (development / single-process installs)
+//   migrate  only the setup steps, as the database owner, then exit
+//            (the Docker "migrate" container)
+//   serve    only serve, as the restricted database role (the Docker
+//            "app" container, which never holds the owner password)
 
 import { config } from './config.js';
 import { initKeys } from './crypto.js';
@@ -12,7 +16,8 @@ import { seedGeneralForms } from './forms.js';
 import { buildApp } from './app.js';
 import { startMaintenance } from './maintenance.js';
 import { ensureFirstAdmin } from './bootstrap.js';
-import { pool } from './db.js';
+import { ensureAppRole, assertMigrated } from './dbroles.js';
+import { pool, switchToAppRole } from './db.js';
 
 async function waitForDatabase(log) {
   for (let i = 1; i <= 30; i++) {
@@ -28,15 +33,28 @@ async function waitForDatabase(log) {
 }
 
 async function main() {
+  const mode = ['all', 'migrate', 'serve'].includes(config.mode) ? config.mode : 'all';
   const app = await buildApp();
   const log = app.log;
   try {
     initKeys();
     await waitForDatabase(log);
-    await migrate(log);
-    await checkMasterKey();
-    await seedGeneralForms(log);
-    await ensureFirstAdmin(log);
+    if (mode === 'serve') {
+      await assertMigrated();
+      await checkMasterKey();
+    } else {
+      await migrate(log);
+      await checkMasterKey();
+      await seedGeneralForms(log);
+      await ensureFirstAdmin(log);
+      await ensureAppRole(log);
+    }
+    if (mode === 'migrate') {
+      log.info('Database is up to date.');
+      await pool.end();
+      process.exit(0);
+    }
+    if (mode === 'all' && await switchToAppRole()) log.info(`Running as database role "${config.dbApp.user}"`);
   } catch (e) {
     log.fatal(e.message);
     process.exit(1);

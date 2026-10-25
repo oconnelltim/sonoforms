@@ -4,7 +4,7 @@
 // which fields are visible, what calculated fields equal, what is
 // required, and how each value is formatted for the report.
 
-import { compile, evaluate, isEmpty, truthy } from './expr.js';
+import { compile, evaluate, isEmpty, truthy, bounded } from './expr.js';
 
 // env holds non-form context available to expressions: patient.age,
 // patient.sex, exam.date, exam.study_description, ...
@@ -108,7 +108,7 @@ function makeScope(s) {
       if (r.field.type === 'calc') {
         if (inProgress.has(`val:${name}`)) return null;
         inProgress.add(`val:${name}`);
-        try { value = scope.eval(r.field.formula); } catch { value = null; }
+        try { value = bounded(scope.eval(r.field.formula)); } catch { value = null; }
         inProgress.delete(`val:${name}`);
         if (typeof value === 'number' && r.field.decimals !== undefined) {
           const f = 10 ** r.field.decimals;

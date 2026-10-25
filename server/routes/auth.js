@@ -7,14 +7,14 @@ import { getSettings } from '../settings.js';
 import { audit } from '../audit.js';
 import {
   login, createSession, destroySession, requireAuth, userInstitutions, capabilities,
-  canAccessInstitution, passwordProblems, HttpError,
+  canAccessInstitution, passwordProblems, HttpError, countAttempt, clearAttempts, throttleKey,
 } from '../auth.js';
 
 export default async function authRoutes(app) {
   // Public info for the login page.
   app.get('/public-info', async () => {
     const s = await getSettings();
-    return { app_name: s.app_name, login_banner: s.login_banner, version: config.version };
+    return { app_name: s.app_name, login_banner: s.login_banner };
   });
 
   app.post('/auth/login', {
@@ -60,6 +60,7 @@ export default async function authRoutes(app) {
     if (!(await canAccessInstitution(req.user, id))) throw new HttpError(403, 'You do not have access to that institution.');
     await query('UPDATE sessions SET institution_id = $2 WHERE id = $1', [req.session.id, id]);
     await query("UPDATE users SET preferences = preferences || jsonb_build_object('institution_id', $2::int) WHERE id = $1", [req.user.id, id]);
+    await audit({ req, institutionId: id, action: 'session.switch_institution', entityType: 'institution', entityId: id });
     return { ok: true };
   });
 
@@ -77,12 +78,20 @@ export default async function authRoutes(app) {
     schema: { body: { type: 'object', required: ['current', 'next'], properties: { current: { type: 'string', maxLength: 500 }, next: { type: 'string', maxLength: 500 } } } },
   }, async (req) => {
     const settings = await getSettings();
+    // Throttled like sign-in, so a stolen session can't be used to guess the password.
+    const key = throttleKey('password', req.user.id);
+    const attempt = await countAttempt(key, req.ip, settings);
+    if (attempt.blocked) throw new HttpError(429, 'Too many incorrect attempts. Wait a few minutes and try again.');
     const row = await one('SELECT password_hash FROM users WHERE id = $1', [req.user.id]);
-    if (!(await verifyPassword(req.body.current, row.password_hash))) throw new HttpError(400, 'Your current password is incorrect.');
+    if (!(await verifyPassword(req.body.current, row.password_hash))) {
+      await audit({ req, action: 'auth.password_change_failed', entityType: 'user', entityId: req.user.id });
+      throw new HttpError(400, 'Your current password is incorrect.');
+    }
+    await clearAttempts(key, req.ip);
     if (req.body.current === req.body.next) throw new HttpError(400, 'The new password must be different from the current one.');
     const problems = passwordProblems(req.body.next, settings, req.user.username);
     if (problems.length) throw new HttpError(400, `The new password needs: ${problems.join(', ')}.`);
-    await query('UPDATE users SET password_hash = $2, must_change_password = false, password_changed_at = now() WHERE id = $1',
+    await query('UPDATE users SET password_hash = $2, must_change_password = false, temp_password_expires_at = NULL, password_changed_at = now() WHERE id = $1',
       [req.user.id, await hashPassword(req.body.next)]);
     // Sign out other sessions for this user.
     await query('DELETE FROM sessions WHERE user_id = $1 AND id <> $2', [req.user.id, req.session.id]);

@@ -1,0 +1,161 @@
+# Changelog
+
+All notable changes to SonoForms are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/). While the version is below 1.0, minor versions may include changes that need action when upgrading; these are listed under **Upgrading**.
+
+## [0.2.0] - 2026-10-25
+
+Security release addressing the October 2026 OWASP Top 10 review. Details of every finding, how it was tested and how it was fixed are in [docs/SECURITY-REVIEW-2026-10.md](docs/SECURITY-REVIEW-2026-10.md).
+
+### Upgrading
+
+Docker installs: run `./manage.sh update`. It creates the one new secret, backs up, rebuilds and migrates. Notes:
+
+- **New secret:** `secrets/db_app_password`, the password of the restricted database account the app now runs as. `./manage.sh update` and `./install.sh` create it automatically.
+- **New container layout:**
+  - A one-off `migrate` container now applies database changes before the app starts. It's the only container with the database owner password.
+  - `./manage.sh` command-line tasks (backup, restore, reset-password, …) run through it.
+- **Ports inside the web container:** Apache now listens on 8443/8080. Host ports are unchanged (443/80, set in `.env`).
+- **`PROXY_SUBNET`:** a new `.env` setting, the address range of the internal web-to-app network (default `172.31.250.0/28`). Change it only if it clashes with addresses on your network.
+- **`TRUST_PROXY`:** now takes addresses or CIDR ranges and is off by default. Hop counts such as `1` are rejected. Installs that don't use Docker should set it to their proxy's address.
+- **Database migrations** run automatically. Existing records are re-encrypted and re-indexed in place, so no data is lost and no action is needed.
+- **Forms using regular expressions in `study_match`** (entries like `/PELVI(S|C)/`) now fail validation and can't be published. Replace them with plain words, e.g. `PELVIS` and `PELVIC`. Existing published versions keep working, but their regex entries are ignored.
+- **API change:** patient search moved from `GET /api/patients?mrn=…` to `POST /api/patients/search` with a JSON body.
+- **Sessions:** the session cookie is renamed, so everyone signs in again once after the update.
+
+### Security
+
+Fixed:
+- Server freezes:
+  - Crafted free-text answers could freeze the server, because report text cleanup took quadratic time and answers had no size limits (H1).
+  - A tech manager could freeze the server with a catastrophic regular expression in a form's `study_match` (H2).
+  - A malicious form could make calculated fields grow exponentially (M6).
+- **Wrong-patient risk:** study UIDs, accession numbers and MRNs were matched after stripping punctuation, and MRN matching ignored the issuer (H3).
+- **Patient identifiers in plaintext logs:** patient search put MRNs and names in URLs, which the Apache access log recorded (H4).
+- **Password guessing:** parallel sign-in attempts bypassed the lockout, and a client-supplied `X-Forwarded-For` header could spoof client IP addresses (H5).
+- **Access-control gaps:**
+  - Removing a user from an institution didn't take effect until their session ended (M7).
+  - Administrators could grant themselves clinical roles and access to every institution (M8).
+  - Administrators could sign out and unlock superusers, and the last superuser could remove their own role.
+- **Lockouts:** anyone could keep any account locked out, and the lockout response revealed which usernames exist (M9).
+- **Audit log:**
+  - Missing events, and no fallback when an audit write failed (M10).
+  - Tamper-evidence that the app's own database account could defeat (M11).
+- **Base images and certificates:** base images were never refreshed on update (M12), and the installer defaulted silently to a self-signed certificate (M13).
+- **Low-severity issues:**
+  - truncated encryption tags were accepted, and ciphertext wasn't bound to its row
+  - backup lines could be spliced between backups
+  - unchecked PACS replies
+  - malformed ids caused server errors
+  - nightly backups weren't retried
+  - the Apache container ran as root
+  - no TLS cipher list was set
+  - a fragile HTTP-to-HTTPS redirect
+  - installer input wasn't validated
+  - the initial admin password leaked into logs
+  - temporary passwords never expired
+  - unpinned CI actions
+
+### Added
+
+- **Sign-in throttling** per username and computer. Pauses double from 1 minute up to a configurable maximum. A ceiling across all computers stops distributed guessing, and unknown usernames get identical responses.
+- **Least-privilege database access.** The app runs as a restricted role that can only *add* audit entries and can't change the schema.
+- **Audit chain:**
+  - The hash chain is keyed (HMAC) with a secret derived from the master key.
+  - An encrypted anchor detects deletion of recent entries.
+  - It is verified nightly, and the head hash is written to the server log.
+- **New audit events:** permission and CSRF failures, attempts to open other institutions' records, exam and findings edits, worklist and history views, institution switches, CLI backups and unlocks, backup failures.
+- **Expiring temporary passwords:** they now expire after 72 hours.
+- **Common-password check:** common passwords are rejected.
+- **Cross-site blocking:** requests that the browser marks as cross-site are refused, including sign-in and sign-out.
+- **Server-side answer limits:** key names, nesting depth, text length and total size.
+- **Linter checks:** reserved field ids, regular expressions in `study_match`, and a 200 KB limit on form source.
+- **New `./manage.sh` commands:** `unlock USERNAME` and `cert-fingerprint`.
+- **Development helper:** `npm run dev:cli` runs admin commands such as `reset-password` against the development database.
+- **Installer:** asks for the hospital's TLS certificate and prints the certificate fingerprint.
+- **Security regression tests:** `test/security.test.js`, 21 tests, one or more per review finding. Shared test setup is in `test/helpers.js`.
+- **Dependabot:** weekly update proposals for npm packages, Docker base images and GitHub Actions.
+- **Documentation:** docs/SECURITY-REVIEW-2026-10.md.
+
+### Changed
+
+- **Encryption:** values are bound to their table, column *and row*. Full 128-bit authentication tags are required.
+- **Blind indexes:**
+  - Identifiers match exactly, and the MRN key includes the issuer.
+  - Indexes are scoped per institution.
+  - Last-name search stays forgiving about case, accents and punctuation.
+- **Clinical access** follows institution assignments for everyone except superusers, administrators included.
+- **Administrators** can't change their own roles or institutions. Only superusers can manage superuser accounts, and the last active superuser is protected.
+- **Lockout setting** is now a maximum pause of at most 60 minutes, replacing the fixed lockout that could be set as high as 24 hours.
+- **Sessions:**
+  - The cookie uses the `__Host-` prefix.
+  - Signing in again replaces the browser's previous session.
+  - Lowering the session time limits applies to existing sessions.
+  - The CSRF token is compared in constant time.
+- **Throttled password changes:** the password-change form is throttled like sign-in.
+- **Backups:**
+  - The format is now version 2: every line is bound to a random backup id, and the header is authenticated. Version-1 backups can still be restored.
+  - Automatic backups are named `sonoforms-auto-…`, and only they are rotated. Manual, pre-update and pre-restore backups are kept.
+  - A failed nightly backup is retried every 15 minutes.
+- **Docker:**
+  - Apache runs as an unprivileged user with a read-only filesystem and all capabilities dropped. It uses the Mozilla "intermediate" TLS profile and logs paths without query strings.
+  - Container logs are rotated.
+  - Internal networks are split so the database is reachable only from the app and migrate containers.
+- **Updates:** `./manage.sh update` and `./install.sh` pull fresh base images.
+- **CI:** actions are pinned to commit hashes, the workflow has read-only permissions, and it fails on critical `npm audit` advisories.
+- **`/api/health` and `/api/public-info`** no longer report the version number.
+- **docs/SECURITY.md and docs/ADMIN.md** were corrected and updated, including claims the review found inaccurate.
+
+### Removed
+
+- Regular-expression entries in form `study_match` lists.
+- `GET /api/patients` (replaced by `POST /api/patients/search`).
+- The `users.failed_logins` and `users.locked_until` columns (replaced by the `login_failures` table).
+
+## [0.1.0] - 2026-10-24
+
+First release.
+
+### Added
+
+- **Technologist workflow** (light theme):
+  - Today's ultrasound worklist from PACS via study-level DICOM C-FIND, with demographics taken from PACS. Manual patient entry is also available.
+  - Forms are suggested automatically from the study description.
+  - Touch-friendly forms with section **Normal** buttons, required items, and automatic calculations: ellipsoid volumes, bladder, testicular (Lambert), and ACR TI-RADS.
+  - Live findings preview, autosave, and submit to the radiologist.
+- **Radiologist workflow** (dark theme):
+  - A reading queue across the user's institutions.
+  - Editable generated findings with one-click copy (CRLF or LF), and "copy & mark dictated".
+  - The tech's note and a summary of entered values.
+  - Return to tech with a reason, and keyboard shortcuts.
+- **Forms management:**
+  - A three-pane editor: YAML source, a live fillable tech-form preview, and live findings.
+  - A linter.
+  - Versioning with draft and publish, and version history.
+  - Export and import.
+  - A general library shared by all institutions, with per-institution copies and an on/off switch for each institution.
+- **Form engine** shared by browser and server: a safe expression language with no `eval`, report templates with conditionals and loops, choice, multi-select, number, measurement, calculated, date and repeat fields, and conditional visibility.
+- **Starter form library:** female pelvis, thyroid (ACR TI-RADS), complete abdomen, RUQ, renal/bladder (with prostate volume), scrotum, and lower-extremity venous duplex. These need radiologist review before clinical use.
+- **Multi-institution support:** separate worklists, patients, forms and PACS settings per institution, with users assigned to institutions.
+- **Administration:**
+  - Users and roles (technologist, tech manager, radiologist, administrator, superuser).
+  - Institutions and PACS settings, with connection and query tests.
+  - Audit log with search, CSV export and integrity check.
+  - Settings, backups and system status.
+- **Security:**
+  - Encryption of patient data at rest (AES-256-GCM) with blind indexes for lookups.
+  - scrypt password hashing, forced first-login password change and account lockout.
+  - `HttpOnly`/`SameSite=Strict` session cookies and CSRF tokens.
+  - A strict Content Security Policy.
+  - An append-only, hash-chained audit log.
+  - No external network calls apart from PACS.
+- **Deployment:**
+  - Docker Compose (PostgreSQL, Node.js app, Apache HTTPS proxy).
+  - `install.sh` for first-time setup and `manage.sh` for day-to-day tasks.
+  - Encrypted nightly backups and restore.
+  - Automatic database migrations.
+  - Optional data retention.
+- **Development:** `npm run dev` with an embedded PostgreSQL and a fake PACS worklist; `npm run mock-pacs` for testing real DICOM queries.
+- **Documentation:** README, docs/ADMIN.md, docs/FORMS.md, docs/SECURITY.md.
+
+[0.2.0]: https://github.com/oconnelltim/sonoforms/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/oconnelltim/sonoforms/releases/tag/v0.1.0

@@ -41,6 +41,10 @@ To try it without a PACS, set `DICOM_MOCK=true` in `.env` and run `./manage.sh r
 
 See [docs/ADMIN.md](docs/ADMIN.md) for everyday administration, certificates, PACS setup, backups and upgrades.
 
+## Security
+
+See [docs/SECURITY.md](docs/SECURITY.md) for the security design, and [docs/SECURITY-REVIEW-2026-10.md](docs/SECURITY-REVIEW-2026-10.md) for the October 2026 OWASP review and its fixes. Please report vulnerabilities privately to the maintainers.
+
 ## Writing forms
 
 Forms are YAML documents that pair what the tech fills in with the report template for each section. See [docs/FORMS.md](docs/FORMS.md). The starter forms in `forms/general/` are a starting point and **must be reviewed by your radiologists before clinical use**.
@@ -52,11 +56,17 @@ Starter library: US pelvis (female), thyroid with ACR TI-RADS, abdomen complete,
 ```bash
 npm install
 npm run dev      # embedded PostgreSQL in .dev/, fake PACS, http://localhost:3000
-npm test         # form engine tests
+npm test         # form engine, API and security regression tests
 npm run lint-forms
 ```
 
-The dev server's first admin is `admin` / `admin-dev-password`.
+On a fresh development database the first admin is `admin` / `admin-dev-password`, and you'll be asked to change it at first sign-in. Forgot the password? With `npm run dev` running, in another terminal:
+
+```bash
+npm run dev:cli -- reset-password admin
+```
+
+This prints a new temporary password. The same tool also offers `unlock USERNAME`, `verify-audit` and `backup FILE`.
 
 Layout:
 

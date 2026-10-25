@@ -1,6 +1,6 @@
 {
   "name": "sonoforms",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Structured ultrasound technologist worksheets that generate radiologist-ready findings text. Self-hosted, offline, no AI.",
   "license": "GPL-3.0-or-later",
   "type": "module",
@@ -12,6 +12,7 @@
   "scripts": {
     "start": "node server/index.js",
     "dev": "node scripts/dev.js",
+    "dev:cli": "node scripts/dev-cli.js",
     "mock-pacs": "node scripts/mock-pacs.js",
     "test": "node --test test/*.test.js",
     "lint-forms": "node server/cli.js lint-forms"

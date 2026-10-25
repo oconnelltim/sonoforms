@@ -12,7 +12,9 @@ const toNum = v => {
   const n = Number(v);
   return isNaN(n) ? null : n;
 };
-const flat = args => args.flat(Infinity);
+const flat = args => args.flat(8);
+// Decimal places clamped to 0..10 (toFixed throws above 100).
+const places = d => Math.min(10, Math.max(0, Math.trunc(toNum(d) ?? 0)));
 const nums = args => flat(args).map(toNum).filter(n => n !== null);
 
 // All three numbers are required for a volume; returns null if any are missing.
@@ -28,7 +30,7 @@ function parseDate(v) {
 }
 
 export const FUNCTIONS = {
-  round: (x, d = 0) => { const n = toNum(x); if (n === null) return null; const f = 10 ** (toNum(d) || 0); return Math.round(n * f) / f; },
+  round: (x, d = 0) => { const n = toNum(x); if (n === null) return null; const f = 10 ** places(d); return Math.round(n * f) / f; },
   floor: x => { const n = toNum(x); return n === null ? null : Math.floor(n); },
   ceil: x => { const n = toNum(x); return n === null ? null : Math.ceil(n); },
   abs: x => { const n = toNum(x); return n === null ? null : Math.abs(n); },
@@ -63,7 +65,7 @@ export const FUNCTIONS = {
   join: (list, sep = ', ') => (Array.isArray(list) ? list.filter(x => !isBlank(x)).join(sep) : (list ?? '')),
   lower: s => (isBlank(s) ? s : String(s).toLowerCase()),
   upper: s => (isBlank(s) ? s : String(s).toUpperCase()),
-  fixed: (x, d = 1) => { const n = toNum(x); return n === null ? null : n.toFixed(toNum(d) ?? 1); },
+  fixed: (x, d = 1) => { const n = toNum(x); return n === null ? null : n.toFixed(places(d)); },
 
   // ACR TI-RADS level from total points (Tessler et al., JACR 2017).
   tirads: p => {

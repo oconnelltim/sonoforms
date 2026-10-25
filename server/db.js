@@ -6,13 +6,24 @@ import { config } from './config.js';
 // Return DATE columns as 'YYYY-MM-DD' strings instead of local-midnight Date objects.
 pg.types.setTypeParser(1082, v => v);
 
-export const pool = new pg.Pool(
-  config.databaseUrl
-    ? { connectionString: config.databaseUrl, max: 10 }
-    : { ...config.db, max: 10 },
-);
+function makePool(options) {
+  const p = new pg.Pool({ ...options, max: 10 });
+  p.on('error', err => console.error('Unexpected database error', err.message));
+  return p;
+}
 
-pool.on('error', err => console.error('Unexpected database error', err));
+// `pool` is a live binding: switchToAppRole() replaces it for every module.
+export let pool = makePool(config.databaseUrl ? { connectionString: config.databaseUrl } : config.db);
+
+// After setup, drop the owner connection and run as the restricted app role.
+export async function switchToAppRole() {
+  if (!config.dbApp.user) return false;
+  const old = pool;
+  pool = makePool({ ...config.db, user: config.dbApp.user, password: config.dbApp.password });
+  await pool.query('SELECT 1');
+  await old.end();
+  return true;
+}
 
 export function query(text, params) {
   return pool.query(text, params);

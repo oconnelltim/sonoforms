@@ -3,7 +3,7 @@
 // Radiologist workflow: worklist of submitted exams, editing the generated
 // findings, copying them, and marking exams dictated or returning them.
 
-import { audit } from '../audit.js';
+import { audit, auditOnce } from '../audit.js';
 import { requireAuth, can, userInstitutions, HttpError } from '../auth.js';
 import { listExams, updateExam } from '../records.js';
 import { loadExamFor } from './tech.js';
@@ -29,6 +29,9 @@ export default async function radRoutes(app) {
     const status = String(req.query.status || 'submitted');
     const statuses = { submitted: ['submitted'], dictated: ['dictated'], returned: ['returned'], all: ['submitted', 'dictated', 'returned'] }[status] || ['submitted'];
     const days = Math.min(Number(req.query.days) || (status === 'submitted' ? 30 : 3), 90);
+    if (req.headers['x-background'] !== '1') {
+      await auditOnce(`wl:${req.user.id}:rad:${status}`, 15 * 60000, { req, institutionId: null, action: 'worklist.view', details: { worklist: 'rad', status, institution: req.query.institution || 'all' } });
+    }
     const exams = await listExams({ institutionIds, statuses, fromDate: daysAgo(days) });
     // Oldest first for the "ready to dictate" queue; newest first otherwise.
     if (status === 'submitted') exams.sort((a, b) => new Date(a.submitted_at) - new Date(b.submitted_at));
@@ -37,11 +40,12 @@ export default async function radRoutes(app) {
 
   app.put('/exams/:id/report', {
     ...rad,
-    schema: { body: { type: 'object', required: ['row_version'], properties: { ...versionBody, text: { type: ['string', 'null'], maxLength: 100000 } } } },
+    schema: { body: { type: 'object', required: ['row_version'], properties: { ...versionBody, text: { type: ['string', 'null'], maxLength: 50000 } } } },
   }, async (req) => {
     const exam = await loadExamFor(req, Number(req.params.id));
     if (exam.status !== 'submitted') throw new HttpError(409, `This exam is ${exam.status}; the findings can no longer be edited.`);
     const rowVersion = await updateExam(exam.id, { final_report: req.body.text }, req.body.row_version);
+    await auditOnce(`report:${req.user.id}:${exam.id}`, 15 * 60000, { req, institutionId: exam.institution_id, action: 'exam.report_edit', entityType: 'exam', entityId: exam.id });
     return { row_version: rowVersion };
   });
 
@@ -53,7 +57,7 @@ export default async function radRoutes(app) {
 
   app.post('/exams/:id/dictated', {
     ...rad,
-    schema: { body: { type: 'object', required: ['row_version'], properties: { ...versionBody, text: { type: ['string', 'null'], maxLength: 100000 } } } },
+    schema: { body: { type: 'object', required: ['row_version'], properties: { ...versionBody, text: { type: ['string', 'null'], maxLength: 50000 } } } },
   }, async (req) => {
     const exam = await loadExamFor(req, Number(req.params.id));
     if (exam.status !== 'submitted') throw new HttpError(409, `This exam is ${exam.status} and cannot be marked dictated.`);

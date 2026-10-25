@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-import fs from 'node:fs';
 import { one, query } from './db.js';
 import { hashPassword, temporaryPassword } from './crypto.js';
 import { audit } from './audit.js';
 import { config } from './config.js';
 
-// On first start, create a superuser with a random password and print it
-// (and write it to INITIAL_PASSWORD_FILE if set, for the installer to show).
+// On first start, create a superuser. With INITIAL_ADMIN_PASSWORD(_FILE) set
+// (the Docker installer does this and shows the password itself) nothing
+// secret is logged; otherwise a random password is generated and printed.
 export async function ensureFirstAdmin(log = console) {
   const existing = await one('SELECT count(*)::int AS n FROM users');
   if (existing.n > 0) return null;
@@ -21,13 +21,13 @@ export async function ensureFirstAdmin(log = console) {
     await query('INSERT INTO user_institutions (user_id, institution_id) VALUES ($1, $2)', [row.id, inst.id]);
   }
   await audit({ action: 'system.first_admin_created', institutionId: null, entityType: 'user', entityId: row.id });
-  const file = process.env.INITIAL_PASSWORD_FILE;
-  if (file) {
-    try { fs.writeFileSync(file, `${password}\n`, { mode: 0o600 }); } catch (e) { log.warn(`Could not write ${file}: ${e.message}`); }
-  }
   log.warn('==================================================================');
-  log.warn(` First start: created user "admin" with temporary password: ${password}`);
-  log.warn(' You will be asked to change it at first login.');
+  if (config.initialAdminPassword) {
+    log.warn(' First start: created user "admin" with the initial password set by the installer.');
+  } else {
+    log.warn(` First start: created user "admin" with temporary password: ${password}`);
+  }
+  log.warn(' You will be asked to change it at first sign-in.');
   log.warn('==================================================================');
   return password;
 }

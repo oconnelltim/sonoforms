@@ -15,6 +15,7 @@ import { config } from './config.js';
 
 let encKey = null;
 let indexKey = null;
+let auditKey = null;
 
 export function generateMasterKey() {
   return crypto.randomBytes(32).toString('base64');
@@ -28,40 +29,85 @@ export function initKeys(masterKeyB64 = config.masterKey) {
   if (master.length !== 32) throw new Error('SONOFORMS_MASTER_KEY must be 32 bytes, base64-encoded.');
   encKey = Buffer.from(crypto.hkdfSync('sha256', master, Buffer.alloc(0), 'sonoforms/encryption/v1', 32));
   indexKey = Buffer.from(crypto.hkdfSync('sha256', master, Buffer.alloc(0), 'sonoforms/blind-index/v1', 32));
+  auditKey = Buffer.from(crypto.hkdfSync('sha256', master, Buffer.alloc(0), 'sonoforms/audit-chain/v1', 32));
 }
 
-// Encrypts any JSON-serializable value. `context` (e.g. 'exams.answers') is
-// bound as associated data so ciphertext can't be moved between columns.
-export function encrypt(value, context) {
-  if (value === null || value === undefined) return null;
+// Low-level authenticated encryption of a JSON value. `aad` is bound as
+// associated data: the ciphertext only decrypts with exactly the same aad.
+// Format: v2.<iv>.<tag>.<ciphertext> (base64). 96-bit IV, 128-bit tag.
+export function seal(value, aad) {
   if (!encKey) throw new Error('Encryption keys not initialized');
   const iv = crypto.randomBytes(12);
-  const cipher = crypto.createCipheriv('aes-256-gcm', encKey, iv);
-  cipher.setAAD(Buffer.from(context));
+  const cipher = crypto.createCipheriv('aes-256-gcm', encKey, iv, { authTagLength: 16 });
+  cipher.setAAD(Buffer.from(aad));
   const ct = Buffer.concat([cipher.update(JSON.stringify(value), 'utf8'), cipher.final()]);
-  return `v1.${iv.toString('base64')}.${cipher.getAuthTag().toString('base64')}.${ct.toString('base64')}`;
+  return `v2.${iv.toString('base64')}.${cipher.getAuthTag().toString('base64')}.${ct.toString('base64')}`;
 }
 
-export function decrypt(blob, context) {
-  if (blob === null || blob === undefined) return null;
-  const [ver, iv, tag, ct] = String(blob).split('.');
-  if (ver !== 'v1') throw new Error('Unknown ciphertext version');
-  const decipher = crypto.createDecipheriv('aes-256-gcm', encKey, Buffer.from(iv, 'base64'));
-  decipher.setAAD(Buffer.from(context));
-  decipher.setAuthTag(Buffer.from(tag, 'base64'));
-  const pt = Buffer.concat([decipher.update(Buffer.from(ct, 'base64')), decipher.final()]);
+function openWith(blob, aad, version) {
+  const parts = String(blob).split('.');
+  if (parts.length !== 4 || parts[0] !== version) throw new Error('Unrecognized ciphertext');
+  const iv = Buffer.from(parts[1], 'base64');
+  const tag = Buffer.from(parts[2], 'base64');
+  // Reject truncated IVs/tags, which would weaken authentication.
+  if (iv.length !== 12 || tag.length !== 16) throw new Error('Malformed ciphertext');
+  const decipher = crypto.createDecipheriv('aes-256-gcm', encKey, iv, { authTagLength: 16 });
+  decipher.setAAD(Buffer.from(aad));
+  decipher.setAuthTag(tag);
+  const pt = Buffer.concat([decipher.update(Buffer.from(parts[3], 'base64')), decipher.final()]);
   return JSON.parse(pt.toString('utf8'));
 }
 
-export function normalizeForIndex(value) {
-  return String(value ?? '').normalize('NFKD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+export function unseal(blob, aad) {
+  return openWith(blob, aad, 'v2');
 }
 
-// Deterministic keyed hash for exact-match lookups. Returns null for blank input.
-export function blindIndex(value, context) {
-  const norm = normalizeForIndex(value);
-  if (!norm) return null;
-  return crypto.createHmac('sha256', indexKey).update(`${context}:${norm}`).digest('hex').slice(0, 40);
+// Record-level encryption. Binding "table.column#rowId" means a value can't
+// be copied into another column or another patient's row undetected.
+export function encrypt(value, context, rowId) {
+  if (value === null || value === undefined) return null;
+  if (rowId === undefined || rowId === null) throw new Error(`encrypt(${context}) needs a row id`);
+  return seal(value, `${context}#${rowId}`);
+}
+
+export function decrypt(blob, context, rowId) {
+  if (blob === null || blob === undefined) return null;
+  return unseal(blob, `${context}#${rowId}`);
+}
+
+export const isLegacyCiphertext = blob => typeof blob === 'string' && blob.startsWith('v1.');
+
+// Version-1 ciphertext (before row binding) was bound to the column only.
+// Only the upgrade routine (server/upgrade.js) reads it.
+export function decryptLegacy(blob, context) {
+  if (blob === null || blob === undefined) return null;
+  return openWith(blob, context, 'v1');
+}
+
+const keyed = (context, value) => crypto.createHmac('sha256', indexKey).update(`${context}\u0000${value}`).digest('hex').slice(0, 40);
+
+// Exact-match index for identifiers (study UID, accession, MRN): only
+// surrounding whitespace is ignored, so "1.2.3.12" and "1.2.31.2" differ.
+export function exactIndex(value, context) {
+  const v = String(value ?? '').trim();
+  return v ? keyed(context, v) : null;
+}
+
+// Forgiving index for names: case, accents and punctuation are ignored so
+// "O'Neil" finds "ONEIL". Only used for searching, never to merge records.
+export function normalizeForIndex(value) {
+  return String(value ?? '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+}
+export function nameIndex(value, context) {
+  const v = normalizeForIndex(value);
+  return v ? keyed(context, v) : null;
+}
+
+// Keyed hash for the audit chain: without the master key, nobody with only
+// database access can rewrite entries and recompute a valid chain.
+export function auditMac(data) {
+  if (!auditKey) throw new Error('Encryption keys not initialized');
+  return crypto.createHmac('sha256', auditKey).update(data).digest('hex');
 }
 
 export function randomToken(bytes = 32) {
@@ -72,11 +118,12 @@ export function sha256(s) {
   return crypto.createHash('sha256').update(s).digest('hex');
 }
 
-// Readable temporary passwords, e.g. "river-copper-71-amber".
+// Readable temporary passwords, e.g. "river-copper-71-amber-heron" (~28 bits;
+// they expire after 72 hours and sign-in is throttled).
 const WORDS = 'amber,birch,cedar,coral,delta,ember,fern,flint,grove,harbor,iris,jade,juniper,kestrel,lark,linen,maple,meadow,onyx,opal,pine,quartz,raven,river,sage,slate,spruce,tidal,umber,violet,willow,zephyr,copper,granite,heron,lotus,marble,orchid,pearl,saffron'.split(',');
 export function temporaryPassword() {
   const pick = () => WORDS[crypto.randomInt(WORDS.length)];
-  return `${pick()}-${pick()}-${crypto.randomInt(10, 100)}-${pick()}`;
+  return `${pick()}-${pick()}-${crypto.randomInt(10, 100)}-${pick()}-${pick()}`;
 }
 
 // Password hashing with scrypt (built into Node; no native dependencies).

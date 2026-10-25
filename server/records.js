@@ -4,10 +4,26 @@
 // here; nothing else in the server touches the *_enc columns directly.
 
 import { one, many, query } from './db.js';
-import { encrypt, decrypt, blindIndex } from './crypto.js';
+import { encrypt, decrypt, exactIndex, nameIndex } from './crypto.js';
 import { HttpError } from './auth.js';
 
 const D = 'patients.demographics';
+
+// Blind indexes, all scoped to the institution so the same person can't be
+// linked across institutions from a database dump. Identifiers match
+// exactly; the MRN key includes the issuer so two assigning authorities
+// can't merge into one patient.
+export const indexes = {
+  mrn: (inst, issuer, mrn) => (String(mrn ?? '').trim() ? exactIndex(`${String(issuer ?? '').trim()}\u0000${String(mrn).trim()}`, `mrn:${inst}`) : null),
+  mrnSearch: (inst, mrn) => exactIndex(mrn, `mrn-search:${inst}`),
+  lastName: (inst, name) => nameIndex(name, `last-name:${inst}`),
+  studyUid: (inst, uid) => exactIndex(uid, `study-uid:${inst}`),
+  accession: (inst, acc) => exactIndex(acc, `accession:${inst}`),
+};
+
+async function nextId(table) {
+  return (await one(`SELECT nextval(pg_get_serial_sequence('${table}', 'id'))::int AS id`)).id;
+}
 
 export function cleanDemographics(d = {}) {
   const s = v => (v === null || v === undefined ? '' : String(v).trim()).slice(0, 200);
@@ -37,7 +53,7 @@ export function ageYears(dob, onDate = new Date()) {
 
 export function patientFromRow(row) {
   if (!row) return null;
-  return { id: row.id, institution_id: row.institution_id, ...decrypt(row.demographics_enc, D) };
+  return { id: row.id, institution_id: row.institution_id, ...decrypt(row.demographics_enc, D, row.id) };
 }
 
 export async function getPatient(id) {
@@ -45,50 +61,54 @@ export async function getPatient(id) {
 }
 
 export async function searchPatients(institutionId, { mrn, last_name }) {
-  const mrnIdx = blindIndex(mrn, 'mrn');
-  const nameIdx = blindIndex(last_name, 'last_name');
+  const mrnIdx = indexes.mrnSearch(institutionId, mrn);
+  const nameIdx = indexes.lastName(institutionId, last_name);
   if (!mrnIdx && !nameIdx) return [];
   const rows = await many(
     `SELECT * FROM patients WHERE institution_id = $1
-       AND ($2::text IS NULL OR mrn_bidx = $2) AND ($3::text IS NULL OR last_name_bidx = $3)
+       AND ($2::text IS NULL OR mrn_search_bidx = $2) AND ($3::text IS NULL OR last_name_bidx = $3)
      ORDER BY updated_at DESC LIMIT 50`, [institutionId, mrnIdx, nameIdx]);
   return rows.map(patientFromRow);
 }
 
-// Find by MRN or create. When `refresh` is set (data from PACS), stored
-// demographics are updated to match.
+// Find by MRN (+ issuer) or create. When `refresh` is set (data from PACS),
+// stored demographics are updated to match.
 export async function upsertPatient(institutionId, demographics, userId, { refresh = false } = {}) {
   const d = cleanDemographics(demographics);
   if (!d.mrn) throw new HttpError(400, 'An MRN (patient ID) is required.');
   if (!d.last_name) throw new HttpError(400, 'A last name is required.');
-  const mrnIdx = blindIndex(d.mrn, 'mrn');
+  const mrnIdx = indexes.mrn(institutionId, d.issuer, d.mrn);
   const existing = await one('SELECT * FROM patients WHERE institution_id = $1 AND mrn_bidx = $2', [institutionId, mrnIdx]);
   if (existing) {
     if (refresh) {
       await query('UPDATE patients SET demographics_enc = $2, last_name_bidx = $3, updated_at = now() WHERE id = $1',
-        [existing.id, encrypt(d, D), blindIndex(d.last_name, 'last_name')]);
+        [existing.id, encrypt(d, D, existing.id), indexes.lastName(institutionId, d.last_name)]);
       return { id: existing.id, institution_id: institutionId, ...d, created: false };
     }
     return { ...patientFromRow(existing), created: false };
   }
+  const id = await nextId('patients');
   const row = await one(
-    `INSERT INTO patients (institution_id, mrn_bidx, last_name_bidx, demographics_enc, created_by)
-     VALUES ($1, $2, $3, $4, $5)
+    `INSERT INTO patients (id, institution_id, mrn_bidx, mrn_search_bidx, last_name_bidx, demographics_enc, created_by)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)
      ON CONFLICT (institution_id, mrn_bidx) DO UPDATE SET updated_at = now()
-     RETURNING id`, [institutionId, mrnIdx, blindIndex(d.last_name, 'last_name'), encrypt(d, D), userId]);
-  return { id: row.id, institution_id: institutionId, ...d, created: true };
+     RETURNING id`, [id, institutionId, mrnIdx, indexes.mrnSearch(institutionId, d.mrn), indexes.lastName(institutionId, d.last_name), encrypt(d, D, id), userId]);
+  if (row.id !== id) return { ...(await getPatient(row.id)), created: false }; // lost a race; use the existing record
+  return { id, institution_id: institutionId, ...d, created: true };
 }
 
 export async function updatePatient(id, demographics) {
-  const d = cleanDemographics(demographics);
-  if (!d.mrn || !d.last_name) throw new HttpError(400, 'MRN and last name are required.');
-  const current = await one('SELECT institution_id FROM patients WHERE id = $1', [id]);
+  const current = await getPatient(id);
   if (!current) throw new HttpError(404, 'Patient not found');
-  const mrnIdx = blindIndex(d.mrn, 'mrn');
-  const clash = await one('SELECT id FROM patients WHERE institution_id = $1 AND mrn_bidx = $2 AND id <> $3', [current.institution_id, mrnIdx, id]);
+  // Keep the issuer from PACS; it isn't editable in the UI.
+  const d = cleanDemographics({ ...demographics, issuer: current.issuer });
+  if (!d.mrn || !d.last_name) throw new HttpError(400, 'MRN and last name are required.');
+  const inst = current.institution_id;
+  const mrnIdx = indexes.mrn(inst, d.issuer, d.mrn);
+  const clash = await one('SELECT id FROM patients WHERE institution_id = $1 AND mrn_bidx = $2 AND id <> $3', [inst, mrnIdx, id]);
   if (clash) throw new HttpError(409, 'Another patient already has that MRN.');
-  await query('UPDATE patients SET mrn_bidx = $2, last_name_bidx = $3, demographics_enc = $4, updated_at = now() WHERE id = $1',
-    [id, mrnIdx, blindIndex(d.last_name, 'last_name'), encrypt(d, D)]);
+  await query('UPDATE patients SET mrn_bidx = $2, mrn_search_bidx = $3, last_name_bidx = $4, demographics_enc = $5, updated_at = now() WHERE id = $1',
+    [id, mrnIdx, indexes.mrnSearch(inst, d.mrn), indexes.lastName(inst, d.last_name), encrypt(d, D, id)]);
   return { id, ...d };
 }
 
@@ -109,8 +129,8 @@ const EXAM_JOINS = `FROM exams e
   LEFT JOIN users ru ON ru.id = e.rad_id`;
 
 function examSummary(row) {
-  const study = decrypt(row.study_enc, 'exams.study') || {};
-  const patient = decrypt(row.demographics_enc, D) || {};
+  const study = decrypt(row.study_enc, 'exams.study', row.id) || {};
+  const patient = decrypt(row.demographics_enc, D, row.patient_id) || {};
   return {
     id: row.id,
     institution_id: row.institution_id,
@@ -128,7 +148,7 @@ function examSummary(row) {
     dictated_at: row.dictated_at,
     created_at: row.created_at,
     updated_at: row.updated_at,
-    return_reason: decrypt(row.return_reason_enc, 'exams.return_reason'),
+    return_reason: decrypt(row.return_reason_enc, 'exams.return_reason', row.id),
     study,
     patient: { id: row.patient_id, ...patient, age: ageYears(patient.dob, row.exam_date) },
   };
@@ -155,22 +175,22 @@ export async function getExam(id) {
   return {
     ...examSummary(row),
     row_version: row.row_version,
-    answers: decrypt(row.answers_enc, 'exams.answers') || {},
-    report: decrypt(row.report_enc, 'exams.report'),
-    final_report: decrypt(row.final_report_enc, 'exams.final_report'),
-    tech_note: decrypt(row.tech_note_enc, 'exams.tech_note') || '',
+    answers: decrypt(row.answers_enc, 'exams.answers', row.id) || {},
+    report: decrypt(row.report_enc, 'exams.report', row.id),
+    final_report: decrypt(row.final_report_enc, 'exams.final_report', row.id),
+    tech_note: decrypt(row.tech_note_enc, 'exams.tech_note', row.id) || '',
   };
 }
 
 export async function findExamByStudyUid(institutionId, studyUid) {
-  const idx = blindIndex(studyUid, 'study_uid');
+  const idx = indexes.studyUid(institutionId, studyUid);
   if (!idx) return null;
   return one("SELECT id, status FROM exams WHERE institution_id = $1 AND study_uid_bidx = $2 AND status <> 'cancelled'", [institutionId, idx]);
 }
 
 // Map of study_uid_bidx -> exam summary, for marking PACS worklist rows.
 export async function examsByStudyUids(institutionId, studyUids) {
-  const idx = studyUids.map(u => blindIndex(u, 'study_uid')).filter(Boolean);
+  const idx = studyUids.map(u => indexes.studyUid(institutionId, u)).filter(Boolean);
   if (!idx.length) return new Map();
   const rows = await many(
     `SELECT ${EXAM_LIST_COLS}, e.study_uid_bidx ${EXAM_JOINS}
@@ -178,8 +198,8 @@ export async function examsByStudyUids(institutionId, studyUids) {
   return new Map(rows.map(r => [r.study_uid_bidx, examSummary(r)]));
 }
 
-export function studyUidIndex(uid) {
-  return blindIndex(uid, 'study_uid');
+export function studyUidIndex(institutionId, uid) {
+  return indexes.studyUid(institutionId, uid);
 }
 
 // Today's date in the server's local time zone (TZ), as YYYY-MM-DD.
@@ -196,12 +216,22 @@ export async function createExam({ institutionId, patientId, formVersionId, sour
     datetime: study?.datetime || null,
     referring: String(study?.referring || '').slice(0, 200),
   };
-  const row = await one(
-    `INSERT INTO exams (institution_id, patient_id, form_version_id, source, exam_date, study_uid_bidx, accession_bidx, study_enc, answers_enc, tech_id)
-     VALUES ($1, $2, $3, $4, $5::date, $6, $7, $8, $9, $10) RETURNING id`,
-    [institutionId, patientId, formVersionId, source, examDate || localToday(), blindIndex(s.study_uid, 'study_uid'),
-      blindIndex(s.accession, 'accession'), encrypt(s, 'exams.study'), encrypt({}, 'exams.answers'), techId]);
-  return row.id;
+  const id = await nextId('exams');
+  try {
+    await query(
+      `INSERT INTO exams (id, institution_id, patient_id, form_version_id, source, exam_date, study_uid_bidx, accession_bidx, study_enc, answers_enc, tech_id)
+       VALUES ($1, $2, $3, $4, $5, $6::date, $7, $8, $9, $10, $11)`,
+      [id, institutionId, patientId, formVersionId, source, examDate || localToday(), indexes.studyUid(institutionId, s.study_uid),
+        indexes.accession(institutionId, s.accession), encrypt(s, 'exams.study', id), encrypt({}, 'exams.answers', id), techId]);
+  } catch (e) {
+    // Two techs started the same study at once: return the exam that won.
+    if (e.code === '23505' && s.study_uid) {
+      const existing = await findExamByStudyUid(institutionId, s.study_uid);
+      if (existing) return existing.id;
+    }
+    throw e;
+  }
+  return id;
 }
 
 // Optimistic concurrency: callers pass the row_version they loaded.
@@ -209,12 +239,12 @@ export async function updateExam(id, fields, expectedVersion) {
   const sets = [];
   const params = [id];
   const add = (col, val) => { params.push(val); sets.push(`${col} = $${params.length}`); };
-  if ('answers' in fields) add('answers_enc', encrypt(fields.answers || {}, 'exams.answers'));
-  if ('tech_note' in fields) add('tech_note_enc', encrypt(fields.tech_note || '', 'exams.tech_note'));
-  if ('report' in fields) add('report_enc', encrypt(fields.report, 'exams.report'));
-  if ('final_report' in fields) add('final_report_enc', fields.final_report === null ? null : encrypt(fields.final_report, 'exams.final_report'));
-  if ('return_reason' in fields) add('return_reason_enc', fields.return_reason ? encrypt(fields.return_reason, 'exams.return_reason') : null);
-  if ('study' in fields) add('study_enc', encrypt(fields.study, 'exams.study'));
+  if ('answers' in fields) add('answers_enc', encrypt(fields.answers || {}, 'exams.answers', id));
+  if ('tech_note' in fields) add('tech_note_enc', encrypt(fields.tech_note || '', 'exams.tech_note', id));
+  if ('report' in fields) add('report_enc', encrypt(fields.report, 'exams.report', id));
+  if ('final_report' in fields) add('final_report_enc', fields.final_report === null ? null : encrypt(fields.final_report, 'exams.final_report', id));
+  if ('return_reason' in fields) add('return_reason_enc', fields.return_reason ? encrypt(fields.return_reason, 'exams.return_reason', id) : null);
+  if ('study' in fields) add('study_enc', encrypt(fields.study, 'exams.study', id));
   for (const col of ['status', 'form_version_id', 'tech_id', 'rad_id', 'submitted_at', 'dictated_at', 'patient_id']) {
     if (col in fields) add(col, fields[col]);
   }

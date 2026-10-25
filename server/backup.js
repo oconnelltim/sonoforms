@@ -1,16 +1,20 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //
 // Backup and restore. A backup file is one plain JSON header line followed by
-// one encrypted line per table row. Every line is encrypted with the master
-// key and bound to its line number, so a backup is useless without the key
-// and lines can't be dropped or reordered undetected.
+// one encrypted line per table row and an encrypted end marker. Every line
+// is encrypted with the master key and bound to this backup's random id and
+// its line number; the end marker also carries a hash of the header. So a
+// backup is useless without the key, and lines can't be dropped, reordered,
+// or swapped in from a different backup without the restore failing.
 //
 // Restoring requires the same master key the backup was made with.
 
 import readline from 'node:readline';
 import { pool, tx } from './db.js';
 import { config } from './config.js';
-import { encrypt, decrypt } from './crypto.js';
+import crypto from 'node:crypto';
+import { seal, unseal, decryptLegacy, sha256 } from './crypto.js';
+import { upgradeLegacyRows } from './upgrade.js';
 
 // Restore order respects foreign keys. Sessions are deliberately excluded.
 export const TABLES = [
@@ -24,8 +28,13 @@ export async function writeBackup(out) {
     else out.once('drain', resolve).once('error', reject);
   });
   const migrations = (await pool.query('SELECT name FROM schema_migrations ORDER BY name')).rows.map(r => r.name);
-  const header = { format: 'sonoforms-backup', format_version: 1, app_version: config.version, created_at: new Date().toISOString(), migrations, tables: TABLES };
-  await write(`${JSON.stringify(header)}\n`);
+  const header = {
+    format: 'sonoforms-backup', format_version: 2, backup_id: crypto.randomBytes(16).toString('hex'),
+    app_version: config.version, created_at: new Date().toISOString(), migrations, tables: TABLES,
+  };
+  const headerLine = JSON.stringify(header);
+  const aad = n => `backup:${header.backup_id}:${n}`;
+  await write(`${headerLine}\n`);
   let n = 0;
   const client = await pool.connect();
   try {
@@ -41,14 +50,14 @@ export async function writeBackup(out) {
         for (const row of rows) {
           n++;
           counts[table]++;
-          await write(`${encrypt({ t: table, r: row }, `backup:${n}`)}\n`);
+          await write(`${seal({ t: table, r: row }, aad(n))}\n`);
         }
       }
       await client.query(`CLOSE c_${table}`);
     }
     await client.query('COMMIT');
     n++;
-    await write(`${encrypt({ end: true, rows: n - 1, counts }, `backup:${n}`)}\n`);
+    await write(`${seal({ end: true, rows: n - 1, counts, header_sha256: sha256(headerLine) }, aad(n))}\n`);
     return { rows: n - 1, counts };
   } catch (e) {
     await client.query('ROLLBACK').catch(() => {});
@@ -62,14 +71,17 @@ export async function writeBackup(out) {
 export async function restoreBackup(input, { wipe = false, log = console } = {}) {
   const rl = readline.createInterface({ input, crlfDelay: Infinity });
   let header = null;
+  let headerLine = '';
   let n = 0;
   let ended = false;
   const batches = new Map();
   for await (const line of rl) {
     if (!line.trim()) continue;
     if (!header) {
-      header = JSON.parse(line);
+      headerLine = line;
+      try { header = JSON.parse(line); } catch { throw new Error('This is not a SonoForms backup file.'); }
       if (header.format !== 'sonoforms-backup') throw new Error('This is not a SonoForms backup file.');
+      if (![1, 2].includes(header.format_version)) throw new Error('Unsupported backup format.');
       const applied = new Set((await pool.query('SELECT name FROM schema_migrations')).rows.map(r => r.name));
       const newer = (header.migrations || []).filter(m => !applied.has(m));
       if (newer.length) throw new Error(`This backup was made by a newer version of SonoForms (${header.app_version}). Upgrade this installation first.`);
@@ -78,12 +90,14 @@ export async function restoreBackup(input, { wipe = false, log = console } = {})
     n++;
     let item;
     try {
-      item = decrypt(line, `backup:${n}`);
+      // Format 1 (before backup ids) is still readable.
+      item = header.format_version === 1 ? decryptLegacy(line, `backup:${n}`) : unseal(line, `backup:${header.backup_id}:${n}`);
     } catch {
       throw new Error(`Backup line ${n} could not be decrypted. Either the file is damaged or SONOFORMS_MASTER_KEY is not the key it was made with.`);
     }
     if (item.end) {
       if (item.rows !== n - 1) throw new Error('Backup file is incomplete.');
+      if (header.format_version >= 2 && item.header_sha256 !== sha256(headerLine)) throw new Error('The backup header has been altered.');
       ended = true;
       break;
     }
@@ -104,10 +118,17 @@ export async function restoreBackup(input, { wipe = false, log = console } = {})
     const jsonCols = new Set((await c.query(
       "SELECT table_name || '.' || column_name AS k FROM information_schema.columns WHERE table_schema = 'public' AND data_type IN ('json', 'jsonb')",
     )).rows.map(r => r.k));
+    const columnsOf = new Map();
+    for (const r of (await c.query("SELECT table_name, column_name FROM information_schema.columns WHERE table_schema = 'public'")).rows) {
+      if (!columnsOf.has(r.table_name)) columnsOf.set(r.table_name, new Set());
+      columnsOf.get(r.table_name).add(r.column_name);
+    }
     for (const table of TABLES) {
       const rows = batches.get(table) || [];
       for (const row of rows) {
         const cols = Object.keys(row);
+        const unknown = cols.filter(k => !columnsOf.get(table)?.has(k));
+        if (unknown.length) throw new Error(`Backup has unknown column(s) in ${table}: ${unknown.join(', ')}`);
         const values = cols.map(k => (jsonCols.has(`${table}.${k}`) && row[k] !== null ? JSON.stringify(row[k]) : row[k]));
         await c.query(`INSERT INTO ${table} (${cols.map(k => `"${k}"`).join(', ')}) VALUES (${cols.map((_, i) => `$${i + 1}`).join(', ')})`, values);
       }
@@ -121,6 +142,8 @@ export async function restoreBackup(input, { wipe = false, log = console } = {})
     }
     await c.query('ALTER TABLE audit_log ENABLE TRIGGER audit_log_no_update');
     await c.query('ALTER TABLE audit_log ENABLE TRIGGER audit_log_no_truncate');
+    // Backups from older versions hold older encryption/index formats.
+    await upgradeLegacyRows(c, log);
   });
   return { rows: n - 1, header };
 }

@@ -4,7 +4,7 @@
 // last name, or enter a new one.
 
 import { h, mount, toast, fmtDate, patientName } from '../dom.js';
-import { get, post } from '../api.js';
+import { post } from '../api.js';
 import { chooseForm } from './tech-worklist.js';
 
 export async function render({ root, navigate }) {
@@ -36,7 +36,7 @@ export async function render({ root, navigate }) {
     e?.preventDefault();
     if (!mrn.value.trim() && !last.value.trim()) return;
     try {
-      const list = await get(`/patients?mrn=${encodeURIComponent(mrn.value.trim())}&last_name=${encodeURIComponent(last.value.trim())}`);
+      const list = await post('/patients/search', { mrn: mrn.value.trim(), last_name: last.value.trim() });
       mount(results, list.length ? h('div.table-wrap', h('table.table',
         h('thead', h('tr', h('th', 'Patient'), h('th', 'MRN'), h('th', 'DOB'), h('th', 'Sex'), h('th', ''))),
         h('tbody', list.map(p => h('tr',

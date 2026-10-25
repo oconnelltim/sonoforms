@@ -125,11 +125,13 @@ function localFilter(settings) {
 const cache = new Map();
 
 // Studies from the last `hours`, newest first.
-export async function todaysStudies(institution, hours = 24, { force = false } = {}) {
+// `cache: false` (used by the admin "Test query" with unsaved settings)
+// neither reads nor fills the shared worklist cache.
+export async function todaysStudies(institution, hours = 24, { force = false, cache: useCache = true } = {}) {
   const settings = institution.dicom || {};
   if (!config.dicomMock && (!settings.enabled || !settings.host || !settings.port)) return { configured: false, studies: [] };
   const key = `${institution.id}:${hours}`;
-  const hit = cache.get(key);
+  const hit = useCache ? cache.get(key) : null;
   if (!force && hit && Date.now() - hit.at < 30000) return hit.value;
 
   const now = new Date();
@@ -147,20 +149,22 @@ export async function todaysStudies(institution, hours = 24, { force = false } =
     .filter(s => s.study_uid && (!s.datetime || new Date(s.datetime) >= since))
     .sort((a, b) => String(b.datetime || '').localeCompare(String(a.datetime || '')));
   const value = { configured: true, studies };
-  cache.set(key, { at: Date.now(), value });
+  if (useCache) cache.set(key, { at: Date.now(), value });
   return value;
 }
 
 // Re-query a single study by UID so demographics come from PACS, not the browser.
 export async function studyByUid(institution, studyUid) {
   if (config.dicomMock) {
-    const el = mockStudies(institution).find(s => s.StudyInstanceUID === studyUid);
+    const el = mockStudies(institution).find(s => s.StudyInstanceUID === String(studyUid));
     return el ? toStudy(el) : null;
   }
   const elements = baseElements({ ...(institution.dicom || {}), filters: [] });
   elements.StudyInstanceUID = studyUid;
   const raw = await runFind(institution.dicom || {}, elements);
-  return raw.length ? toStudy(raw[0]) : null;
+  // Only accept an answer for exactly the study we asked about.
+  const match = raw.map(toStudy).filter(s => s.study_uid === studyUid);
+  return match.length === 1 ? match[0] : null;
 }
 
 export function clearCache() { cache.clear(); }

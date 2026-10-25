@@ -32,7 +32,7 @@ sections:
 
 ### study_match
 
-Each entry is a set of whole words that must *all* appear in the study description (case-insensitive, any order). `US PELVIS` matches "US PELVIS COMPLETE TRANSVAGINAL", and `RENAL` does not match "ADRENAL". Entries with more words are more specific and win over shorter ones. An entry that exactly equals the description wins outright. An entry like `/PELV(IS|IC)/` is a regular expression, scored like a one-word match. The tech can always pick a different form.
+Each entry is a set of whole words that must *all* appear in the study description (case-insensitive, any order). `US PELVIS` matches "US PELVIS COMPLETE TRANSVAGINAL", and `RENAL` does not match "ADRENAL". Entries with more words are more specific and win over shorter ones. An entry that exactly equals the description wins outright. The tech can always pick a different form.
 
 ## Fields
 

@@ -4,7 +4,7 @@
 // The exam read endpoint is shared with radiologists.
 
 import { one } from '../db.js';
-import { audit } from '../audit.js';
+import { audit, auditOnce } from '../audit.js';
 import { requireAuth, can, activeInstitution, canAccessInstitution, HttpError } from '../auth.js';
 import { getSettings } from '../settings.js';
 import { todaysStudies, studyByUid } from '../dicom.js';
@@ -16,6 +16,7 @@ import {
 import { matchScore } from '../../shared/formdef.js';
 import { validateAnswers, computeCalcs } from '../../shared/engine.js';
 import { generateReport } from '../../shared/template.js';
+import { assertAnswersOk } from '../validate.js';
 
 const versionBody = { row_version: { type: 'integer' } };
 
@@ -33,9 +34,14 @@ function rankForms(forms, description) {
 // Loads an exam and checks the user may see it.
 export async function loadExamFor(req, id) {
   const exam = await getExam(id);
-  if (!(await canAccessInstitution(req.user, exam.institution_id))) throw new HttpError(404, 'Exam not found');
+  if (!(await canAccessInstitution(req.user, exam.institution_id))) {
+    await audit({ req, action: 'security.forbidden', entityType: 'exam', entityId: id, details: { reason: 'institution', route: req.routeOptions?.url } });
+    throw new HttpError(404, 'Exam not found');
+  }
   return exam;
 }
+
+const FIFTEEN_MIN = 15 * 60000;
 
 function requireStatus(exam, statuses, action) {
   if (!statuses.includes(exam.status)) {
@@ -47,7 +53,10 @@ export default async function techRoutes(app) {
   const tech = { preHandler: requireAuth(can.tech) };
 
   app.get('/worklist/tech', tech, async (req) => {
-    const institutionId = activeInstitution(req);
+    const institutionId = await activeInstitution(req);
+    if (req.headers['x-background'] !== '1') {
+      await auditOnce(`wl:${req.user.id}:${institutionId}`, FIFTEEN_MIN, { req, institutionId, action: 'worklist.view', details: { worklist: 'tech' } });
+    }
     const settings = await getSettings();
     const institution = await one('SELECT id, name, code, dicom FROM institutions WHERE id = $1', [institutionId]);
     const pacs = { configured: false, error: null, studies: [] };
@@ -57,7 +66,7 @@ export default async function techRoutes(app) {
       const existing = await examsByStudyUids(institutionId, result.studies.map(s => s.study_uid));
       const forms = await availableForms(institutionId);
       pacs.studies = result.studies.map(s => {
-        const exam = existing.get(studyUidIndex(s.study_uid));
+        const exam = existing.get(studyUidIndex(institutionId, s.study_uid));
         const best = rankForms(forms, s.description)[0];
         return {
           ...s,
@@ -77,15 +86,20 @@ export default async function techRoutes(app) {
   });
 
   app.get('/forms/available', tech, async (req) => {
-    const forms = await availableForms(activeInstitution(req));
+    const forms = await availableForms(await activeInstitution(req));
     return rankForms(forms, String(req.query.description || '')).map(({ id, title, description, score, institution_id }) => ({ id, title, description, score, general: institution_id === null }));
   });
 
-  app.get('/patients', tech, async (req) => {
-    const institutionId = activeInstitution(req);
-    const mrn = String(req.query.mrn || '').slice(0, 64);
-    const lastName = String(req.query.last_name || '').slice(0, 100);
-    if (!mrn && !lastName) throw new HttpError(400, 'Enter an MRN or a last name to search.');
+  // POST so identifiers travel in the body, never in URLs (which end up in
+  // proxy access logs and browser history).
+  app.post('/patients/search', {
+    ...tech,
+    schema: { body: { type: 'object', properties: { mrn: { type: 'string', maxLength: 64 }, last_name: { type: 'string', maxLength: 100 } } } },
+  }, async (req) => {
+    const institutionId = await activeInstitution(req);
+    const mrn = String(req.body.mrn || '');
+    const lastName = String(req.body.last_name || '');
+    if (!mrn.trim() && !lastName.trim()) throw new HttpError(400, 'Enter an MRN or a last name to search.');
     const results = await searchPatients(institutionId, { mrn, last_name: lastName });
     await audit({ req, action: 'patient.search', details: { by: mrn ? 'mrn' : 'last_name', results: results.length } });
     return results;
@@ -101,14 +115,14 @@ export default async function techRoutes(app) {
   };
 
   app.post('/patients', { ...tech, schema: { body: demographicsSchema } }, async (req) => {
-    const patient = await upsertPatient(activeInstitution(req), req.body, req.user.id);
+    const patient = await upsertPatient(await activeInstitution(req), req.body, req.user.id);
     if (patient.created) await audit({ req, action: 'patient.create', entityType: 'patient', entityId: patient.id });
     return patient;
   });
 
   app.put('/patients/:id', { ...tech, schema: { body: demographicsSchema } }, async (req) => {
     const existing = await getPatient(Number(req.params.id));
-    if (!existing || existing.institution_id !== activeInstitution(req)) throw new HttpError(404, 'Patient not found');
+    if (!existing || existing.institution_id !== await activeInstitution(req)) throw new HttpError(404, 'Patient not found');
     const patient = await updatePatient(existing.id, req.body);
     await audit({ req, action: 'patient.update', entityType: 'patient', entityId: existing.id });
     return patient;
@@ -121,7 +135,7 @@ export default async function techRoutes(app) {
       description: { type: 'string', maxLength: 200 }, accession: { type: 'string', maxLength: 64 },
     } } },
   }, async (req) => {
-    const institutionId = activeInstitution(req);
+    const institutionId = await activeInstitution(req);
     const forms = await availableForms(institutionId);
     let patientId, study, source;
 
@@ -168,8 +182,9 @@ export default async function techRoutes(app) {
   });
 
   app.get('/exams', tech, async (req) => {
-    const institutionId = activeInstitution(req);
+    const institutionId = await activeInstitution(req);
     const days = Math.min(Number(req.query.days) || 7, 90);
+    await audit({ req, institutionId, action: 'exam.list', details: { days, mine: req.query.mine === '1' } });
     return listExams({
       institutionIds: [institutionId],
       fromDate: today(-days),
@@ -184,10 +199,12 @@ export default async function techRoutes(app) {
   }, async (req) => {
     const exam = await loadExamFor(req, Number(req.params.id));
     requireStatus(exam, ['draft', 'returned'], 'edited');
+    if (req.body.answers) assertAnswersOk(req.body.answers);
     const fields = {};
     if (req.body.answers) fields.answers = req.body.answers;
     if (req.body.tech_note !== undefined) fields.tech_note = req.body.tech_note;
     const rowVersion = await updateExam(exam.id, fields, req.body.row_version);
+    await auditOnce(`edit:${req.user.id}:${exam.id}`, FIFTEEN_MIN, { req, institutionId: exam.institution_id, action: 'exam.edit', entityType: 'exam', entityId: exam.id });
     return { row_version: rowVersion };
   });
 
@@ -214,6 +231,7 @@ export default async function techRoutes(app) {
     const { definition } = await getVersion(exam.form_version_id);
     const env = templateEnv(exam);
     const answers = req.body.answers;
+    assertAnswersOk(answers);
     const { missing, warnings } = validateAnswers(definition, answers, env);
     if (missing.length) {
       // Save their work anyway, then report what's missing.
