@@ -13,6 +13,10 @@
 //   restore <file> [--wipe]      restore a backup (needs the same master key)
 //   verify-audit                 check the audit log hash chain
 //   lint-forms [dir]             check form YAML files for mistakes
+//   update-general-forms [--apply] [--force]
+//                                show (and with --apply, publish) newer versions of
+//                                the starter forms; --force also replaces forms
+//                                that were edited in the app
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -114,6 +118,36 @@ async function main() {
         const r = await verifyAuditChain();
         console.log(r.ok ? `Audit log OK (${r.checked} entries).` : `Audit log BROKEN at entry ${r.brokenAt} (after ${r.checked} good entries).`);
         if (!r.ok) process.exitCode = 2;
+      });
+      return;
+    }
+    case 'update-general-forms': {
+      const apply = args.includes('--apply');
+      const force = args.includes('--force');
+      await withDb(async () => {
+        const { planGeneralFormUpdates, applyGeneralFormUpdates } = await import('./forms.js');
+        const { audit } = await import('./audit.js');
+        const plan = await planGeneralFormUpdates({ force });
+        const say = {
+          add: () => 'new form, will be added',
+          update: p => `newer starter version, will replace v${p.version}`,
+          same: () => 'up to date',
+          edited: p => `edited in the app (v${p.version}), left alone. Use --force to replace it with the starter version`,
+          draft: () => 'has an unpublished draft, left alone. Publish or discard the draft first',
+          invalid: p => `starter file has problems, skipped: ${p.reason}`,
+        };
+        for (const p of plan) {
+          const copies = p.copies && ['update', 'edited'].includes(p.action) ? ` (${p.copies} institution ${p.copies === 1 ? 'copy is' : 'copies are'} not changed)` : '';
+          console.log(`${p.action.padEnd(7)} ${p.title || p.file}: ${say[p.action](p)}${copies}`);
+        }
+        const todo = plan.filter(p => ['add', 'update'].includes(p.action));
+        if (!todo.length) { console.log('\nNothing to do.'); return; }
+        if (!apply) { console.log(`\n${todo.length} form(s) would change. Run again with --apply to publish them.`); return; }
+        for (const d of await applyGeneralFormUpdates(todo)) {
+          await audit({ action: d.action === 'add' ? 'form.create_cli' : 'form.update_general_cli', institutionId: null, entityType: 'form', entityId: d.formId, details: { file: d.file, version: d.newVersion, replaced: d.version ?? null } });
+          console.log(`Published ${d.title} v${d.newVersion}`);
+        }
+        console.log('Done. Earlier versions are kept in each form\'s History.');
       });
       return;
     }

@@ -39,6 +39,7 @@ case "${1:-help}" in
     docker compose build --pull
     docker compose up -d
     echo "Updated. Database changes were applied by the migrate step."
+    echo "To see whether the starter forms have newer versions: ./manage.sh update-forms"
     ;;
   backup)
     backup_to "backups/sonoforms-$(date +%Y-%m-%d-%H%M%S)-manual.sfbak"
@@ -70,6 +71,7 @@ case "${1:-help}" in
     ;;
   verify-audit) cli verify-audit ;;
   lint-forms)   cli lint-forms ;;
+  update-forms) shift; cli update-general-forms "$@" ;;
   cert-fingerprint)
     docker compose exec -T web openssl x509 -noout -fingerprint -sha256 -in /certs/server.crt
     ;;
@@ -89,6 +91,9 @@ SonoForms management
   ./manage.sh verify-audit              check the audit log has not been altered
   ./manage.sh cert-fingerprint          show the HTTPS certificate fingerprint
   ./manage.sh lint-forms                check the starter form files
+  ./manage.sh update-forms              list starter forms with newer versions
+  ./manage.sh update-forms --apply      publish them (forms edited in the app are
+                                        left alone unless you add --force)
 
 Backups need secrets/master_key to be restored. Keep a copy of it safe.
 HELP

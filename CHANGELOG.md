@@ -6,7 +6,7 @@ All notable changes to SonoForms are documented here. The format follows [Keep a
 
 ### Upgrading
 
-- **Starter forms already in your general library are not updated automatically**, because admins may have edited them. Until they are replaced, their Indication and Comparison lines stay inside the Findings card. To pick up the new versions, open each form in the editor, paste the matching file from `forms/general/` into the Source tab, and publish.
+- **Starter forms already in your general library are not updated automatically**, because admins may have edited them. Until they are replaced, their Indication and Comparison lines stay inside the Findings card. To pick up the new versions, run `./manage.sh update-forms` to see what would change, then `./manage.sh update-forms --apply`. Forms edited in the app are skipped unless you add `--force`.
 
 ### Added
 
@@ -24,6 +24,7 @@ All notable changes to SonoForms are documented here. The format follows [Keep a
   - Forms say where each section's text goes with `report_field:`, or give `report:` one entry per field. In the builder, pick *Goes into the report's … field*, or add *Text for another report field*. See "Report fields" in [docs/FORMS.md](docs/FORMS.md).
   - The starter forms send their clinical section to Indication and Comparison, and the pelvis technique section to Technique.
   - Copying a card is recorded in the audit log with the field copied.
+- **`update-general-forms` command** (`./manage.sh update-forms`): lists starter forms with newer versions and, with `--apply`, publishes them as each form's next version. Forms edited in the app or with an unpublished draft are left alone (`--force` replaces edited ones), institution copies are never touched, and each update is audited.
 - **Form editor:** undo and redo, and automatic draft saving (the "Save draft" button is gone; Ctrl+S still saves immediately). Leaving the editor saves pending changes instead of discarding them.
 
 - **PACS query guardrails:**

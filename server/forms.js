@@ -176,3 +176,62 @@ export async function seedGeneralForms(log = console) {
     log.info(`Added general form '${def.title}' from ${file}`);
   }
 }
+
+// Compares forms/general/*.yaml with the general library, for
+// `update-general-forms`. A form is only replaced if nobody has edited it in
+// the app since it last came from the starter files (its published version
+// has no author), unless force is set. A form with an unpublished draft is
+// always left alone so nobody's work in progress is overwritten.
+// Each entry: { file, slug, title, action, formId?, version?, copies?, reason? }
+//   action: 'add' | 'update' | 'same' | 'edited' | 'draft' | 'invalid'
+export async function planGeneralFormUpdates({ force = false } = {}) {
+  const dir = path.join(config.formsDir, 'general');
+  if (!fs.existsSync(dir)) return [];
+  const plan = [];
+  for (const file of fs.readdirSync(dir).filter(f => /\.ya?ml$/.test(f)).sort()) {
+    const source = fs.readFileSync(path.join(dir, file), 'utf8');
+    let def, errors;
+    try {
+      ({ def, errors } = parseSource(source));
+    } catch (e) {
+      plan.push({ file, action: 'invalid', reason: e.message });
+      continue;
+    }
+    if (errors.length) {
+      plan.push({ file, slug: def.id, title: def.title, action: 'invalid', reason: errors.map(e => `${e.path}: ${e.message}`).join('; ') });
+      continue;
+    }
+    const entry = { file, slug: def.id, title: def.title, source };
+    const form = await one(
+      `SELECT f.id, cv.version, cv.source, cv.created_by,
+              (SELECT count(*)::int FROM forms c WHERE c.copied_from_id = f.id) AS copies,
+              EXISTS (SELECT 1 FROM form_versions d WHERE d.form_id = f.id AND d.status = 'draft') AS has_draft
+       FROM forms f LEFT JOIN form_versions cv ON cv.id = f.current_version_id
+       WHERE f.institution_id IS NULL AND f.slug = $1`, [def.id]);
+    if (!form) { plan.push({ ...entry, action: 'add' }); continue; }
+    Object.assign(entry, { formId: form.id, version: form.version, copies: form.copies });
+    if (form.source === source) entry.action = 'same';
+    else if (form.has_draft) entry.action = 'draft';
+    else if (form.created_by !== null && !force) entry.action = 'edited';
+    else entry.action = 'update';
+    plan.push(entry);
+  }
+  return plan;
+}
+
+// Applies the 'add' and 'update' entries of a plan. Old versions stay in the
+// form's history, and exams keep the version they were filled in with.
+export async function applyGeneralFormUpdates(plan) {
+  const done = [];
+  for (const p of plan) {
+    if (p.action === 'add') {
+      const id = await createForm({ source: p.source, publish: true, userId: null });
+      done.push({ ...p, formId: id, newVersion: 1 });
+    } else if (p.action === 'update') {
+      await saveDraft(p.formId, p.source, null);
+      const newVersion = await publishDraft(p.formId, null, `Updated from the starter file ${p.file}`);
+      done.push({ ...p, newVersion });
+    }
+  }
+  return done;
+}

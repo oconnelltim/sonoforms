@@ -39,7 +39,7 @@ The **Builder** tab lets you edit a form without writing any code.
 
 The **Source** tab shows the same form as YAML text, for anyone who prefers to work that way. Both tabs edit the same form, and comments in the YAML are kept when you use the builder. The rest of this guide describes the YAML format.
 
-Starter forms live in `forms/general/` and are loaded into the general library on first start. These starter forms have not been clinically validated. Have your radiologists review the wording before going live.
+Starter forms live in `forms/general/` and are loaded into the general library on first start. Later improvements to them can be applied with `./manage.sh update-forms` (see [Newer starter forms](ADMIN.md#newer-starter-forms)). These starter forms have not been clinically validated. Have your radiologists review the wording before going live.
 
 ## Skeleton
 

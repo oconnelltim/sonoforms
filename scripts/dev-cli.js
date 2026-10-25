@@ -6,6 +6,7 @@
 //   npm run dev:cli -- reset-password admin
 //   npm run dev:cli -- unlock jsmith
 //   npm run dev:cli -- verify-audit
+//   npm run dev:cli -- update-general-forms --apply
 
 import net from 'node:net';
 import path from 'node:path';

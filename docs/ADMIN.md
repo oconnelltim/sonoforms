@@ -107,6 +107,21 @@ This stops the app, saves a safety backup of the current state, replaces all dat
 
 This makes a backup, pulls the new version, pulls fresh base images (bringing operating-system security fixes), rebuilds and restarts. Database changes are applied by a short-lived `migrate` container before the app starts. That's the only container with the database owner password; the app itself runs with a restricted database account. Run `update` at least monthly.
 
+### Newer starter forms
+
+An update can include improved starter forms, but the copies already in your general library are never changed automatically. To see which have newer versions:
+
+```bash
+./manage.sh update-forms
+./manage.sh update-forms --apply      # publish the newer versions
+```
+
+Each newer version is published as the form's next version; earlier versions stay in the form's History, and exams keep the version they were filled in with. Your institutions' own copies of a form are never changed.
+
+Forms someone has edited in the app are left alone, as are forms with an unpublished draft. To replace an edited form with the starter version anyway, add `--force`. Have your radiologists check the new wording before applying, as with any form change. Each update is recorded in the audit log.
+
+Without Docker, the command is `node server/cli.js update-general-forms [--apply] [--force]`; in development, `npm run dev:cli -- update-general-forms`.
+
 ## Audit log
 
 Admin › Audit log records sign-ins (including failures), every exam opened, created, submitted, copied or dictated, patient searches, form changes, user and setting changes, exports and backups. Patient names and MRNs are never written to the audit log; records are referred to by number.
