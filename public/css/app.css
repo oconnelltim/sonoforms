@@ -333,8 +333,8 @@ dialog.modal::backdrop { background: rgba(10, 15, 20, .5); }
 .unit { color: var(--muted); font-size: .9rem; }
 .calc-value { display: inline-block; min-width: 96px; padding: 7px 12px; background: var(--accent-soft); color: var(--accent); border-radius: 7px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .input.date { width: 180px; }
-.toggle { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; min-height: 36px; }
-.toggle input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.toggle { position: relative; display: inline-flex; align-items: center; gap: 10px; cursor: pointer; min-height: 36px; }
+.toggle input { position: absolute; left: 0; top: 0; opacity: 0; width: 1px; height: 1px; } /* contained by .toggle, so it never escapes a scrolling pane */
 .toggle-track { width: 40px; height: 22px; border-radius: 11px; background: var(--surface-3); border: 1px solid var(--border-strong); position: relative; flex-shrink: 0; transition: background .15s; }
 .toggle-track::after { content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--surface); box-shadow: var(--shadow); transition: transform .15s; }
 .toggle input:checked + .toggle-track { background: var(--accent); border-color: var(--accent); }
@@ -375,7 +375,7 @@ textarea.findings:focus { outline: none; border-color: var(--accent); box-shadow
 .pane { display: flex; flex-direction: column; min-height: 0; border-right: 1px solid var(--border); }
 .pane:last-child { border-right: none; }
 .pane-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 10px 14px; border-bottom: 1px solid var(--border); background: var(--surface-2); }
-.pane-body, .pane-report .report-text, .pane-form .pane-body { flex: 1; overflow: auto; padding: 12px 14px; }
+.pane-body, .pane-report .report-text, .pane-form .pane-body { flex: 1 1 0; min-height: 0; overflow: auto; padding: 12px 14px; }
 .pane-report .report-text { margin: 0; background: var(--surface); }
 .code-editor { flex: 1; width: 100%; resize: none; border: none; padding: 12px 14px; background: var(--code-bg); color: var(--text); font: .85rem/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; tab-size: 2; white-space: pre; overflow: auto; }
 .code-editor:focus { outline: none; box-shadow: inset 0 0 0 2px var(--accent); }
@@ -421,15 +421,23 @@ textarea.findings:focus { outline: none; border-color: var(--accent); box-shadow
 }
 
 /* ---- Visual form builder ------------------------------------------------------ */
+/* The editor fills the window below the header; each pane scrolls on its own.
+   Every level gets an explicit "fill the rest" size (flex-basis 0 + min-height 0,
+   grid rows minmax(0, 1fr)), so all browsers agree on the heights instead of
+   letting content stretch the page. */
+.editor-page { overflow: hidden; }
+.editor-panes { grid-template-rows: minmax(0, 1fr); }
+.editor-panes > .pane { min-height: 0; overflow: hidden; }
 .editor-panes.builder-mode { grid-template-columns: minmax(0, 1.75fr) minmax(0, 1fr) minmax(0, .85fr); }
-.edit-pane-body { flex: 1; display: flex; flex-direction: column; min-height: 0; }
-.edit-pane-body > .code-editor { flex: 1; }
+.edit-pane-body { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+.edit-pane-body > .code-editor { flex: 1 1 0; min-height: 0; height: 0; }
+.edit-pane-body > .problems { flex: 0 0 auto; }
 .pane-tools { display: flex; align-items: center; gap: 6px; }
-.form-builder { flex: 1; display: grid; grid-template-columns: minmax(170px, 230px) minmax(0, 1fr); min-height: 0; }
-.fb-outline { overflow: auto; border-right: 1px solid var(--border); padding: 8px 0; background: var(--surface-2); }
-.fb-row { display: flex; align-items: center; gap: 6px; padding: 5px 10px; cursor: pointer; font-size: .88rem; border-left: 3px solid transparent; user-select: none; }
+.form-builder { flex: 1 1 0; min-height: 0; height: 0; display: grid; grid-template-columns: minmax(180px, 240px) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
+.fb-outline { min-height: 0; overflow: auto; border-right: 1px solid var(--border); padding: 10px 8px 24px; background: var(--surface-2); }
+.fb-row { display: flex; align-items: center; gap: 6px; padding: 5px 8px; border-radius: 6px; cursor: pointer; font-size: .88rem; user-select: none; }
 .fb-row:hover { background: var(--surface-3); }
-.fb-row.selected { background: var(--accent-soft); border-left-color: var(--accent); color: var(--accent); }
+.fb-row.selected { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
 .fb-row.fb-section { font-weight: 650; margin-top: 8px; }
 .fb-row.fb-form { color: var(--muted); }
 .fb-row.fb-drop { box-shadow: inset 0 2px 0 var(--accent); }
@@ -438,8 +446,8 @@ textarea.findings:focus { outline: none; border-color: var(--accent); box-shadow
 .fb-row.selected .fb-icon { color: var(--accent); }
 .fb-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--danger); flex-shrink: 0; }
 .fb-tag { font-size: .68rem; color: var(--muted); border: 1px solid var(--border); border-radius: 4px; padding: 0 4px; font-weight: 500; }
-.fb-add { display: block; padding: 3px 10px 3px 30px; text-align: left; }
-.fb-panel { overflow: auto; padding: 14px 16px 40px; }
+.fb-add { display: block; padding: 3px 8px 3px 30px; text-align: left; }
+.fb-panel { min-height: 0; overflow: auto; padding: 18px 24px 48px; }
 .fb-heading { font-size: 1rem; margin: 2px 0 10px; }
 .fb-field { display: block; margin-bottom: 12px; }
 .fb-field-label { display: block; font-size: .82rem; font-weight: 600; margin-bottom: 4px; }
@@ -488,4 +496,8 @@ textarea.findings:focus { outline: none; border-color: var(--accent); box-shadow
 .fb-type-name { font-weight: 600; font-size: .9rem; }
 .fb-type-hint { font-size: .78rem; color: var(--muted); }
 .form-render .field.builder-selected, .form-render .form-section.builder-selected { box-shadow: 0 0 0 2px var(--accent); border-radius: 8px; }
-@media (max-width: 1100px) { .form-builder { grid-template-columns: 170px minmax(0, 1fr); } }
+@media (max-width: 1100px) {
+  /* One pane at a time: the edit pane takes the full width. */
+  .editor-panes.builder-mode { grid-template-columns: 1fr; }
+  .form-builder { grid-template-columns: minmax(160px, 200px) minmax(0, 1fr); }
+}

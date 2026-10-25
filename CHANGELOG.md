@@ -31,6 +31,12 @@ All notable changes to SonoForms are documented here. The format follows [Keep a
 
 ### Fixed
 
+- **Form editor layout:**
+  - Hidden on/off-switch checkboxes in the tech-form preview escaped their scrolling pane and stretched the whole page.
+  - The editor's panes now always fill the window and scroll independently in every browser (previously the Source box could be only a few lines tall, and the builder could fail to scroll on its own).
+  - Below 1100 px wide, the builder took only part of the width.
+  - The builder's outline and settings panel now have proper spacing from the window edge.
+
 Found by the first full Docker install test of 0.2.0:
 - **Apache crash at startup:** it couldn't write its PID file, because the container's scratch areas were writable only by root and Apache now runs unprivileged.
 - **Installer health check:** it checked the app directly, so it reported success even when Apache was down. It now checks the full HTTPS path through Apache.
