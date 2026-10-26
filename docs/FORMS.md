@@ -51,6 +51,7 @@ study_match:                    # used to auto-pick this form from the DICOM stu
   - THYROID
   - US NECK SOFT TISSUE
 report:                         # optional, applies to the whole report
+  heading: ULTRASOUND THYROID   # heading in a combined report (see below)
   separator: "\n\n"             # between sections (default: blank line)
   header: "FINDINGS:"           # optional template placed before all sections
   footer: ""                    # optional template placed after all sections
@@ -226,6 +227,25 @@ To fill several fields from one section, give `report:` one entry per field inst
 ```
 
 Field names are `indication`, `comparison`, `technique`, `findings` and `impression`. Texts for the same field from different sections are joined in section order, with the form's `separator`. The form's `header` and `footer` go into Findings. Don't put headings such as "INDICATION:" in the text: the field itself is the heading. When the radiologist uses *Copy all as one block*, each field gets a heading automatically.
+
+### Combined reports (several exams in one visit)
+
+When a patient has more than one exam the same day, e.g. an abdomen and a DVT study, the radiologist reports them together by default. The cards are combined:
+
+* **Findings** and **Impression** get a heading per exam, e.g. `ULTRASOUND ABDOMEN:` then `ULTRASOUND RIGHT LOWER EXTREMITY VENOUS DOPPLER:`.
+* **Indication** and **Technique** list each exam's text once.
+* **Comparison** is shown once when every exam says the same (e.g. "None."), otherwise per exam with headings.
+
+The heading comes from the form's `report.heading`, which is a template, so it can use answers:
+
+```yaml
+report:
+  heading: "ULTRASOUND {{side | upper}} VENOUS DOPPLER"
+```
+
+Without one, it's made from the title ("US Pelvis (female, non-OB)" becomes "ULTRASOUND PELVIS"). In the builder it's *Heading in a combined report* under Form settings.
+
+A separately billed study that the same form covers (e.g. an abdominal Doppler done with the abdomen) doesn't need its own form: the tech links it to the abdomen form when starting, and the radiologist sees both accession numbers.
 
 ## Worked example: scoring
 

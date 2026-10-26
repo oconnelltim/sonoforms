@@ -9,6 +9,9 @@ study_match:
   - PELVIS
   - PELVIC
 
+report:
+  heading: ULTRASOUND PELVIS # used when reported together with other exams from the same visit
+
 sections:
   - id: clinical
     title: Clinical

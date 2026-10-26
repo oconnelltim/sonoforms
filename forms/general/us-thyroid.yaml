@@ -8,6 +8,9 @@ study_match:
   - US NECK
   - THYR
 
+report:
+  heading: ULTRASOUND THYROID # used when reported together with other exams from the same visit
+
 sections:
   - id: clinical
     title: Clinical

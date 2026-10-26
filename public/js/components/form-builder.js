@@ -13,7 +13,7 @@ import { createDocTools } from '/shared/builder/yamldoc.js';
 import { findReferences, uniqueFieldId, uniqueSectionId, renameInExpression, renameInTemplate } from '/shared/builder/refs.js';
 import { defaultSectionTemplate, fieldTag } from '/shared/builder/template-tokens.js';
 import { sectionReportParts } from '/shared/template.js';
-import { REPORT_FIELDS, REPORT_FIELD_IDS, DEFAULT_REPORT_FIELD, reportFieldLabel } from '/shared/report-fields.js';
+import { REPORT_FIELDS, REPORT_FIELD_IDS, DEFAULT_REPORT_FIELD, reportFieldLabel, defaultHeading } from '/shared/report-fields.js';
 import { conditionEditor } from './condition-editor.js';
 import { templateEditor } from './template-editor.js';
 
@@ -344,7 +344,7 @@ export function formBuilder({ source, readOnly = false, onChange, onSelect = () 
     commit(() => {
       tools.setProp(doc, path, 'id', newId);
       tools.rewriteStrings(doc, ['show_if', 'required', 'formula'], v => renameInExpression(v, oldId, newId));
-      tools.rewriteStrings(doc, ['report', 'header', 'footer', ...REPORT_FIELD_IDS], v => renameInTemplate(v, oldId, newId));
+      tools.rewriteStrings(doc, ['report', 'heading', 'header', 'footer', ...REPORT_FIELD_IDS], v => renameInTemplate(v, oldId, newId));
     }, { redraw: false });
     if (fresh.delete(oldId)) fresh.add(newId);
     return true;
@@ -388,6 +388,10 @@ export function formBuilder({ source, readOnly = false, onChange, onSelect = () 
         rows: 4, disabled: readOnly, value: (def.study_match || []).join('\n'), placeholder: 'US PELVIS\nTRANSVAGINAL',
         oninput: debounce((e) => commit(() => tools.setProp(doc, [], 'study_match', e.target.value.split('\n').map(x => x.trim()).filter(Boolean)), { redraw: false }), 300),
       }), 'One per line. All the words on a line must appear in the PACS study description, in any order.'),
+      field('Heading in a combined report', h('input.input', {
+        disabled: readOnly, value: report.heading || '', placeholder: defaultHeading(def.title),
+        oninput: debounce(e => commit(() => setReportKey('heading', e.target.value.trim()), { redraw: false }), 300),
+      }), 'When the radiologist reports this exam together with others from the same visit (e.g. an abdomen and a DVT study), its findings and impression go under this heading.'),
       h('details.fb-advanced',
         h('summary', 'Advanced'),
         h('p.small.muted', `Form id: ${def.id} (fixed)`),

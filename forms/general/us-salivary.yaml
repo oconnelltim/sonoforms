@@ -1,0 +1,630 @@
+# Starter form. Review wording with your radiologists before clinical use.
+#
+# Salivary gland ultrasound: parotid and submandibular glands, often done
+# together with a thyroid study. The technique section picks which glands
+# were examined; gland sections that were not examined are hidden.
+id: us-salivary
+title: US Salivary Glands
+description: Parotid and submandibular gland ultrasound (swelling, lump, pain, sialadenitis or stone, mass follow-up, Sjögren).
+# Adjust study_match to the study descriptions your PACS uses.
+study_match:
+  - US SALIVARY
+  - US PAROTID
+  - US SUBMANDIBULAR
+  - SALIVARY GLAND
+  - PAROTID
+  - SUBMANDIBULAR
+
+report:
+  heading: ULTRASOUND SALIVARY GLANDS # used when reported together with other exams from the same visit
+
+sections:
+  - id: clinical
+    title: Clinical
+    fields:
+      - id: indication
+        type: multi
+        label: Indication
+        required: true
+        other: true
+        options:
+          - { value: swelling, label: Swelling, text: salivary gland swelling }
+          - { value: lump, label: Palpable lump, text: palpable lump }
+          - { value: pain, label: Pain, text: pain }
+          - { value: meals, label: Swelling or pain with meals, text: swelling or pain with meals }
+          - { value: sialadenitis, label: Suspected sialadenitis, text: suspected sialadenitis }
+          - { value: stone, label: Suspected stone, text: suspected sialolithiasis }
+          - { value: mass_fu, label: Mass follow-up, text: follow-up of salivary gland mass }
+          - { value: sjogren, label: Sjögren syndrome (known or suspected), text: known or suspected Sjögren syndrome }
+          - { value: incidental, label: Incidental finding on CT / MRI / PET, text: incidental salivary gland finding on prior imaging }
+      - id: ind_site
+        type: multi
+        label: Side / region (optional)
+        options:
+          - { value: rp, label: Right parotid, text: right parotid }
+          - { value: lp, label: Left parotid, text: left parotid }
+          - { value: rs, label: Right submandibular, text: right submandibular }
+          - { value: ls, label: Left submandibular, text: left submandibular }
+      - id: comparison
+        type: text
+        label: Comparison
+        placeholder: "e.g. US salivary glands 03/14/2025, or leave blank for none"
+    report:
+      indication: |-
+        {{indication | cap}}{{#if present(ind_site)}} ({{ind_site}} region{{#if count(ind_site) > 1}}s{{/if}}){{/if}}.
+      comparison: |-
+        {{#if present(comparison)}}{{comparison}}{{else}}None{{/if}}.
+
+  - id: technique
+    title: Technique
+    fields:
+      - id: glands
+        type: choice
+        label: Glands examined
+        required: true
+        default: all
+        options:
+          - { value: all, label: Both parotid and both submandibular glands, text: the bilateral parotid and submandibular glands }
+          - { value: parotids, label: Both parotid glands, text: the bilateral parotid glands }
+          - { value: submandibulars, label: Both submandibular glands, text: the bilateral submandibular glands }
+          - { value: select, label: Selected glands }
+      - id: glands_selected
+        type: multi
+        label: Which glands
+        required: true
+        show_if: "glands == 'select'"
+        options:
+          - { value: rp, label: Right parotid, text: right parotid }
+          - { value: lp, label: Left parotid, text: left parotid }
+          - { value: rs, label: Right submandibular, text: right submandibular }
+          - { value: ls, label: Left submandibular, text: left submandibular }
+      - id: with_thyroid
+        type: boolean
+        label: Performed together with a thyroid ultrasound
+    report_field: technique
+    report: |
+      Grayscale and color Doppler ultrasound of {{#if glands == 'select'}}the {{glands_selected}} gland{{#if count(glands_selected) > 1}}s{{/if}}{{else}}{{glands}}{{/if}} was performed.{{#if with_thyroid}} The study was performed together with a thyroid ultrasound.{{/if}}
+
+  - id: right_parotid
+    title: Right parotid
+    show_if: "glands in ['all', 'parotids'] or (glands == 'select' and has(glands_selected, 'rp'))"
+    fields:
+      - id: rp_status
+        type: choice
+        label: Right parotid gland
+        required: true
+        default: seen
+        normal: seen
+        options:
+          - { value: seen, label: Visualized }
+          - { value: not_seen, label: Not visualized }
+          - { value: absent, label: Surgically absent }
+      - id: rp_size
+        type: dims
+        label: Size (optional)
+        decimals: 1
+        help: Length (craniocaudal) x AP x width (transverse)
+        min: 0.5
+        max: 10
+        show_if: "rp_status == 'seen'"
+      - id: rp_echo
+        type: choice
+        label: Echotexture
+        required: true
+        other: true
+        show_if: "rp_status == 'seen'"
+        normal: homogeneous
+        options:
+          - { value: homogeneous, label: Homogeneous (normal), text: homogeneous echotexture }
+          - { value: heterogeneous, label: Heterogeneous, text: heterogeneous echotexture }
+          - { value: hypoechoic, label: Diffusely hypoechoic, text: diffusely hypoechoic parenchyma }
+          - { value: sjogren, label: Multiple small hypoechoic foci (Sjögren pattern), text: "heterogeneous parenchyma with multiple small hypoechoic or anechoic foci, a pattern that can be seen with Sjögren syndrome" }
+          - { value: atrophic, label: Small and echogenic (atrophic), text: "small, echogenic gland, which can be seen with atrophy or chronic sialadenitis" }
+      - id: rp_vasc
+        type: choice
+        label: Vascularity
+        required: true
+        show_if: "rp_status == 'seen'"
+        normal: normal
+        options:
+          - { value: normal, label: Normal, text: normal vascularity }
+          - { value: increased, label: Increased, text: increased vascularity }
+      - id: rp_ducts
+        type: choice
+        label: Ductal dilatation
+        required: true
+        show_if: "rp_status == 'seen'"
+        normal: none
+        options:
+          - { value: none, label: None, text: no ductal dilatation }
+          - { value: intra, label: Intraglandular ducts, text: dilated intraglandular ducts }
+          - { value: main, label: Main (Stensen) duct, text: dilated main (Stensen) duct }
+          - { value: both, label: Both, text: dilated intraglandular ducts and main (Stensen) duct }
+      - id: rp_calculi
+        type: choice
+        label: Calculi
+        required: true
+        show_if: "rp_status == 'seen'"
+        normal: none
+        options:
+          - { value: none, label: None }
+          - { value: present, label: Present }
+      - id: rp_stone
+        type: number
+        label: Largest calculus
+        unit: mm
+        min: 1
+        max: 30
+        width: short
+        required: true
+        show_if: "rp_status == 'seen' and rp_calculi == 'present'"
+      - id: rp_stone_multiple
+        type: boolean
+        label: Multiple calculi
+        show_if: "rp_status == 'seen' and rp_calculi == 'present'"
+      - id: rp_stone_loc
+        type: choice
+        label: Location of the largest calculus
+        show_if: "rp_status == 'seen' and rp_calculi == 'present'"
+        options:
+          - { value: gland, label: Within the gland, text: within the gland }
+          - { value: hilum, label: At the hilum, text: at the hilum }
+          - { value: duct, label: In the main (Stensen) duct, text: in the main (Stensen) duct }
+      - id: rp_nodes
+        type: choice
+        label: Intraparotid lymph nodes
+        required: true
+        show_if: "rp_status == 'seen'"
+        normal: normal
+        options:
+          - { value: normal, label: None or normal-appearing, text: no abnormal intraparotid lymph nodes }
+          - { value: abnormal, label: Abnormal (describe) }
+      - id: rp_nodes_note
+        type: text
+        label: Abnormal intraparotid lymph node(s)
+        placeholder: "e.g. 1.2 x 0.9 cm, rounded, no fatty hilum"
+        required: true
+        show_if: "rp_status == 'seen' and rp_nodes == 'abnormal'"
+    report: |
+      {{#if rp_status == 'not_seen'}}
+      RIGHT PAROTID: Not visualized.
+      {{else if rp_status == 'absent'}}
+      RIGHT PAROTID: Surgically absent.
+      {{else if rp_status == 'seen'}}
+      RIGHT PAROTID:{{#if present(rp_size)}} Measures {{rp_size}}.{{/if}} {{rp_echo | sentence}} {{rp_vasc | sentence}} {{rp_ducts | sentence}} {{#if rp_calculi == 'present'}}{{#if rp_stone_multiple}}Multiple calculi, the largest{{else}}Calculus{{/if}} measuring {{rp_stone}}{{#if present(rp_stone_loc)}} {{rp_stone_loc}}{{/if}}.{{else if rp_calculi == 'none'}}No calculi.{{/if}} {{#if rp_nodes == 'abnormal'}}Abnormal intraparotid lymph node(s): {{rp_nodes_note}}.{{else}}{{rp_nodes | sentence}}{{/if}}
+      {{/if}}
+
+  - id: left_parotid
+    title: Left parotid
+    show_if: "glands in ['all', 'parotids'] or (glands == 'select' and has(glands_selected, 'lp'))"
+    fields:
+      - id: lp_status
+        type: choice
+        label: Left parotid gland
+        required: true
+        default: seen
+        normal: seen
+        options:
+          - { value: seen, label: Visualized }
+          - { value: not_seen, label: Not visualized }
+          - { value: absent, label: Surgically absent }
+      - id: lp_size
+        type: dims
+        label: Size (optional)
+        decimals: 1
+        help: Length (craniocaudal) x AP x width (transverse)
+        min: 0.5
+        max: 10
+        show_if: "lp_status == 'seen'"
+      - id: lp_echo
+        type: choice
+        label: Echotexture
+        required: true
+        other: true
+        show_if: "lp_status == 'seen'"
+        normal: homogeneous
+        options:
+          - { value: homogeneous, label: Homogeneous (normal), text: homogeneous echotexture }
+          - { value: heterogeneous, label: Heterogeneous, text: heterogeneous echotexture }
+          - { value: hypoechoic, label: Diffusely hypoechoic, text: diffusely hypoechoic parenchyma }
+          - { value: sjogren, label: Multiple small hypoechoic foci (Sjögren pattern), text: "heterogeneous parenchyma with multiple small hypoechoic or anechoic foci, a pattern that can be seen with Sjögren syndrome" }
+          - { value: atrophic, label: Small and echogenic (atrophic), text: "small, echogenic gland, which can be seen with atrophy or chronic sialadenitis" }
+      - id: lp_vasc
+        type: choice
+        label: Vascularity
+        required: true
+        show_if: "lp_status == 'seen'"
+        normal: normal
+        options:
+          - { value: normal, label: Normal, text: normal vascularity }
+          - { value: increased, label: Increased, text: increased vascularity }
+      - id: lp_ducts
+        type: choice
+        label: Ductal dilatation
+        required: true
+        show_if: "lp_status == 'seen'"
+        normal: none
+        options:
+          - { value: none, label: None, text: no ductal dilatation }
+          - { value: intra, label: Intraglandular ducts, text: dilated intraglandular ducts }
+          - { value: main, label: Main (Stensen) duct, text: dilated main (Stensen) duct }
+          - { value: both, label: Both, text: dilated intraglandular ducts and main (Stensen) duct }
+      - id: lp_calculi
+        type: choice
+        label: Calculi
+        required: true
+        show_if: "lp_status == 'seen'"
+        normal: none
+        options:
+          - { value: none, label: None }
+          - { value: present, label: Present }
+      - id: lp_stone
+        type: number
+        label: Largest calculus
+        unit: mm
+        min: 1
+        max: 30
+        width: short
+        required: true
+        show_if: "lp_status == 'seen' and lp_calculi == 'present'"
+      - id: lp_stone_multiple
+        type: boolean
+        label: Multiple calculi
+        show_if: "lp_status == 'seen' and lp_calculi == 'present'"
+      - id: lp_stone_loc
+        type: choice
+        label: Location of the largest calculus
+        show_if: "lp_status == 'seen' and lp_calculi == 'present'"
+        options:
+          - { value: gland, label: Within the gland, text: within the gland }
+          - { value: hilum, label: At the hilum, text: at the hilum }
+          - { value: duct, label: In the main (Stensen) duct, text: in the main (Stensen) duct }
+      - id: lp_nodes
+        type: choice
+        label: Intraparotid lymph nodes
+        required: true
+        show_if: "lp_status == 'seen'"
+        normal: normal
+        options:
+          - { value: normal, label: None or normal-appearing, text: no abnormal intraparotid lymph nodes }
+          - { value: abnormal, label: Abnormal (describe) }
+      - id: lp_nodes_note
+        type: text
+        label: Abnormal intraparotid lymph node(s)
+        placeholder: "e.g. 1.2 x 0.9 cm, rounded, no fatty hilum"
+        required: true
+        show_if: "lp_status == 'seen' and lp_nodes == 'abnormal'"
+    report: |
+      {{#if lp_status == 'not_seen'}}
+      LEFT PAROTID: Not visualized.
+      {{else if lp_status == 'absent'}}
+      LEFT PAROTID: Surgically absent.
+      {{else if lp_status == 'seen'}}
+      LEFT PAROTID:{{#if present(lp_size)}} Measures {{lp_size}}.{{/if}} {{lp_echo | sentence}} {{lp_vasc | sentence}} {{lp_ducts | sentence}} {{#if lp_calculi == 'present'}}{{#if lp_stone_multiple}}Multiple calculi, the largest{{else}}Calculus{{/if}} measuring {{lp_stone}}{{#if present(lp_stone_loc)}} {{lp_stone_loc}}{{/if}}.{{else if lp_calculi == 'none'}}No calculi.{{/if}} {{#if lp_nodes == 'abnormal'}}Abnormal intraparotid lymph node(s): {{lp_nodes_note}}.{{else}}{{lp_nodes | sentence}}{{/if}}
+      {{/if}}
+
+  - id: right_submandibular
+    title: Right submandibular
+    show_if: "glands in ['all', 'submandibulars'] or (glands == 'select' and has(glands_selected, 'rs'))"
+    fields:
+      - id: rs_status
+        type: choice
+        label: Right submandibular gland
+        required: true
+        default: seen
+        normal: seen
+        options:
+          - { value: seen, label: Visualized }
+          - { value: not_seen, label: Not visualized }
+          - { value: absent, label: Surgically absent }
+      - id: rs_size
+        type: dims
+        label: Size (optional)
+        decimals: 1
+        help: Length (craniocaudal) x AP x width (transverse)
+        min: 0.5
+        max: 10
+        show_if: "rs_status == 'seen'"
+      - id: rs_echo
+        type: choice
+        label: Echotexture
+        required: true
+        other: true
+        show_if: "rs_status == 'seen'"
+        normal: homogeneous
+        options:
+          - { value: homogeneous, label: Homogeneous (normal), text: homogeneous echotexture }
+          - { value: heterogeneous, label: Heterogeneous, text: heterogeneous echotexture }
+          - { value: hypoechoic, label: Diffusely hypoechoic, text: diffusely hypoechoic parenchyma }
+          - { value: sjogren, label: Multiple small hypoechoic foci (Sjögren pattern), text: "heterogeneous parenchyma with multiple small hypoechoic or anechoic foci, a pattern that can be seen with Sjögren syndrome" }
+          - { value: atrophic, label: Small and echogenic (atrophic), text: "small, echogenic gland, which can be seen with atrophy or chronic sialadenitis" }
+      - id: rs_vasc
+        type: choice
+        label: Vascularity
+        required: true
+        show_if: "rs_status == 'seen'"
+        normal: normal
+        options:
+          - { value: normal, label: Normal, text: normal vascularity }
+          - { value: increased, label: Increased, text: increased vascularity }
+      - id: rs_ducts
+        type: choice
+        label: Ductal dilatation
+        required: true
+        show_if: "rs_status == 'seen'"
+        normal: none
+        options:
+          - { value: none, label: None, text: no ductal dilatation }
+          - { value: intra, label: Intraglandular ducts, text: dilated intraglandular ducts }
+          - { value: main, label: Main (Wharton) duct, text: dilated main (Wharton) duct }
+          - { value: both, label: Both, text: dilated intraglandular ducts and main (Wharton) duct }
+      - id: rs_calculi
+        type: choice
+        label: Calculi
+        required: true
+        show_if: "rs_status == 'seen'"
+        normal: none
+        options:
+          - { value: none, label: None }
+          - { value: present, label: Present }
+      - id: rs_stone
+        type: number
+        label: Largest calculus
+        unit: mm
+        min: 1
+        max: 30
+        width: short
+        required: true
+        show_if: "rs_status == 'seen' and rs_calculi == 'present'"
+      - id: rs_stone_multiple
+        type: boolean
+        label: Multiple calculi
+        show_if: "rs_status == 'seen' and rs_calculi == 'present'"
+      - id: rs_stone_loc
+        type: choice
+        label: Location of the largest calculus
+        show_if: "rs_status == 'seen' and rs_calculi == 'present'"
+        options:
+          - { value: gland, label: Within the gland, text: within the gland }
+          - { value: hilum, label: At the hilum, text: at the hilum }
+          - { value: duct, label: In the main (Wharton) duct, text: in the main (Wharton) duct }
+    report: |
+      {{#if rs_status == 'not_seen'}}
+      RIGHT SUBMANDIBULAR: Not visualized.
+      {{else if rs_status == 'absent'}}
+      RIGHT SUBMANDIBULAR: Surgically absent.
+      {{else if rs_status == 'seen'}}
+      RIGHT SUBMANDIBULAR:{{#if present(rs_size)}} Measures {{rs_size}}.{{/if}} {{rs_echo | sentence}} {{rs_vasc | sentence}} {{rs_ducts | sentence}} {{#if rs_calculi == 'present'}}{{#if rs_stone_multiple}}Multiple calculi, the largest{{else}}Calculus{{/if}} measuring {{rs_stone}}{{#if present(rs_stone_loc)}} {{rs_stone_loc}}{{/if}}.{{else if rs_calculi == 'none'}}No calculi.{{/if}}
+      {{/if}}
+
+  - id: left_submandibular
+    title: Left submandibular
+    show_if: "glands in ['all', 'submandibulars'] or (glands == 'select' and has(glands_selected, 'ls'))"
+    fields:
+      - id: ls_status
+        type: choice
+        label: Left submandibular gland
+        required: true
+        default: seen
+        normal: seen
+        options:
+          - { value: seen, label: Visualized }
+          - { value: not_seen, label: Not visualized }
+          - { value: absent, label: Surgically absent }
+      - id: ls_size
+        type: dims
+        label: Size (optional)
+        decimals: 1
+        help: Length (craniocaudal) x AP x width (transverse)
+        min: 0.5
+        max: 10
+        show_if: "ls_status == 'seen'"
+      - id: ls_echo
+        type: choice
+        label: Echotexture
+        required: true
+        other: true
+        show_if: "ls_status == 'seen'"
+        normal: homogeneous
+        options:
+          - { value: homogeneous, label: Homogeneous (normal), text: homogeneous echotexture }
+          - { value: heterogeneous, label: Heterogeneous, text: heterogeneous echotexture }
+          - { value: hypoechoic, label: Diffusely hypoechoic, text: diffusely hypoechoic parenchyma }
+          - { value: sjogren, label: Multiple small hypoechoic foci (Sjögren pattern), text: "heterogeneous parenchyma with multiple small hypoechoic or anechoic foci, a pattern that can be seen with Sjögren syndrome" }
+          - { value: atrophic, label: Small and echogenic (atrophic), text: "small, echogenic gland, which can be seen with atrophy or chronic sialadenitis" }
+      - id: ls_vasc
+        type: choice
+        label: Vascularity
+        required: true
+        show_if: "ls_status == 'seen'"
+        normal: normal
+        options:
+          - { value: normal, label: Normal, text: normal vascularity }
+          - { value: increased, label: Increased, text: increased vascularity }
+      - id: ls_ducts
+        type: choice
+        label: Ductal dilatation
+        required: true
+        show_if: "ls_status == 'seen'"
+        normal: none
+        options:
+          - { value: none, label: None, text: no ductal dilatation }
+          - { value: intra, label: Intraglandular ducts, text: dilated intraglandular ducts }
+          - { value: main, label: Main (Wharton) duct, text: dilated main (Wharton) duct }
+          - { value: both, label: Both, text: dilated intraglandular ducts and main (Wharton) duct }
+      - id: ls_calculi
+        type: choice
+        label: Calculi
+        required: true
+        show_if: "ls_status == 'seen'"
+        normal: none
+        options:
+          - { value: none, label: None }
+          - { value: present, label: Present }
+      - id: ls_stone
+        type: number
+        label: Largest calculus
+        unit: mm
+        min: 1
+        max: 30
+        width: short
+        required: true
+        show_if: "ls_status == 'seen' and ls_calculi == 'present'"
+      - id: ls_stone_multiple
+        type: boolean
+        label: Multiple calculi
+        show_if: "ls_status == 'seen' and ls_calculi == 'present'"
+      - id: ls_stone_loc
+        type: choice
+        label: Location of the largest calculus
+        show_if: "ls_status == 'seen' and ls_calculi == 'present'"
+        options:
+          - { value: gland, label: Within the gland, text: within the gland }
+          - { value: hilum, label: At the hilum, text: at the hilum }
+          - { value: duct, label: In the main (Wharton) duct, text: in the main (Wharton) duct }
+    report: |
+      {{#if ls_status == 'not_seen'}}
+      LEFT SUBMANDIBULAR: Not visualized.
+      {{else if ls_status == 'absent'}}
+      LEFT SUBMANDIBULAR: Surgically absent.
+      {{else if ls_status == 'seen'}}
+      LEFT SUBMANDIBULAR:{{#if present(ls_size)}} Measures {{ls_size}}.{{/if}} {{ls_echo | sentence}} {{ls_vasc | sentence}} {{ls_ducts | sentence}} {{#if ls_calculi == 'present'}}{{#if ls_stone_multiple}}Multiple calculi, the largest{{else}}Calculus{{/if}} measuring {{ls_stone}}{{#if present(ls_stone_loc)}} {{ls_stone_loc}}{{/if}}.{{else if ls_calculi == 'none'}}No calculi.{{/if}}
+      {{/if}}
+
+  - id: masses_section
+    title: Masses
+    fields:
+      - id: mass_status
+        type: choice
+        label: Focal masses
+        required: true
+        normal: none
+        options:
+          - { value: none, label: None }
+          - { value: present, label: Present (describe each below) }
+      - id: masses
+        type: repeat
+        label: Masses
+        item_label: Mass
+        max_items: 6
+        required: true
+        show_if: "mass_status == 'present'"
+        fields:
+          - id: gland
+            type: choice
+            label: Gland
+            required: true
+            options:
+              - { value: rp, label: Right parotid, text: right parotid gland }
+              - { value: lp, label: Left parotid, text: left parotid gland }
+              - { value: rs, label: Right submandibular, text: right submandibular gland }
+              - { value: ls, label: Left submandibular, text: left submandibular gland }
+          - id: site
+            type: choice
+            label: Location in the parotid
+            show_if: "gland in ['rp', 'lp']"
+            options:
+              - { value: superficial, label: Superficial lobe, text: superficial lobe }
+              - { value: deep, label: Deep lobe, text: deep lobe }
+              - { value: tail, label: Tail (inferior pole), text: parotid tail }
+          - id: size
+            type: dims
+            label: Size
+            help: Length (craniocaudal) x AP x width (transverse)
+            min: 0.2
+            max: 10
+            required: true
+          - id: composition
+            type: choice
+            label: Cystic / solid
+            required: true
+            options:
+              - { value: solid, label: Solid, text: solid }
+              - { value: mostly_solid, label: Predominantly solid, text: predominantly solid }
+              - { value: mostly_cystic, label: Predominantly cystic, text: predominantly cystic }
+              - { value: cystic, label: Cystic, text: cystic }
+          - id: echogenicity
+            type: choice
+            label: Echogenicity
+            required: true
+            options:
+              - { value: hypoechoic, label: Hypoechoic, text: hypoechoic }
+              - { value: isoechoic, label: Isoechoic, text: isoechoic }
+              - { value: hyperechoic, label: Hyperechoic, text: hyperechoic }
+              - { value: heterogeneous, label: Heterogeneous, text: heterogeneous }
+              - { value: anechoic, label: Anechoic, text: anechoic }
+          - id: margins
+            type: choice
+            label: Margins
+            required: true
+            options:
+              - { value: circumscribed, label: Well-circumscribed, text: well-circumscribed margins }
+              - { value: lobulated, label: Lobulated, text: lobulated margins }
+              - { value: ill_defined, label: Ill-defined, text: ill-defined margins }
+              - { value: irregular, label: Irregular / infiltrative, text: irregular margins }
+          - id: vascularity
+            type: choice
+            label: Internal vascularity
+            required: true
+            options:
+              - { value: none, label: None, text: no internal vascularity }
+              - { value: internal, label: Internal, text: internal vascularity }
+              - { value: peripheral, label: Peripheral only, text: peripheral vascularity only }
+              - { value: marked, label: Marked internal, text: marked internal vascularity }
+          - id: calcification
+            type: choice
+            label: Calcification
+            options:
+              - { value: none, label: None, text: no calcification }
+              - { value: present, label: Present, text: contains calcification }
+          - id: enhancement
+            type: boolean
+            label: Posterior acoustic enhancement
+          - id: change
+            type: choice
+            label: Compared with prior
+            options:
+              - { value: new, label: New, text: New since the prior examination. }
+              - { value: stable, label: Stable, text: Stable compared with the prior examination. }
+              - { value: larger, label: Enlarged, text: Increased in size compared with the prior examination. }
+              - { value: smaller, label: Smaller, text: Decreased in size compared with the prior examination. }
+          - id: note
+            type: text
+            label: Note (optional)
+    report: |
+      {{#if mass_status == 'none'}}
+      MASSES: No focal mass.
+      {{else if mass_status == 'present'}}
+      MASSES:
+      {{#each masses}}
+      - Mass {{@index}} ({{gland}}{{#if present(site)}}, {{site}}{{/if}}): Measures {{size}}. {{composition | cap}} and {{echogenicity}}, with {{margins}}. {{vascularity | sentence}} {{calcification | sentence}}{{#if enhancement}} Posterior acoustic enhancement.{{/if}} {{note | sentence}} {{change}}
+      {{/each}}
+      {{/if}}
+
+  - id: lymph_nodes
+    title: Cervical lymph nodes
+    fields:
+      - id: ln_status
+        type: choice
+        label: Cervical lymph nodes
+        required: true
+        normal: normal
+        options:
+          - { value: normal, label: None abnormal }
+          - { value: abnormal, label: Abnormal (describe) }
+          - { value: not_assessed, label: Not assessed }
+      - id: ln_note
+        type: textarea
+        label: Abnormal lymph node(s)
+        placeholder: "Side, level, size, abnormal features (e.g. right level II, 1.8 x 1.2 cm, no fatty hilum)"
+        rows: 2
+        required: true
+        show_if: "ln_status == 'abnormal'"
+    report: |
+      {{#if ln_status == 'normal'}}
+      CERVICAL LYMPH NODES: No abnormal cervical lymph nodes.
+      {{else if ln_status == 'abnormal'}}
+      CERVICAL LYMPH NODES: {{ln_note | sentence}}
+      {{else if ln_status == 'not_assessed'}}
+      CERVICAL LYMPH NODES: Not assessed.
+      {{/if}}

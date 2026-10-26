@@ -12,6 +12,9 @@ study_match:
   - DVT LOWER
   - DVT LEG
 
+report:
+  heading: "ULTRASOUND {{side | upper}} VENOUS DOPPLER" # used when reported together with other exams from the same visit
+
 sections:
   - id: clinical
     title: Clinical

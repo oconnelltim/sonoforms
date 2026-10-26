@@ -6,7 +6,7 @@
 // produces. Changes are undoable and saved automatically as a draft;
 // technologists only see them once someone presses Publish.
 
-import { h, mount, toast, modal, confirmDialog, promptDialog, debounce, fmtDateTime, downloadUrl } from '../dom.js';
+import { h, mount, toast, modal, confirmDialog, promptDialog, debounce, fmtDateTime, downloadUrl, localToday } from '../dom.js';
 import { get, post, put, del } from '../api.js';
 import { renderForm } from '../components/form-renderer.js';
 import { formBuilder } from '../components/form-builder.js';
@@ -15,7 +15,7 @@ import { generateReport } from '/shared/template.js';
 import { DEFAULT_REPORT_FIELD, reportFieldLabel } from '/shared/report-fields.js';
 import YAML from '/vendor/yaml/index.js';
 
-const SAMPLE_ENV = { patient: { age: 45, sex: 'F' }, exam: { date: new Date().toISOString().slice(0, 10), study_description: '' }, institution: { name: 'Preview', code: 'PREVIEW' } };
+const SAMPLE_ENV = { patient: { age: 45, sex: 'F' }, exam: { date: localToday(), study_description: '' }, institution: { name: 'Preview', code: 'PREVIEW' } };
 
 function storedMode() {
   try { return localStorage.getItem('sf.formsMode') === 'source' ? 'source' : 'builder'; } catch { return 'builder'; }

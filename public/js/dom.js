@@ -46,6 +46,12 @@ export const $ = (sel, root = document) => root.querySelector(sel);
 
 // ---- Formatting ---------------------------------------------------------
 
+// Today in the browser's time zone, as YYYY-MM-DD (toISOString would give UTC).
+export function localToday() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 export function fmtDate(d) {
   if (!d) return '';
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(d));

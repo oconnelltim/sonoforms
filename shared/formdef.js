@@ -197,6 +197,7 @@ export function lintForm(rawOrDef) {
       }
     }
   }
+  if (def.report.heading) checkTemplate('report.heading', def.report.heading);
   if (def.report.header) checkTemplate('report.header', def.report.header);
   if (def.report.footer) checkTemplate('report.footer', def.report.footer);
   return problems;

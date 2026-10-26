@@ -11,6 +11,9 @@ study_match:
   - TESTICLE
   - TESTICLES
 
+report:
+  heading: ULTRASOUND SCROTUM # used when reported together with other exams from the same visit
+
 sections:
   - id: clinical
     title: Clinical

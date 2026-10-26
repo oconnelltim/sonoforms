@@ -9,7 +9,7 @@ import { renderForm } from '../components/form-renderer.js';
 import { generateReport } from '/shared/template.js';
 import { validateAnswers } from '/shared/engine.js';
 import { initialAnswers } from '/shared/formdef.js';
-import { chooseForm } from './tech-worklist.js';
+import { chooseForm, chooseLinkedStudies, startFromStudy } from './tech-worklist.js';
 
 export async function render({ root, params, navigate, session }) {
   const id = Number(params[0]);
@@ -155,13 +155,52 @@ export async function render({ root, params, navigate, session }) {
       await post(`/exams/${id}/submit`, { answers, tech_note: techNote.value, row_version: rowVersion });
       dirty = false;
       toast('Submitted. The radiologist can now dictate it.', 'success');
-      navigate('/tech');
+      if (!(await offerNextStudy())) navigate('/tech');
     } catch (e) {
       if (e.body?.row_version) rowVersion = e.body.row_version;
       if (e.body?.missing) form.highlightMissing(e.body.missing);
       toast(e.message, 'error', 6000);
       submitBtn.disabled = false;
     }
+  }
+
+  // After submitting: if the patient has another study today without a form,
+  // offer to start it. Returns true if one was started.
+  async function offerNextStudy() {
+    let related;
+    try { related = await get(`/exams/${id}/related-studies`); } catch { return false; }
+    const free = (related.studies || []).filter(st => st.state === 'free');
+    if (!free.length) return false;
+    const choice = await modal({
+      title: 'Next study for this patient',
+      body: [h('p', `${patientName(exam.patient)} has ${free.length === 1 ? 'another study' : 'other studies'} today without a form:`),
+        h('ul', free.map(st => h('li', [st.description || 'Study', st.accession && `Acc ${st.accession}`].filter(Boolean).join(' · '))))],
+      actions: [{ label: 'Back to worklist', value: null }, ...free.slice(0, 3).map(st => ({ label: `Start ${st.description || 'study'}`, primary: true, value: st }))],
+    });
+    if (!choice) return false;
+    await startFromStudy(choice, navigate, free);
+    return true;
+  }
+
+  // Which of the patient's PACS studies today this form covers.
+  async function editStudies() {
+    let related;
+    try { related = await get(`/exams/${id}/related-studies`); } catch (e) { toast(e.message, 'error'); return; }
+    const others = (related.studies || []).filter(st => st.state !== 'this');
+    if (!others.length) { toast(related.error || 'This patient has no other studies in today’s PACS worklist.', 'info'); return; }
+    const picked = await chooseLinkedStudies(patientName(exam.patient), data.form?.definition?.title || 'this', others.map(st => ({
+      ...st,
+      checked: st.state === 'linked',
+      disabled: st.state === 'other',
+      note: st.state === 'other' ? `on the ${st.exam.form_title || 'other'} form` : '',
+    })));
+    if (picked === null) return;
+    try {
+      const r = await put(`/exams/${id}/studies`, { study_uids: picked });
+      exam.linked_studies = r.linked_studies;
+      drawHeader();
+      toast(r.linked_studies.length ? `This form now covers ${r.linked_studies.length + 1} studies` : 'This form covers its own study only', 'success');
+    } catch (e) { toast(e.message, 'error'); }
   }
 
   async function reopen() {
@@ -195,7 +234,11 @@ export async function render({ root, params, navigate, session }) {
         h('a.back', { href: '#/tech' }, '← Worklist'),
         h('div.banner-name', patientName(p), ' ', statusBadge(exam.status)),
         h('div.banner-sub', patientLine(p)),
-        h('div.banner-sub', [exam.study.description, exam.study.accession && `Acc ${exam.study.accession}`, exam.study.referring && `Ref: ${exam.study.referring}`].filter(Boolean).join(' · '))),
+        h('div.banner-sub', [exam.study.description, exam.study.accession && `Acc ${exam.study.accession}`, exam.study.referring && `Ref: ${exam.study.referring}`].filter(Boolean).join(' · ')),
+        (exam.linked_studies || []).length ? h('div.banner-sub.linked-line', h('span.badge', 'Also covers'), ' ',
+          exam.linked_studies.map(st => [st.description, st.accession && `Acc ${st.accession}`].filter(Boolean).join(' · ')).join('; ')) : null,
+        exam.source === 'pacs' && ['draft', 'returned', 'submitted'].includes(exam.status) && session.can.tech
+          ? h('button.link.small', { type: 'button', onclick: editStudies }, (exam.linked_studies || []).length ? 'Change studies covered…' : 'Covers another study too?') : null),
       h('div.banner-right',
         h('div.banner-form',
           h('span.muted.small', 'Form'),

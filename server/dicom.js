@@ -251,12 +251,16 @@ export function mockStudies(institution) {
     ['MOCK^GRACE^L', 'F', '20010215', 'US PELVIS TRANSABDOMINAL'],
     ['DUMMY^HENRY', 'M', '19630527', 'US VENOUS DUPLEX LOWER EXT LEFT'],
     ['TRIAL^IRIS', 'F', '19960409', 'US OB 1ST TRIMESTER'],
+    // A multipart visit for TEST^CARLOS (same MRN as row 2): a Doppler
+    // billed separately but on the abdomen form, and a DVT study.
+    ['TEST^CARLOS^J', 'M', '19550130', 'US DOPPLER ABDOMEN', 2],
+    ['TEST^CARLOS^J', 'M', '19550130', 'US VENOUS DUPLEX LOWER EXT RIGHT', 2],
   ];
-  return people.map(([name, sex, dob, desc], i) => {
+  return people.map(([name, sex, dob, desc, samePatientAs], i) => {
     const t = new Date(today.getTime() - (i * 47 + 5) * 60000);
     return {
       PatientName: [{ Alphabetic: name }],
-      PatientID: `MRN${String(100200 + i * 37 + (institution.id || 0) * 1000)}`,
+      PatientID: `MRN${String(100200 + (samePatientAs ?? i) * 37 + (institution.id || 0) * 1000)}`,
       PatientBirthDate: dob,
       PatientSex: sex,
       StudyInstanceUID: `1.2.826.0.1.3680043.10.1077.${institution.id || 0}.${dicomDate(t)}.${i + 1}`,

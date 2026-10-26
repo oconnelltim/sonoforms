@@ -24,6 +24,13 @@ All notable changes to SonoForms are documented here. The format follows [Keep a
   - Forms say where each section's text goes with `report_field:`, or give `report:` one entry per field. In the builder, pick *Goes into the report's … field*, or add *Text for another report field*. See "Report fields" in [docs/FORMS.md](docs/FORMS.md).
   - The starter forms send their clinical section to Indication and Comparison, and the pelvis technique section to Technique.
   - Copying a card is recorded in the audit log with the field copied.
+- **Multipart studies:**
+  - **Linked studies.** One form can cover several PACS studies, for an exam billed as two (e.g. an abdomen and an abdominal Doppler). When a tech starts a form, the patient's other studies today are offered, with likely ones ticked. A linked study shows as "Covered" on the worklist and opens the same form. *Change studies covered…* on the form edits the list. Cancelling a form frees its studies.
+  - **Combined reports.** Exams for one patient on the same day (e.g. an abdomen and a DVT study) are one row on the reading worklist and are reported together by default: one set of cards, with a heading per exam in Findings and Impression, shared Indication, Technique and Comparison, and every accession number listed. *Mark dictated* marks them all; *Move back to worklist* moves them back together; *Report separately* splits them. The radiologist is told if another exam for the patient is still with the tech.
+  - **Next study.** After submitting, the tech is offered the patient's next study that has no form yet.
+  - Forms have a `report.heading` (a template, e.g. `ULTRASOUND {{side | upper}} VENOUS DOPPLER`) for combined reports, set in the builder under Form settings. The starter forms have one.
+  - API: `GET /api/exams/:id/related-studies`, `PUT /api/exams/:id/studies`, `GET /api/exams/:id/visit`, `POST /api/exams/:id/dictated-group`; `POST /api/exams` takes `linked_study_uids`, and `PUT /api/exams/:id/report` takes `combined_with`.
+- **Salivary glands starter form** (`us-salivary`): parotid and submandibular glands per side (echotexture, vascularity, ducts, calculi, intraparotid nodes), masses as a repeating group, and cervical lymph nodes.
 - **Early pregnancy starter form** (`us-early-ob`): first-trimester ultrasound for rule out ectopic, pain or bleeding, viability and dating. It drafts the Impression: live intrauterine pregnancy with gestational age; SRU criteria for pregnancy failure (definite and suspicious, with follow-up advice); pregnancy of unknown location; adnexal findings suspicious for ectopic or heterotopic pregnancy; cesarean scar, cervical and interstitial locations; and possible hemoperitoneum. For a live embryo it gives gestational age by CRL and LMP, and an estimated date of delivery, redating by ultrasound per ACOG. As with every starter form, have your radiologists review the wording before clinical use.
 - **Form functions for early pregnancy:** `crl_ga` (Robinson & Fleming, or Hadlock), `msd_ga`, `ga_text`, `edd_from_lmp`, `edd_from_ga`, `redate_by_us` and `add_days`. Calculated dates print as MM/DD/YYYY.
 - **`update-general-forms` command** (`./manage.sh update-forms`): lists starter forms with newer versions and, with `--apply`, publishes them as each form's next version. Forms edited in the app or with an unpublished draft are left alone (`--force` replaces edited ones), institution copies are never touched, and each update is audited.
@@ -44,6 +51,8 @@ All notable changes to SonoForms are documented here. The format follows [Keep a
 - The starter forms were respaced to one consistent YAML style, so builder edits produce minimal changes. Only spacing inside `[ ]` lists changed.
 
 ### Fixed
+
+- The tech worklist showed a date under today's studies in the evening (it compared against the UTC date), and the form editor's preview used the UTC date as the exam date.
 
 - **Form editor layout:**
   - Hidden on/off-switch checkboxes in the tech-form preview escaped their scrolling pane and stretched the whole page.

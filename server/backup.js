@@ -19,7 +19,7 @@ import { upgradeLegacyRows } from './upgrade.js';
 // Restore order respects foreign keys. Sessions are deliberately excluded.
 export const TABLES = [
   'settings', 'institutions', 'users', 'user_institutions', 'forms', 'form_versions',
-  'institution_forms', 'patients', 'exams', 'audit_log',
+  'institution_forms', 'patients', 'exams', 'exam_studies', 'audit_log',
 ];
 
 export async function writeBackup(out) {

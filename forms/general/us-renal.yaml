@@ -9,6 +9,9 @@ study_match:
   - RETROPERITONEAL
   - US KIDNEYS BLADDER
 
+report:
+  heading: ULTRASOUND KIDNEYS AND BLADDER # used when reported together with other exams from the same visit
+
 sections:
   - id: clinical
     title: Clinical

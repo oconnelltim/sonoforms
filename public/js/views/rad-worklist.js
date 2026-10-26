@@ -32,28 +32,51 @@ export async function render({ root, session, navigate }) {
     }
   }
 
+  // Exams for one patient on the same day are one row in the "ready" queue:
+  // the radiologist reports them together.
+  function visits(list) {
+    if (status !== 'submitted') return list.map(e => [e]);
+    const byKey = new Map();
+    for (const e of list) {
+      const key = `${e.patient.id}|${e.institution_id}|${e.exam_date}`;
+      if (!byKey.has(key)) byKey.set(key, []);
+      byKey.get(key).push(e);
+    }
+    return [...byKey.values()];
+  }
+  const accessions = e => [e.study.accession, ...(e.linked_studies || []).map(st => st.accession)].filter(Boolean);
+
   function draw() {
     const q = filter.value.trim().toLowerCase();
-    const list = rows.filter(e => !q || [patientName(e.patient), e.patient.mrn, e.study.accession, e.form_title, e.study.description, e.tech_name].some(v => String(v || '').toLowerCase().includes(q)));
+    const list = rows.filter(e => !q || [patientName(e.patient), e.patient.mrn, ...accessions(e), e.form_title, e.study.description, e.tech_name].some(v => String(v || '').toLowerCase().includes(q)));
+    const groups = visits(list);
+    const leadOf = g => g.reduce((a, b) => (b.id < a.id ? b : a));
     // The queue order is remembered so "Next case" works on the exam screen.
-    sessionStorage.setItem('sf.radQueue', JSON.stringify(status === 'submitted' ? list.map(e => e.id) : []));
+    sessionStorage.setItem('sf.radQueue', JSON.stringify(status === 'submitted' ? groups.map(g => leadOf(g).id) : []));
     const multi = instSel.value === 'all';
     mount(box, list.length ? h('div.table-wrap', h('table.table.worklist',
       h('thead', h('tr',
         h('th', status === 'dictated' ? 'Dictated' : 'Submitted'),
         h('th', 'Patient'), h('th', 'Study'), multi ? h('th', 'Site') : null, h('th', 'Tech'), h('th', 'Status'))),
-      h('tbody', list.map(e => h('tr.clickable', {
-        tabindex: 0,
-        onclick: () => navigate(`/rad/exam/${e.id}`),
-        onkeydown: (ev) => { if (ev.key === 'Enter') navigate(`/rad/exam/${e.id}`); },
-      },
-      h('td.nowrap', h('div', fmtDateTime(status === 'dictated' ? e.dictated_at : e.submitted_at)), h('div.muted.small', timeAgo(status === 'dictated' ? e.dictated_at : e.submitted_at))),
-      h('td', h('div.strong', patientName(e.patient)), h('div.muted.small', [e.patient.mrn && `MRN ${e.patient.mrn}`, e.patient.age !== null && `${e.patient.age} y`, e.patient.sex].filter(Boolean).join(' · '))),
-      h('td', h('div', e.form_title || e.study.description || '—'), h('div.muted.small', [e.study.description !== e.form_title && e.study.description, e.study.accession && `Acc ${e.study.accession}`].filter(Boolean).join(' · '))),
-      multi ? h('td', h('span.badge', e.institution_code)) : null,
-      h('td', e.tech_name || ''),
-      h('td', statusBadge(e.status), e.status === 'returned' && e.return_reason ? h('div.muted.small', e.return_reason) : null),
-      ))))) : h('div.empty', status === 'submitted' ? 'All caught up: nothing waiting to be dictated.' : 'Nothing here.'));
+      h('tbody', groups.map((g) => {
+        const e = leadOf(g);
+        const when = status === 'dictated' ? e.dictated_at : g.map(x => x.submitted_at).sort()[0];
+        return h('tr.clickable', {
+          tabindex: 0,
+          onclick: () => navigate(`/rad/exam/${e.id}`),
+          onkeydown: (ev) => { if (ev.key === 'Enter') navigate(`/rad/exam/${e.id}`); },
+        },
+        h('td.nowrap', h('div', fmtDateTime(when)), h('div.muted.small', timeAgo(when))),
+        h('td', h('div.strong', patientName(e.patient)), h('div.muted.small', [e.patient.mrn && `MRN ${e.patient.mrn}`, e.patient.age !== null && `${e.patient.age} y`, e.patient.sex].filter(Boolean).join(' · '))),
+        h('td',
+          g.length > 1 ? h('span.badge.accent', `${g.length} exams, one report`) : null,
+          g.map(x => h('div', h('div', x.form_title || x.study.description || '—'),
+            h('div.muted.small', [x.study.description !== x.form_title && x.study.description, accessions(x).length && `Acc ${accessions(x).join(', ')}`].filter(Boolean).join(' · '))))),
+        multi ? h('td', h('span.badge', e.institution_code)) : null,
+        h('td', [...new Set(g.map(x => x.tech_name).filter(Boolean))].join(', ')),
+        h('td', statusBadge(e.status), e.status === 'returned' && e.return_reason ? h('div.muted.small', e.return_reason) : null),
+        );
+      })))) : h('div.empty', status === 'submitted' ? 'All caught up: nothing waiting to be dictated.' : 'Nothing here.'));
   }
 
   instSel.addEventListener('change', () => { put('/session/preferences', { rad_institutions: instSel.value }).catch(() => {}); session.user.preferences = { ...prefs, rad_institutions: instSel.value }; load(); });

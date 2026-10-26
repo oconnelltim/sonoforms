@@ -5,9 +5,10 @@
 
 import { audit, auditOnce } from '../audit.js';
 import { requireAuth, can, userInstitutions, HttpError } from '../auth.js';
-import { listExams, updateExam } from '../records.js';
+import { tx } from '../db.js';
+import { listExams, updateExam, visitExams } from '../records.js';
 import { loadExamFor } from './tech.js';
-import { REPORT_FIELD_IDS, reportFields, reportFieldLabel } from '../../shared/report-fields.js';
+import { REPORT_FIELD_IDS, reportFields, reportFieldLabel, combineReports, defaultHeading } from '../../shared/report-fields.js';
 
 // Request body for the radiologist's edited report: { fields: { indication: '…', findings: '…' } },
 // or null to go back to the generated text.
@@ -17,17 +18,46 @@ const editedFieldsSchema = {
   properties: Object.fromEntries(REPORT_FIELD_IDS.map(id => [id, { type: 'string', maxLength: 50000 }])),
 };
 
-// Edited text for each field, kept in the generated report's field order.
+// Generated fields with the radiologist's edits applied, in report order.
+function applyEdits(generated, edits) {
+  const order = [...generated.map(f => f.id), ...REPORT_FIELD_IDS.filter(id => !generated.some(f => f.id === id))];
+  return order
+    .filter(id => edits[id] !== undefined || generated.some(f => f.id === id))
+    .map(id => ({ id, label: reportFieldLabel(id), text: edits[id] ?? generated.find(f => f.id === id)?.text ?? '' }));
+}
+
 function editedReport(exam, edits) {
   if (edits === null || edits === undefined) return null;
-  const generated = reportFields(exam.report);
-  const order = [...generated.map(f => f.id), ...REPORT_FIELD_IDS.filter(id => !generated.some(f => f.id === id))];
-  return {
-    fields: order
-      .filter(id => edits[id] !== undefined || generated.some(f => f.id === id))
-      .map(id => ({ id, label: reportFieldLabel(id), text: edits[id] ?? generated.find(f => f.id === id)?.text ?? '' })),
-  };
+  return { fields: applyEdits(reportFields(exam.report), edits) };
 }
+
+// ---- Combined reports ---------------------------------------------------
+// Exams for one patient on the same day can be reported together: one set
+// of cards, with a heading per exam in Findings and Impression. The combined
+// edits are kept on the first exam of the group (lowest id); when dictated,
+// every exam in the group stores the combined report and the ids it covers.
+
+// An exam's own report as it stands (separate edits included).
+export function ownFields(exam) {
+  const own = exam.final_report && !exam.final_report.combined ? exam.final_report : exam.report;
+  return reportFields(own);
+}
+const headingOf = exam => exam.report?.heading || defaultHeading(exam.form_title);
+export const combinedGenerated = group => combineReports(group.map(e => ({ heading: headingOf(e), fields: ownFields(e) })));
+
+// Checks a requested group: this exam plus others from its visit, all
+// waiting to be dictated. Returns the group's exams, oldest first.
+async function loadGroup(exam, ids) {
+  const want = new Set([exam.id, ...ids]);
+  const visit = await visitExams(exam);
+  const group = visit.filter(e => want.has(e.id));
+  if (group.length !== want.size) throw new HttpError(400, 'Those exams are not all from this patient’s visit.');
+  const notReady = group.find(e => e.status !== 'submitted');
+  if (notReady) throw new HttpError(409, `${notReady.form_title || 'One of the exams'} is ${notReady.status}; it can’t be reported in this group.`);
+  return group;
+}
+
+const groupSchema = { type: 'array', maxItems: 10, items: { type: 'integer' } };
 
 const versionBody = { row_version: { type: 'integer' } };
 
@@ -59,13 +89,30 @@ export default async function radRoutes(app) {
     return exams;
   });
 
+  // The patient's exams from the same day, for reporting them together.
+  app.get('/exams/:id/visit', rad, async (req) => {
+    const exam = await loadExamFor(req, Number(req.params.id));
+    const visit = await visitExams(exam);
+    return {
+      exams: visit.map(e => ({
+        id: e.id, status: e.status, form_title: e.form_title, heading: headingOf(e), study: e.study, linked_studies: e.linked_studies,
+        tech_name: e.tech_name, submitted_at: e.submitted_at, row_version: e.row_version, report: e.report, final_report: e.final_report,
+      })),
+    };
+  });
+
   app.put('/exams/:id/report', {
     ...rad,
-    schema: { body: { type: 'object', required: ['row_version'], properties: { ...versionBody, fields: editedFieldsSchema } } },
+    schema: { body: { type: 'object', required: ['row_version'], properties: { ...versionBody, fields: editedFieldsSchema, combined_with: groupSchema } } },
   }, async (req) => {
     const exam = await loadExamFor(req, Number(req.params.id));
     if (exam.status !== 'submitted') throw new HttpError(409, `This exam is ${exam.status}; the findings can no longer be edited.`);
-    const rowVersion = await updateExam(exam.id, { final_report: editedReport(exam, req.body.fields) }, req.body.row_version);
+    let finalReport = editedReport(exam, req.body.fields);
+    if (req.body.combined_with?.length) {
+      const group = await loadGroup(exam, req.body.combined_with);
+      finalReport = req.body.fields ? { fields: applyEdits(combinedGenerated(group), req.body.fields), combined: group.map(e => e.id) } : null;
+    }
+    const rowVersion = await updateExam(exam.id, { final_report: finalReport }, req.body.row_version);
     await auditOnce(`report:${req.user.id}:${exam.id}`, 15 * 60000, { req, institutionId: exam.institution_id, action: 'exam.report_edit', entityType: 'exam', entityId: exam.id });
     return { row_version: rowVersion };
   });
@@ -76,6 +123,31 @@ export default async function radRoutes(app) {
   }, async (req) => {
     const exam = await loadExamFor(req, Number(req.params.id));
     await audit({ req, institutionId: exam.institution_id, action: 'exam.copy_findings', entityType: 'exam', entityId: exam.id, details: req.body?.field ? { field: req.body.field } : null });
+    return { ok: true };
+  });
+
+  // Marks a group of exams reported together as dictated. Each stores the
+  // combined report. versions: { examId: row_version } for every exam.
+  app.post('/exams/:id/dictated-group', {
+    ...rad,
+    schema: { body: { type: 'object', required: ['versions'], properties: {
+      versions: { type: 'object', additionalProperties: { type: 'integer' }, maxProperties: 10 }, fields: editedFieldsSchema,
+    } } },
+  }, async (req) => {
+    const exam = await loadExamFor(req, Number(req.params.id));
+    const ids = Object.keys(req.body.versions).map(Number);
+    if (!ids.includes(exam.id) || ids.length < 2) throw new HttpError(400, 'A combined report needs this exam and at least one other.');
+    const group = await loadGroup(exam, ids);
+    const combined = { fields: applyEdits(combinedGenerated(group), req.body.fields || {}), combined: group.map(e => e.id) };
+    const now = new Date();
+    await tx(async (c) => {
+      for (const e of group) {
+        await updateExam(e.id, { status: 'dictated', rad_id: req.user.id, dictated_at: now, final_report: combined }, req.body.versions[e.id], c);
+      }
+    });
+    for (const e of group) {
+      await audit({ req, institutionId: e.institution_id, action: 'exam.dictated', entityType: 'exam', entityId: e.id, details: { combined_with: group.map(x => x.id).filter(x => x !== e.id) } });
+    }
     return { ok: true };
   });
 
@@ -95,8 +167,18 @@ export default async function radRoutes(app) {
   app.post('/exams/:id/undictate', { ...rad, schema: { body: { type: 'object', required: ['row_version'], properties: versionBody } } }, async (req) => {
     const exam = await loadExamFor(req, Number(req.params.id));
     if (exam.status !== 'dictated') throw new HttpError(409, 'This exam is not marked dictated.');
-    const rowVersion = await updateExam(exam.id, { status: 'submitted', dictated_at: null, rad_id: null }, req.body.row_version);
-    await audit({ req, institutionId: exam.institution_id, action: 'exam.undictate', entityType: 'exam', entityId: exam.id });
+    // A combined report moves back as a group, keeping its edits on the first exam.
+    const groupIds = exam.final_report?.combined || [];
+    const others = groupIds.length ? (await visitExams(exam)).filter(e => groupIds.includes(e.id) && e.id !== exam.id && e.status === 'dictated') : [];
+    let rowVersion;
+    await tx(async (c) => {
+      const back = (e, version) => updateExam(e.id, {
+        status: 'submitted', dictated_at: null, rad_id: null, final_report: groupIds.length && e.id !== Math.min(...groupIds) ? null : e.final_report,
+      }, version, c);
+      rowVersion = await back(exam, req.body.row_version);
+      for (const e of others) await back(e, e.row_version);
+    });
+    for (const e of [exam, ...others]) await audit({ req, institutionId: e.institution_id, action: 'exam.undictate', entityType: 'exam', entityId: e.id });
     return { row_version: rowVersion };
   });
 

@@ -31,3 +31,31 @@ export function reportFields(stored) {
   if (typeof stored === 'string') return [{ id: DEFAULT_REPORT_FIELD, label: reportFieldLabel(DEFAULT_REPORT_FIELD), text: stored }];
   return Array.isArray(stored.fields) ? stored.fields : [];
 }
+
+// Heading for an exam's part of a combined report, e.g. "US Pelvis (female,
+// non-OB)" -> "ULTRASOUND PELVIS". Forms can set their own (report.heading).
+export function defaultHeading(title) {
+  const t = String(title || 'Ultrasound').replace(/\s*\([^)]*\)/g, '').trim();
+  return (/^US\b/i.test(t) ? t.replace(/^US\b/i, 'Ultrasound') : t).toUpperCase();
+}
+
+// One report for several exams of a visit (e.g. an abdomen and a DVT study),
+// reported together. Findings and Impression get a heading per exam;
+// Indication and Technique list each exam's text once; Comparison is shared
+// when every exam says the same, otherwise headed.
+// members: [{ heading, fields: [{ id, label, text }] }]
+const HEADED_FIELDS = new Set(['findings', 'impression']);
+export function combineReports(members) {
+  if (members.length === 1) return members[0].fields;
+  const out = [];
+  for (const { id, label } of REPORT_FIELDS) {
+    const parts = members
+      .map(m => ({ heading: m.heading, text: String(m.fields.find(f => f.id === id)?.text || '').trim() }))
+      .filter(p => p.text);
+    if (!parts.length) continue;
+    const unique = [...new Set(parts.map(p => p.text))];
+    const headed = HEADED_FIELDS.has(id) || (id === 'comparison' && unique.length > 1);
+    out.push({ id, label, text: headed ? parts.map(p => `${p.heading}:\n${p.text}`).join('\n\n') : unique.join('\n') });
+  }
+  return out;
+}

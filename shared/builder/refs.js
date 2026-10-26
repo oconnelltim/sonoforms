@@ -97,6 +97,7 @@ export function findReferences(def, id) {
     }
   }
   const report = def.report || {};
+  if (uses(templateIds(report.heading || ''))) hits.push({ where: 'the combined-report heading', path: [] });
   if (uses(templateIds(report.header || ''))) hits.push({ where: 'the report header', path: [] });
   if (uses(templateIds(report.footer || ''))) hits.push({ where: 'the report footer', path: [] });
   return hits;

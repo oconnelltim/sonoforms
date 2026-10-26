@@ -14,7 +14,7 @@
 
 import { compile, evaluate, truthy, isEmpty } from './expr.js';
 import { createEvaluator, formatValue, naturalJoin } from './engine.js';
-import { REPORT_FIELDS, REPORT_FIELD_IDS, DEFAULT_REPORT_FIELD, reportText } from './report-fields.js';
+import { REPORT_FIELDS, REPORT_FIELD_IDS, DEFAULT_REPORT_FIELD, reportText, defaultHeading } from './report-fields.js';
 
 export class TemplateError extends Error {}
 
@@ -256,6 +256,7 @@ export function sectionReportParts(section) {
 // Returns {
 //   fields:   [{ id, label, text }]  one per report field that has text, in report order
 //   text:     the whole report as one block (headings added when there are several fields)
+//   heading:  e.g. "ULTRASOUND ABDOMEN", for a report combined with other exams
 //   sections: [{ id, title, text, parts: [{ field, text }], error? }]
 //   errors:   []
 // }
@@ -292,5 +293,7 @@ export function generateReport(def, data, env = {}) {
   const fields = REPORT_FIELDS
     .map(f => ({ id: f.id, label: f.label, text: byField.get(f.id).join(separator).trim() }))
     .filter(f => f.text);
-  return { fields, text: reportText(fields), sections, errors };
+  // Used when this exam is reported together with others from the same visit.
+  const heading = (report.heading ? render(report.heading, 'Report heading').trim() : '') || defaultHeading(def.title);
+  return { fields, text: reportText(fields), heading, sections, errors };
 }

@@ -3,7 +3,7 @@
 // Technologist worklist: today's US studies from PACS plus forms already
 // started in this app. Picking a study keeps the PACS demographics.
 
-import { h, mount, toast, modal, fmtDate, fmtTime, fmtDateTime, patientName, statusBadge, timeAgo } from '../dom.js';
+import { h, mount, toast, modal, fmtDate, fmtTime, fmtDateTime, patientName, statusBadge, timeAgo, localToday } from '../dom.js';
 import { get, post } from '../api.js';
 
 export async function chooseForm(description, { title = 'Choose a form', current = null } = {}) {
@@ -32,12 +32,46 @@ export async function chooseForm(description, { title = 'Choose a form', current
   });
 }
 
-export async function startFromStudy(study, navigate) {
+export const samePatient = (a, b) => !!a?.mrn && a.mrn === b?.mrn && (a.issuer || '') === (b?.issuer || '');
+
+const studyLabel = st => [st.description || 'Study', st.accession && `Acc ${st.accession}`, st.datetime && fmtTime(st.datetime)].filter(Boolean).join(' · ');
+
+// Asks which of the patient's other studies a form also covers (e.g. a
+// Doppler billed as a separate exam). Returns the chosen study UIDs, or null
+// if the dialog was closed. `studies` items: { study_uid, description,
+// accession, datetime, checked, disabled, note }.
+export async function chooseLinkedStudies(patientLabel, formTitle, studies) {
+  const boxes = studies.map(st => h('input', { type: 'checkbox', checked: !!st.checked, disabled: !!st.disabled }));
+  const ok = await modal({
+    title: 'Other studies for this patient',
+    body: [
+      h('p', `${patientLabel} has other studies today. Tick any that the `, h('strong', formTitle), ' form also covers, for example a Doppler billed as a separate exam. Leave the rest to get their own form.'),
+      h('div.link-list', studies.map((st, i) => h(`label.link-study${st.disabled ? '.disabled' : ''}`, boxes[i],
+        h('span', h('span.strong', st.description || 'Study'), h('span.muted.small', [st.accession && `Acc ${st.accession}`, st.datetime && fmtTime(st.datetime), st.note].filter(Boolean).join(' · ')))))),
+    ],
+    actions: [{ label: 'Cancel', value: false }, { label: 'Continue', primary: true, value: true }],
+  });
+  if (!ok) return null;
+  return studies.filter((st, i) => boxes[i].checked && !st.disabled).map(st => st.study_uid);
+}
+
+// Starts a form for a PACS study. `others` are the rest of today's studies,
+// so the tech can include the same patient's related ones.
+export async function startFromStudy(study, navigate, others = []) {
   if (study.exam) return navigate(`/exam/${study.exam.id}`);
   const form = await chooseForm(study.description);
   if (!form) return;
+  let linked = [];
+  const candidates = others.filter(o => o.study_uid !== study.study_uid && !o.exam && samePatient(o.patient, study.patient));
+  if (candidates.length) {
+    // Pre-tick studies that suggest the same form, or no form at all.
+    const picked = await chooseLinkedStudies(patientName(study.patient), form.title,
+      candidates.map(o => ({ ...o, checked: !o.suggested_form || o.suggested_form.id === form.id, note: o.suggested_form && o.suggested_form.id !== form.id ? `usually ${o.suggested_form.title}` : '' })));
+    if (picked === null) return;
+    linked = picked;
+  }
   try {
-    const r = await post('/exams', { study_uid: study.study_uid, form_id: form.id });
+    const r = await post('/exams', { study_uid: study.study_uid, form_id: form.id, linked_study_uids: linked });
     navigate(`/exam/${r.id}`);
   } catch (e) {
     toast(e.message, 'error');
@@ -100,13 +134,15 @@ export async function render({ root, session, navigate }) {
         h('thead', h('tr', h('th', 'Time'), h('th', 'Patient'), h('th', 'Study'), h('th', 'Status'), h('th', ''))),
         h('tbody', rows.map(s => h(`tr.clickable${s.exam ? '.has-exam' : ''}`, {
           tabindex: 0,
-          onclick: () => startFromStudy(s, navigate),
-          onkeydown: (e) => { if (e.key === 'Enter') startFromStudy(s, navigate); },
+          onclick: () => startFromStudy(s, navigate, p.studies),
+          onkeydown: (e) => { if (e.key === 'Enter') startFromStudy(s, navigate, p.studies); },
         },
-        h('td.nowrap', h('div', fmtTime(s.datetime)), h('div.muted.small', fmtDate(s.datetime?.slice(0, 10)) !== fmtDate(new Date().toISOString().slice(0, 10)) ? fmtDate(s.datetime?.slice(0, 10)) : '')),
+        h('td.nowrap', h('div', fmtTime(s.datetime)), h('div.muted.small', s.datetime && s.datetime.slice(0, 10) !== localToday() ? fmtDate(s.datetime.slice(0, 10)) : '')),
         h('td', h('div.strong', patientName(s.patient)), h('div.muted.small', [s.patient.mrn && `MRN ${s.patient.mrn}`, s.patient.dob && fmtDate(s.patient.dob), s.patient.sex].filter(Boolean).join(' · '))),
         h('td', h('div', s.description || '—'), h('div.muted.small', s.accession ? `Acc ${s.accession}` : '')),
-        h('td', s.exam ? [statusBadge(s.exam.status), h('div.muted.small', s.exam.tech_name || '')] : (s.suggested_form ? h('span.muted.small', s.suggested_form.title) : h('span.muted.small', 'No form match'))),
+        h('td', s.exam?.linked ? [h('span.badge', 'Covered'), h('div.muted.small', `by the ${s.exam.form_title || 'other'} form`)]
+          : s.exam ? [statusBadge(s.exam.status), h('div.muted.small', s.exam.tech_name || '')]
+            : (s.suggested_form ? h('span.muted.small', s.suggested_form.title) : h('span.muted.small', 'No form match'))),
         h('td.right', h(`button.btn.small${s.exam ? '' : '.primary'}`, { type: 'button', tabindex: -1 }, s.exam ? 'Open' : 'Start')),
         ))))) : h('div.empty', q ? 'No studies match the filter.' : `No ultrasound studies found in the last ${session.settings.worklist_show_hours || 24} hours.`));
     }

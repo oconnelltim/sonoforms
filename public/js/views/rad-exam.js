@@ -4,20 +4,54 @@
 // report field (Indication, Comparison, Technique, Findings, Impression),
 // because these are separate fields in speech-recognition templates: each
 // card has its own Copy button. Edits are saved per field.
+//
+// When the patient has other submitted exams the same day (e.g. an abdomen
+// and a DVT study), they are reported together by default: one set of
+// cards, with a heading per exam in Findings and Impression. The combined
+// edits are kept on the first exam of the group.
 
-import { h, mount, toast, confirmDialog, promptDialog, debounce, copyText, patientName, patientLine, statusBadge, fmtDateTime } from '../dom.js';
+import { h, mount, toast, modal, confirmDialog, promptDialog, debounce, copyText, patientName, patientLine, statusBadge, fmtDateTime } from '../dom.js';
 import { get, post, put } from '../api.js';
 import { answersSummary } from '../components/form-renderer.js';
-import { reportFields, reportText } from '/shared/report-fields.js';
+import { reportFields, reportText, combineReports } from '/shared/report-fields.js';
+
+const ownFields = e => reportFields(e.final_report && !e.final_report.combined ? e.final_report : e.report);
+const studyLine = st => [st.description, st.accession && `Acc ${st.accession}`].filter(Boolean).join(' · ');
 
 export async function render({ root, params, navigate, session }) {
   const id = Number(params[0]);
-  const data = await get(`/exams/${id}`);
+  const [data, visit] = await Promise.all([get(`/exams/${id}`), get(`/exams/${id}/visit`).catch(() => ({ exams: [] }))]);
   const { exam } = data;
-  let rowVersion = exam.row_version;
+  const self = visit.exams.find(e => e.id === id) || { ...exam, heading: '' };
+
+  // Exams that can be reported with this one, and ones still with the tech.
+  const readyOthers = visit.exams.filter(e => e.id !== id && e.status === 'submitted');
+  const pending = visit.exams.filter(e => e.id !== id && ['draft', 'returned'].includes(e.status));
+  const dictatedGroup = exam.status === 'dictated' && exam.final_report?.combined?.length > 1 ? exam.final_report.combined : null;
+  const visitKey = `sf.radSeparate.${visit.exams.map(e => e.id).join('-')}`;
+  const canCombine = exam.status === 'submitted' && readyOthers.length > 0;
+  const combined = canCombine && sessionStorage.getItem(visitKey) !== '1';
+  const group = combined ? [self, ...readyOthers].sort((a, b) => a.id - b.id) : [self];
+  const lead = group[0];
+  const groupIds = group.map(e => e.id);
+  const sameGroup = ids => Array.isArray(ids) && ids.length === groupIds.length && ids.every(x => groupIds.includes(x));
+
+  // What the cards start from, and any saved edits.
+  let generated;
+  let edited;
+  if (combined) {
+    generated = combineReports(group.map(e => ({ heading: e.heading, fields: ownFields(e) })));
+    edited = sameGroup(lead.final_report?.combined) ? reportFields(lead.final_report) : [];
+  } else if (dictatedGroup) {
+    generated = reportFields(exam.final_report);
+    edited = [];
+  } else {
+    generated = reportFields(exam.report);
+    edited = exam.final_report?.combined ? [] : reportFields(exam.final_report);
+  }
+  const saveId = combined ? lead.id : id;
+  let rowVersion = combined ? lead.row_version : exam.row_version;
   const editable = exam.status === 'submitted';
-  const generated = reportFields(exam.report);
-  const edited = reportFields(exam.final_report);
   // Fields to show: the generated ones, plus any only present in saved edits.
   const fieldList = [...generated, ...edited.filter(e => !generated.some(g => g.id === e.id))];
   const generatedText = fid => generated.find(f => f.id === fid)?.text ?? '';
@@ -25,7 +59,7 @@ export async function render({ root, params, navigate, session }) {
   const queue = JSON.parse(sessionStorage.getItem('sf.radQueue') || '[]');
   const nextId = () => {
     const i = queue.indexOf(id);
-    const rest = i >= 0 ? queue.slice(i + 1) : queue.filter(x => x !== id);
+    const rest = (i >= 0 ? queue.slice(i + 1) : queue).filter(x => !groupIds.includes(x));
     return rest[0] || null;
   };
 
@@ -41,7 +75,9 @@ export async function render({ root, params, navigate, session }) {
 
   const saveEdits = debounce(async () => {
     try {
-      const r = await put(`/exams/${id}/report`, { fields: changes(), row_version: rowVersion });
+      const body = { fields: changes(), row_version: rowVersion };
+      if (combined) body.combined_with = groupIds.filter(x => x !== saveId);
+      const r = await put(`/exams/${saveId}/report`, body);
       rowVersion = r.row_version;
       saveState.textContent = changes() ? 'Edits saved' : '';
       saveState.className = 'save-state ok';
@@ -70,7 +106,7 @@ export async function render({ root, params, navigate, session }) {
     c.card.classList.add('copied');
     c.copiedBadge.hidden = false;
     toast(`${c.field.label} copied`, 'success', 1800);
-    post(`/exams/${id}/copied`, { field: c.field.id }).catch(() => {});
+    post(`/exams/${saveId}/copied`, { field: c.field.id }).catch(() => {});
     if (editable && cards.every(x => x.card.classList.contains('copied'))) dictateBtn.classList.add('primary');
   }
 
@@ -78,7 +114,7 @@ export async function render({ root, params, navigate, session }) {
     const fields = cards.map(c => ({ id: c.field.id, label: c.field.label, text: c.textarea.value })).filter(f => f.text.trim());
     if (await copyText(clipboardText(reportText(fields)))) {
       toast('Whole report copied as one block', 'success', 2000);
-      post(`/exams/${id}/copied`, { field: 'all' }).catch(() => {});
+      post(`/exams/${saveId}/copied`, { field: 'all' }).catch(() => {});
     }
   }
 
@@ -119,60 +155,123 @@ export async function render({ root, params, navigate, session }) {
   async function markDictated({ goNext = true } = {}) {
     saveEdits.cancel();
     try {
-      await post(`/exams/${id}/dictated`, { row_version: rowVersion, fields: changes() });
-      toast('Marked dictated', 'success', 2000);
+      if (combined) {
+        // The lead's version may have moved on while edits were saved.
+        const versions = Object.fromEntries(group.map(e => [e.id, e.id === saveId ? rowVersion : e.row_version]));
+        await post(`/exams/${id}/dictated-group`, { versions, fields: changes() });
+        toast(`Marked ${group.length} exams dictated`, 'success', 2000);
+      } else {
+        await post(`/exams/${id}/dictated`, { row_version: rowVersion, fields: changes() });
+        toast('Marked dictated', 'success', 2000);
+      }
       const next = goNext ? nextId() : null;
       navigate(next ? `/rad/exam/${next}` : '/rad');
     } catch (e) { toast(e.message, 'error'); }
   }
 
   async function returnToTech() {
+    // In a combined report, say which exam needs fixing.
+    let target = self;
+    if (combined) {
+      const sel = h('select.input', group.map(e => h('option', { value: e.id }, `${e.form_title || 'Exam'}${e.study?.accession ? ` (Acc ${e.study.accession})` : ''}`)));
+      const pickedId = await modal({
+        title: 'Which exam needs fixing?',
+        body: [h('p', 'The other exams stay on your worklist.'), sel],
+        actions: [{ label: 'Cancel', value: null }, { label: 'Next', primary: true, onClick: close => close(Number(sel.value)), keepOpen: true }],
+      });
+      if (!pickedId) return;
+      target = group.find(e => e.id === pickedId);
+    }
     const reason = await promptDialog('Return to technologist', 'What needs to be fixed or added?', { multiline: true, confirmLabel: 'Return' });
     if (!reason) return;
     try {
-      await post(`/exams/${id}/return`, { row_version: rowVersion, reason });
+      const version = target.id === saveId ? rowVersion : (target.id === id ? exam.row_version : target.row_version);
+      await post(`/exams/${target.id}/return`, { row_version: version, reason });
       toast('Returned to the technologist', 'success');
-      navigate('/rad');
+      // Returning another exam of the group leaves this one open, now reported alone.
+      if (target.id === id) navigate('/rad'); else location.reload();
     } catch (e) { toast(e.message, 'error'); }
   }
 
   async function undictate() {
-    if (!(await confirmDialog('Move back to the worklist?', 'This marks the exam as not yet dictated.', { confirmLabel: 'Move back' }))) return;
+    const msg = dictatedGroup ? `All ${dictatedGroup.length} exams reported together move back, and stay together.` : 'This marks the exam as not yet dictated.';
+    if (!(await confirmDialog('Move back to the worklist?', msg, { confirmLabel: 'Move back' }))) return;
     try {
-      await post(`/exams/${id}/undictate`, { row_version: rowVersion });
-      navigate(`/rad/exam/${id}`);
+      await post(`/exams/${id}/undictate`, { row_version: exam.row_version });
+      location.reload();
     } catch (e) { toast(e.message, 'error'); }
   }
 
+  function setSeparate(separate) {
+    try { sessionStorage.setItem(visitKey, separate ? '1' : '0'); } catch { /* ignore */ }
+    location.reload();
+  }
+
   const p = exam.patient;
+  const examLines = (combined ? group : [self.id ? self : exam]).map(e => {
+    const st = e.study || exam.study;
+    return h('div.banner-sub', [e.form_title && combined ? e.form_title : null, studyLine(st)].filter(Boolean).join(' · '),
+      (e.linked_studies || []).length ? h('span', ' + ', e.linked_studies.map(studyLine).join('; ')) : null);
+  });
   const banner = h('div.exam-banner',
     h('div.banner-left',
       h('a.back', { href: '#/rad' }, '← Worklist'),
-      h('div.banner-name', patientName(p), ' ', statusBadge(exam.status)),
+      h('div.banner-name', patientName(p), ' ', statusBadge(exam.status), combined ? h('span.badge.accent', `${group.length} exams, one report`) : null),
       h('div.banner-sub', patientLine(p)),
-      h('div.banner-sub', [exam.institution_name, exam.study.description, exam.study.accession && `Acc ${exam.study.accession}`].filter(Boolean).join(' · '))),
+      h('div.banner-sub', exam.institution_name),
+      examLines),
     h('div.banner-right',
-      h('div.banner-form', h('span.muted.small', 'Form'), h('strong', data.form?.definition?.title || exam.form_title || '—')),
+      h('div.banner-form', h('span.muted.small', combined ? 'Forms' : 'Form'), h('strong', combined ? group.map(e => e.form_title || '—').join(' + ') : (data.form?.definition?.title || exam.form_title || '—'))),
       h('div.muted.small', `Tech: ${exam.tech_name || '—'} · submitted ${fmtDateTime(exam.submitted_at)}`),
       exam.status === 'dictated' ? h('div.muted.small', `Dictated by ${exam.rad_name || '—'} ${fmtDateTime(exam.dictated_at)}`) : null));
 
-  const dictateBtn = h('button.btn.big', { type: 'button', onclick: () => markDictated() }, '✓ Mark dictated');
+  // Accession numbers to link in the dictation software.
+  const accessions = [...new Set((combined ? group : [self]).flatMap(e => [e.study || exam.study, ...(e.linked_studies || [])]).map(st => st?.accession).filter(Boolean))];
+
+  const notices = [];
+  if (combined) {
+    notices.push(h('div.alert.info', h('strong', 'Reported together: '), `${group.map(e => e.form_title || 'exam').join(' and ')} for this patient today. `,
+      h('button.link', { type: 'button', onclick: () => setSeparate(true) }, 'Report separately')));
+  } else if (canCombine) {
+    notices.push(h('div.alert.info', `This patient has ${readyOthers.length === 1 ? 'another exam' : 'other exams'} ready today: ${readyOthers.map(e => e.form_title || 'exam').join(', ')}. `,
+      h('button.link', { type: 'button', onclick: () => setSeparate(false) }, 'Report together')));
+  }
+  if (pending.length && editable) {
+    notices.push(h('div.alert.warn', `Still with the tech: ${pending.map(e => `${e.form_title || 'exam'} (${e.status === 'returned' ? 'returned' : 'in progress'})`).join(', ')}. `,
+      'To report it in the same report, wait until it is submitted.'));
+  }
+  if (dictatedGroup) notices.push(h('div.alert.info', `Dictated as one report with ${dictatedGroup.length - 1} other exam${dictatedGroup.length > 2 ? 's' : ''} from this visit.`));
+
+  const dictateBtn = h('button.btn.big', { type: 'button', onclick: () => markDictated() }, combined ? `✓ Mark ${group.length} exams dictated` : '✓ Mark dictated');
   const actions = editable
     ? h('div.rad-actions', dictateBtn, h('button.btn.ghost', { type: 'button', onclick: returnToTech }, '↩ Return to tech'), h('span.spacer'), h('button.btn.small.ghost', { type: 'button', onclick: copyAll }, 'Copy all as one block'))
     : h('div.rad-actions', exam.status === 'dictated' ? h('button.btn.ghost', { type: 'button', onclick: undictate }, 'Move back to worklist') : null, h('span.spacer'), h('button.btn.small.ghost', { type: 'button', onclick: copyAll }, 'Copy all as one block'));
 
-  const side = h('aside.rad-side',
-    exam.tech_note ? h('div.tech-note', h('h3', 'Note from tech'), h('p', exam.tech_note)) : null,
+  // What each tech entered; other exams in the group are loaded alongside.
+  const side = h('aside.rad-side');
+  const sideFor = (d, withTitle) => [
+    withTitle ? h('h2.side-exam-title', d.form?.definition?.title || d.exam.form_title || 'Exam') : null,
+    d.exam.tech_note ? h('div.tech-note', h('h3', 'Note from tech'), h('p', d.exam.tech_note)) : null,
     h('h3', 'What the tech entered'),
-    data.form ? answersSummary(data.form.definition, exam.answers, data.env) : h('p.muted', 'No form.'));
+    d.form ? answersSummary(d.form.definition, d.exam.answers, d.env) : h('p.muted', 'No form.'),
+  ];
+  mount(side, sideFor(data, combined));
+  if (combined) {
+    Promise.all(group.filter(e => e.id !== id).map(e => get(`/exams/${e.id}`))).then((others) => {
+      const all = [data, ...others].sort((a, b) => a.exam.id - b.exam.id);
+      mount(side, all.map(d => h('div.side-exam', sideFor(d, true))));
+    }).catch(() => {});
+  }
 
   mount(root, h('div.exam-page.rad',
     banner,
     h('div.rad-grid',
       h('section.rad-main',
         h('div.panel-head', h('h3', 'Report'), saveState),
+        notices,
         exam.status === 'returned' ? h('div.alert.warn', `Returned to tech: ${exam.return_reason || ''}`) : null,
         !cards.length && exam.status !== 'returned' ? h('div.alert.info', 'No report text has been generated yet.') : null,
+        accessions.length > 1 ? h('p.small', h('strong', 'Accession numbers: '), accessions.join(', '), h('span.muted', ' (link these in your dictation software)')) : null,
         h('div.report-cards', cards.map(c => c.card)),
         actions,
         h('p.muted.small', `Each card goes into its own field in your dictation template. Shortcuts: Ctrl+Shift+1–${Math.min(cards.length, 9) || 1} copy a card. Edits are saved automatically.`)),

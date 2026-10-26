@@ -10,7 +10,8 @@
 id: us-early-ob
 title: US Early Pregnancy (first trimester)
 description: "Early OB: rule out ectopic, pain or bleeding, viability and dating."
-study_match:                    # adjust to the study descriptions your PACS uses
+# Adjust study_match to the study descriptions your PACS uses.
+study_match:
   - US OB FIRST TRIMESTER
   - US OB 1ST TRIMESTER
   - US OB LESS THAN 14 WEEKS
@@ -19,6 +20,9 @@ study_match:                    # adjust to the study descriptions your PACS use
   - EARLY PREGNANCY
   - ECTOPIC
   - VIABILITY
+
+report:
+  heading: ULTRASOUND EARLY PREGNANCY # used when reported together with other exams from the same visit
 
 sections:
   - id: clinical

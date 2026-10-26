@@ -11,7 +11,7 @@ import { todaysStudies, studyByUid } from '../dicom.js';
 import { availableForms, getVersion } from '../forms.js';
 import {
   searchPatients, upsertPatient, updatePatient, getPatient, createExam, getExam, updateExam,
-  listExams, examsByStudyUids, studyUidIndex, findExamByStudyUid, templateEnv,
+  listExams, examsByStudyUids, studyUidIndex, findExamByStudyUid, templateEnv, setLinkedStudies, unlinkStudies,
 } from '../records.js';
 import { matchScore } from '../../shared/formdef.js';
 import { validateAnswers, computeCalcs } from '../../shared/engine.js';
@@ -49,6 +49,28 @@ function requireStatus(exam, statuses, action) {
   }
 }
 
+const samePatient = (a, b) => !!a?.mrn && String(a.mrn).trim() === String(b?.mrn || '').trim()
+  && String(a.issuer || '').trim() === String(b?.issuer || '').trim();
+
+// Looks up studies to link to an exam in PACS and checks they belong to the
+// exam's patient and aren't another exam's.
+async function studiesToLink(institutionId, patient, studyUids, examId = null) {
+  if (!studyUids.length) return [];
+  const institution = await one('SELECT id, name, dicom FROM institutions WHERE id = $1', [institutionId]);
+  const out = [];
+  for (const uid of studyUids) {
+    const found = await studyByUid(institution, uid);
+    if (!found) throw new HttpError(404, 'A study to include could not be found in PACS. Refresh the worklist and try again.');
+    if (!samePatient(found.patient, patient)) throw new HttpError(400, `${found.description || 'A study'} belongs to a different patient.`);
+    const other = await findExamByStudyUid(institutionId, uid);
+    if (other && other.id !== examId) throw new HttpError(409, `${found.description || 'A study'}${found.accession ? ` (Acc ${found.accession})` : ''} is already on another form.`);
+    out.push(found);
+  }
+  return out;
+}
+
+const linkSchema = { type: 'array', maxItems: 10, items: { type: 'string', minLength: 1, maxLength: 128 } };
+
 export default async function techRoutes(app) {
   const tech = { preHandler: requireAuth(can.tech) };
 
@@ -71,7 +93,7 @@ export default async function techRoutes(app) {
         const best = rankForms(forms, s.description)[0];
         return {
           ...s,
-          exam: exam ? { id: exam.id, status: exam.status, tech_name: exam.tech_name, form_title: exam.form_title } : null,
+          exam: exam ? { id: exam.id, status: exam.status, tech_name: exam.tech_name, form_title: exam.form_title, linked: !!exam.linked } : null,
           suggested_form: best && best.score > 0 ? { id: best.id, title: best.title } : null,
         };
       });
@@ -134,11 +156,12 @@ export default async function techRoutes(app) {
     schema: { body: { type: 'object', properties: {
       study_uid: { type: 'string', maxLength: 128 }, patient_id: { type: 'integer' }, form_id: { type: 'integer' },
       description: { type: 'string', maxLength: 200 }, accession: { type: 'string', maxLength: 64 },
+      linked_study_uids: linkSchema,
     } } },
   }, async (req) => {
     const institutionId = await activeInstitution(req);
     const forms = await availableForms(institutionId);
-    let patientId, study, source;
+    let patientId, study, source, patient;
 
     if (req.body.study_uid) {
       const existing = await findExamByStudyUid(institutionId, req.body.study_uid);
@@ -146,12 +169,12 @@ export default async function techRoutes(app) {
       const institution = await one('SELECT id, name, dicom FROM institutions WHERE id = $1', [institutionId]);
       const found = await studyByUid(institution, req.body.study_uid);
       if (!found) throw new HttpError(404, 'That study could not be found in PACS. Refresh the worklist and try again.');
-      const patient = await upsertPatient(institutionId, found.patient, req.user.id, { refresh: true });
+      patient = await upsertPatient(institutionId, found.patient, req.user.id, { refresh: true });
       patientId = patient.id;
       study = found;
       source = 'pacs';
     } else if (req.body.patient_id) {
-      const patient = await getPatient(req.body.patient_id);
+      patient = await getPatient(req.body.patient_id);
       if (!patient || patient.institution_id !== institutionId) throw new HttpError(404, 'Patient not found');
       patientId = patient.id;
       study = { description: req.body.description || '', accession: req.body.accession || '' };
@@ -159,6 +182,8 @@ export default async function techRoutes(app) {
     } else {
       throw new HttpError(400, 'Choose a study from the worklist or a patient.');
     }
+
+    const linked = await studiesToLink(institutionId, patient, (req.body.linked_study_uids || []).filter(u => u !== req.body.study_uid));
 
     let form = req.body.form_id ? forms.find(f => f.id === req.body.form_id) : null;
     if (req.body.form_id && !form) throw new HttpError(400, 'That form is not available at this institution.');
@@ -170,8 +195,46 @@ export default async function techRoutes(app) {
       institutionId, patientId, formVersionId: form?.version_id ?? null, source, study,
       examDate: study.datetime ? study.datetime.slice(0, 10) : null, techId: req.user.id,
     });
-    await audit({ req, action: 'exam.create', entityType: 'exam', entityId: id, details: { source, form_version_id: form?.version_id ?? null } });
+    await audit({ req, action: 'exam.create', entityType: 'exam', entityId: id, details: { source, form_version_id: form?.version_id ?? null, linked_studies: linked.length } });
+    if (linked.length) await setLinkedStudies(await getExam(id), linked);
     return { id, existing: false };
+  });
+
+  // The patient's studies in today's PACS worklist, with what each is
+  // attached to: this exam, another exam, or nothing yet. Used to link
+  // studies to a form and to offer the tech the patient's next study.
+  app.get('/exams/:id/related-studies', tech, async (req) => {
+    const exam = await loadExamFor(req, Number(req.params.id));
+    const settings = await getSettings();
+    const institution = await one('SELECT id, name, code, dicom FROM institutions WHERE id = $1', [exam.institution_id]);
+    let result;
+    try {
+      result = await todaysStudies(institution, settings.worklist_show_hours);
+    } catch (e) {
+      return { studies: [], error: e.message };
+    }
+    const mine = result.studies.filter(st => samePatient(st.patient, exam.patient));
+    const exams = await examsByStudyUids(exam.institution_id, mine.map(st => st.study_uid));
+    return {
+      studies: mine.map(({ patient, ...st }) => {
+        const other = exams.get(studyUidIndex(exam.institution_id, st.study_uid));
+        const state = st.study_uid === exam.study.study_uid ? 'this'
+          : other?.id === exam.id ? 'linked' : other ? 'other' : 'free';
+        return { ...st, state, exam: other && other.id !== exam.id ? { id: other.id, status: other.status, form_title: other.form_title, linked: !!other.linked } : null };
+      }),
+    };
+  });
+
+  app.put('/exams/:id/studies', {
+    ...tech,
+    schema: { body: { type: 'object', required: ['study_uids'], properties: { study_uids: linkSchema } } },
+  }, async (req) => {
+    const exam = await loadExamFor(req, Number(req.params.id));
+    requireStatus(exam, ['draft', 'returned', 'submitted'], 'changed');
+    const studies = await studiesToLink(exam.institution_id, exam.patient, req.body.study_uids.filter(u => u !== exam.study.study_uid), exam.id);
+    const linked = await setLinkedStudies(exam, studies);
+    await audit({ req, institutionId: exam.institution_id, action: 'exam.link_studies', entityType: 'exam', entityId: exam.id, details: { count: linked.length } });
+    return { linked_studies: linked };
   });
 
   // Shared with radiologists.
@@ -246,7 +309,7 @@ export default async function techRoutes(app) {
       tech_note: req.body.tech_note ?? exam.tech_note,
       // Stored per report field (Indication, Comparison, Findings…) so the
       // radiologist can copy each into its own dictation field.
-      report: { fields: report.fields },
+      report: { fields: report.fields, heading: report.heading },
       final_report: null,
       return_reason: null,
       status: 'submitted',
@@ -269,6 +332,7 @@ export default async function techRoutes(app) {
     const exam = await loadExamFor(req, Number(req.params.id));
     requireStatus(exam, ['draft', 'returned', 'submitted'], 'cancelled');
     const rowVersion = await updateExam(exam.id, { status: 'cancelled' }, req.body.row_version);
+    await unlinkStudies(exam.id);   // its linked studies can now get their own forms
     await audit({ req, institutionId: exam.institution_id, action: 'exam.cancel', entityType: 'exam', entityId: exam.id });
     return { row_version: rowVersion };
   });

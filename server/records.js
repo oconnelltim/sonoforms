@@ -3,7 +3,7 @@
 // Patients and exams. All identifying data passes through encrypt/decrypt
 // here; nothing else in the server touches the *_enc columns directly.
 
-import { one, many, query } from './db.js';
+import { one, many, query, tx } from './db.js';
 import { encrypt, decrypt, exactIndex, nameIndex } from './crypto.js';
 import { HttpError } from './auth.js';
 
@@ -118,7 +118,8 @@ const EXAM_LIST_COLS = `e.id, e.institution_id, e.patient_id, e.status, e.source
   e.submitted_at, e.dictated_at, e.created_at, e.updated_at, e.row_version, e.return_reason_enc,
   e.tech_id, tu.display_name AS tech_name, e.rad_id, ru.display_name AS rad_name,
   f.title AS form_title, fv.version AS form_version, i.name AS institution_name, i.code AS institution_code,
-  p.demographics_enc`;
+  p.demographics_enc,
+  (SELECT json_agg(json_build_object('id', ls.id, 'enc', ls.study_enc) ORDER BY ls.id) FROM exam_studies ls WHERE ls.exam_id = e.id) AS linked_enc`;
 
 const EXAM_JOINS = `FROM exams e
   JOIN patients p ON p.id = e.patient_id
@@ -150,6 +151,8 @@ function examSummary(row) {
     updated_at: row.updated_at,
     return_reason: decrypt(row.return_reason_enc, 'exams.return_reason', row.id),
     study,
+    // Other PACS studies (accession numbers) this exam's form also covers.
+    linked_studies: (row.linked_enc || []).map(l => decrypt(l.enc, 'exam_studies.study', l.id)).filter(Boolean),
     patient: { id: row.patient_id, ...patient, age: ageYears(patient.dob, row.exam_date) },
   };
 }
@@ -182,20 +185,77 @@ export async function getExam(id) {
   };
 }
 
+// The active exam for a study: its own exam, or the exam it is linked to.
 export async function findExamByStudyUid(institutionId, studyUid) {
   const idx = indexes.studyUid(institutionId, studyUid);
   if (!idx) return null;
-  return one("SELECT id, status FROM exams WHERE institution_id = $1 AND study_uid_bidx = $2 AND status <> 'cancelled'", [institutionId, idx]);
+  return (await one("SELECT id, status FROM exams WHERE institution_id = $1 AND study_uid_bidx = $2 AND status <> 'cancelled'", [institutionId, idx]))
+    || one(`SELECT e.id, e.status, true AS linked FROM exam_studies s JOIN exams e ON e.id = s.exam_id
+            WHERE s.institution_id = $1 AND s.study_uid_bidx = $2 AND e.status <> 'cancelled'`, [institutionId, idx]);
 }
 
 // Map of study_uid_bidx -> exam summary, for marking PACS worklist rows.
+// Studies covered by another exam's form are marked `linked: true`.
 export async function examsByStudyUids(institutionId, studyUids) {
   const idx = studyUids.map(u => indexes.studyUid(institutionId, u)).filter(Boolean);
   if (!idx.length) return new Map();
   const rows = await many(
     `SELECT ${EXAM_LIST_COLS}, e.study_uid_bidx ${EXAM_JOINS}
      WHERE e.institution_id = $1 AND e.study_uid_bidx = ANY($2::text[]) AND e.status <> 'cancelled'`, [institutionId, idx]);
-  return new Map(rows.map(r => [r.study_uid_bidx, examSummary(r)]));
+  const linked = await many(
+    `SELECT ${EXAM_LIST_COLS}, s.study_uid_bidx AS linked_bidx ${EXAM_JOINS}
+     JOIN exam_studies s ON s.exam_id = e.id
+     WHERE s.institution_id = $1 AND s.study_uid_bidx = ANY($2::text[]) AND e.status <> 'cancelled'`, [institutionId, idx]);
+  return new Map([
+    ...linked.map(r => [r.linked_bidx, { ...examSummary(r), linked: true }]),
+    ...rows.map(r => [r.study_uid_bidx, examSummary(r)]),
+  ]);
+}
+
+// Replaces the extra studies an exam's form covers. Each study may belong to
+// only one active exam, as its own study or as a linked one.
+export async function setLinkedStudies(exam, studies) {
+  const inst = exam.institution_id;
+  const seen = new Set([exam.study?.study_uid].filter(Boolean));
+  const list = studies.map(cleanStudy).filter(st => st.study_uid && !seen.has(st.study_uid) && seen.add(st.study_uid));
+  await tx(async (c) => {
+    await c.query('DELETE FROM exam_studies WHERE exam_id = $1', [exam.id]);
+    for (const st of list) {
+      const idx = indexes.studyUid(inst, st.study_uid);
+      const label = [st.description || 'That study', st.accession && `(Acc ${st.accession})`].filter(Boolean).join(' ');
+      const own = await c.query("SELECT 1 FROM exams WHERE institution_id = $1 AND study_uid_bidx = $2 AND status <> 'cancelled' AND id <> $3", [inst, idx, exam.id]);
+      if (own.rowCount) throw new HttpError(409, `${label} already has its own form. Cancel that form first, or leave the study out.`);
+      const id = (await c.query("SELECT nextval(pg_get_serial_sequence('exam_studies', 'id'))::int AS id")).rows[0].id;
+      try {
+        await c.query(
+          'INSERT INTO exam_studies (id, exam_id, institution_id, study_uid_bidx, accession_bidx, study_enc) VALUES ($1, $2, $3, $4, $5, $6)',
+          [id, exam.id, inst, idx, indexes.accession(inst, st.accession), encrypt(st, 'exam_studies.study', id)]);
+      } catch (e) {
+        if (e.code === '23505') throw new HttpError(409, `${label} is already covered by another form.`);
+        throw e;
+      }
+    }
+  });
+  return list;
+}
+
+export async function unlinkStudies(examId) {
+  await query('DELETE FROM exam_studies WHERE exam_id = $1', [examId]);
+}
+
+// The patient's other exams the same day at the same institution (a
+// "visit"), including this one, with their reports, oldest first.
+export async function visitExams(exam) {
+  const rows = await many(
+    `SELECT ${EXAM_LIST_COLS}, e.report_enc, e.final_report_enc ${EXAM_JOINS}
+     WHERE e.patient_id = $1 AND e.institution_id = $2 AND e.exam_date = $3 AND e.status <> 'cancelled'
+     ORDER BY e.id`, [exam.patient.id, exam.institution_id, exam.exam_date]);
+  return rows.map(r => ({
+    ...examSummary(r),
+    row_version: r.row_version,
+    report: decrypt(r.report_enc, 'exams.report', r.id),
+    final_report: decrypt(r.final_report_enc, 'exams.final_report', r.id),
+  }));
 }
 
 export function studyUidIndex(institutionId, uid) {
@@ -208,14 +268,18 @@ export function localToday() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-export async function createExam({ institutionId, patientId, formVersionId, source, study, examDate, techId }) {
-  const s = {
+function cleanStudy(study) {
+  return {
     accession: String(study?.accession || '').slice(0, 64),
     study_uid: String(study?.study_uid || '').slice(0, 128),
     description: String(study?.description || '').slice(0, 200),
     datetime: study?.datetime || null,
     referring: String(study?.referring || '').slice(0, 200),
   };
+}
+
+export async function createExam({ institutionId, patientId, formVersionId, source, study, examDate, techId }) {
+  const s = cleanStudy(study);
   const id = await nextId('exams');
   try {
     await query(
@@ -234,8 +298,9 @@ export async function createExam({ institutionId, patientId, formVersionId, sour
   return id;
 }
 
-// Optimistic concurrency: callers pass the row_version they loaded.
-export async function updateExam(id, fields, expectedVersion) {
+// Optimistic concurrency: callers pass the row_version they loaded. Pass a
+// transaction client to update several exams together.
+export async function updateExam(id, fields, expectedVersion, client = null) {
   const sets = [];
   const params = [id];
   const add = (col, val) => { params.push(val); sets.push(`${col} = $${params.length}`); };
@@ -254,7 +319,8 @@ export async function updateExam(id, fields, expectedVersion) {
     params.push(expectedVersion);
     where += ` AND row_version = $${params.length}`;
   }
-  const r = await query(`UPDATE exams SET ${sets.join(', ')} WHERE ${where} RETURNING row_version`, params);
+  const run = client ? (text, values) => client.query(text, values) : query;
+  const r = await run(`UPDATE exams SET ${sets.join(', ')} WHERE ${where} RETURNING row_version`, params);
   if (!r.rowCount) throw new HttpError(409, 'This exam was changed by someone else (or in another window). Reload to see the latest version.', { code: 'CONFLICT' });
   return r.rows[0].row_version;
 }
