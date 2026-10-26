@@ -44,6 +44,10 @@ All notable changes to SonoForms are documented here. The format follows [Keep a
 
 ### Changed
 
+- **Checks run locally.** `npm run check` (tests, form check, npm audit), `npm run check:linux` (the same in a clean Linux container) and `npm run security` (Semgrep, Gitleaks, Hadolint, ShellCheck and Grype, in Docker). The GitHub workflow now runs only when started by hand, and the Dependabot configuration was removed.
+- **Docker images:** both apply Alpine security updates when built; npm is removed from the app image after installing packages; the Apache image runs as `www-data` by default; the app health check no longer uses `wget`.
+- `adm-zip` (an unused dependency of the DICOM library) is pinned to 0.6.1, which fixes its high-severity advisories. `npm run check` fails on high as well as critical advisories.
+
 - The logo is now a small ultrasound probe, in the header, on the sign-in page and as the browser tab icon.
 - **API:** `PUT /api/exams/:id/report` and `POST /api/exams/:id/dictated` take `fields` (an object of edited text per report field, or `null`) instead of a single `report` string. `POST /api/exams/:id/copied` takes `field`. Exams store their report as `{ fields: [...] }`; reports saved before this change still display, as one Findings card.
 - A study lookup by UID never sends a blank UID (which would match every study) and fetches at most a handful of results.
@@ -51,6 +55,8 @@ All notable changes to SonoForms are documented here. The format follows [Keep a
 - The starter forms were respaced to one consistent YAML style, so builder edits produce minimal changes. Only spacing inside `[ ]` lists changed.
 
 ### Fixed
+
+- A test failed on machines set to UTC late in the day: the fake PACS's studies could fall on the previous day, splitting a patient's visit. Fake studies are now always dated today.
 
 - The tech worklist showed a date under today's studies in the evening (it compared against the UTC date), and the form editor's preview used the UTC date as the exam date.
 

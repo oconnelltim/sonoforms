@@ -97,17 +97,41 @@ SonoForms handles protected health information. This document describes how it i
 * **Concurrent edits:** optimistic locking (row versions) prevents silent overwrites when two people edit the same exam.
 * **Least-privilege database access:** a one-off migrate container applies schema changes as the database owner. The long-running app connects as a restricted role and never receives the owner password.
 * **Containers:** every SonoForms container runs as a non-root user with a read-only root filesystem, all Linux capabilities dropped, and `no-new-privileges`. Apache listens on unprivileged ports inside its container.
-* **Updates and pinning:** updates rebuild from freshly pulled base images. Dependabot proposes dependency, base-image and CI updates. CI actions are pinned to commit hashes.
+* **Images:** both images apply the base image's security updates (`apk upgrade`) when built. npm is removed from the app image after installing packages, so its own dependencies aren't shipped.
+* **Updates and pinning:** updates rebuild from freshly pulled base images. The optional GitHub workflow (started by hand only) has its actions pinned to commit hashes.
+* **Security scans:** `npm run security` runs Semgrep, Gitleaks, Hadolint, ShellCheck and Grype locally in Docker (see [Checking the code](#checking-the-code)).
 
 ## Known limitations
 
-* **`adm-zip` advisory:** `npm audit` reports an advisory in `adm-zip`, which the DICOM library's dependency `dcmjs` declares. The built `dcmjs` code never loads it, so the vulnerable code isn't reachable.
+* **`adm-zip`:** the DICOM library's dependency `dcmjs` declares `adm-zip`, though its built code never loads it. It's pinned to a fixed version (0.6.1) with an npm override. One medium advisory (symlinks during extraction) has no fix yet; SonoForms never handles ZIP files.
 * **Free text:** free-text fields (comparison, "other" descriptions, tech notes) can contain whatever the tech types, including identifiers. They are encrypted like all other answers.
 * **Plaintext metadata:** exam dates, form titles and the patient each exam belongs to are not encrypted, so a database dump shows which kinds of exams an anonymous patient record had, and when.
 * **Admin connection tests:** administrators can point the PACS connection tests at any host and port. The connection only speaks DICOM, and detailed errors are kept because they're needed for troubleshooting.
 * **Outbound traffic:** the app container's outbound traffic isn't restricted at the network level by default. docs/ADMIN.md shows how to limit it to your PACS with a firewall rule.
 * **Owner credentials:** the database owner password and master key are on the server, in `secrets/`. Anyone with root on the host can read all data. Protect the host accordingly.
 * **No single sign-on:** there is no LDAP/SAML yet.
+
+## Checking the code
+
+All checks run on your own computer; nothing is sent to GitHub or any other service (the scanners do download their rules and vulnerability databases).
+
+```bash
+npm run check          # tests, form check, npm audit (fails on high or critical)
+npm run check:linux    # the same in a clean Linux container in UTC (needs Docker)
+npm run security       # security scans (needs Docker)
+```
+
+`npm run security` runs pinned versions of:
+
+| Tool | Checks |
+|---|---|
+| Semgrep | the JavaScript and Dockerfiles, with the `javascript`, `nodejs`, `owasp-top-ten`, `secrets` and `dockerfile` rule packs |
+| Gitleaks | the whole git history for committed secrets |
+| Hadolint | the Dockerfiles |
+| ShellCheck | `install.sh`, `manage.sh` and the other shell scripts |
+| Grype | npm packages (from `package-lock.json`) and the built app and web images, for known vulnerabilities |
+
+Reports are written to `reports/` (git-ignored). Add `--no-images` to skip building and scanning the Docker images. Run it before each release and after updating dependencies.
 
 ## Reporting a vulnerability
 

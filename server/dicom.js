@@ -256,8 +256,12 @@ export function mockStudies(institution) {
     ['TEST^CARLOS^J', 'M', '19550130', 'US DOPPLER ABDOMEN', 2],
     ['TEST^CARLOS^J', 'M', '19550130', 'US VENOUS DUPLEX LOWER EXT RIGHT', 2],
   ];
+  const midnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
   return people.map(([name, sex, dob, desc, samePatientAs], i) => {
-    const t = new Date(today.getTime() - (i * 47 + 5) * 60000);
+    // Spread over the past few hours, but always today, so a patient's
+    // studies never straddle midnight (tests rely on same-day visits).
+    let t = new Date(today.getTime() - (i * 47 + 5) * 60000);
+    if (t < midnight) t = new Date(midnight.getTime() + i * 60000);
     return {
       PatientName: [{ Alphabetic: name }],
       PatientID: `MRN${String(100200 + (samePatientAs ?? i) * 37 + (institution.id || 0) * 1000)}`,

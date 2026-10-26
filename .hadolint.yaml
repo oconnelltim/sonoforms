@@ -1,0 +1,7 @@
+# Hadolint settings for `npm run security`.
+failure-threshold: warning
+ignored:
+  # Pinning Alpine package versions (apk add pkg=1.2.3) breaks the build as
+  # soon as Alpine publishes a security update and drops the old version.
+  # The images run `apk upgrade` instead, and Grype checks what's installed.
+  - DL3018

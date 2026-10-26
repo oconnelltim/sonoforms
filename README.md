@@ -58,7 +58,11 @@ npm install
 npm run dev      # embedded PostgreSQL in .dev/, fake PACS, http://localhost:3000
 npm test         # form engine, API and security regression tests
 npm run lint-forms
+npm run check    # tests + form check + npm audit, before committing
+npm run security # Semgrep, Gitleaks, Hadolint, ShellCheck, Grype (needs Docker)
 ```
+
+All checks run locally; see "Checking the code" in [docs/SECURITY.md](docs/SECURITY.md). The GitHub workflow only runs when started by hand.
 
 On a fresh development database the first admin is `admin` / `admin-dev-password`, and you'll be asked to change it at first sign-in. Forgot the password? With `npm run dev` running, in another terminal:
 

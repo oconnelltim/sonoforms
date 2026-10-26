@@ -15,6 +15,9 @@
     "dev:cli": "node scripts/dev-cli.js",
     "mock-pacs": "node scripts/mock-pacs.js",
     "test": "node --test test/*.test.js",
+    "check": "npm test && npm run lint-forms && npm audit --omit=dev --audit-level=high",
+    "check:linux": "bash scripts/check-linux.sh",
+    "security": "bash scripts/security-scan.sh",
     "lint-forms": "node server/cli.js lint-forms"
   },
   "dependencies": {
@@ -27,5 +30,8 @@
   },
   "devDependencies": {
     "embedded-postgres": "^18.4.0-beta.17"
+  },
+  "overrides": {
+    "adm-zip": "^0.6.1"
   }
 }

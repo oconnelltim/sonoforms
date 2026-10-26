@@ -102,7 +102,7 @@ web_ok() {
   fi
 }
 ok=""
-for i in $(seq 1 60); do
+for _ in $(seq 1 60); do
   if web_ok; then ok=1; break; fi
   sleep 2
 done

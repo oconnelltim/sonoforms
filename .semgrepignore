@@ -1,0 +1,4 @@
+# Paths Semgrep skips in `npm run security`.
+node_modules/
+.dev/
+reports/
