@@ -1,0 +1,448 @@
+# Starter form. Review wording with your radiologists before clinical use.
+#
+# Early pregnancy (first trimester): rule out ectopic, pain or bleeding,
+# viability and dating. Not for detailed or later obstetric assessment.
+#
+# Gestational age by CRL uses Robinson & Fleming (crl_ga); change to
+# crl_ga(crl, 'hadlock') if your department dates with Hadlock. Pregnancy
+# failure wording follows the SRU consensus criteria (Doubilet et al.,
+# NEJM 2013); redating follows ACOG Committee Opinion 700.
+id: us-early-ob
+title: US Early Pregnancy (first trimester)
+description: "Early OB: rule out ectopic, pain or bleeding, viability and dating."
+study_match:                    # adjust to the study descriptions your PACS uses
+  - US OB FIRST TRIMESTER
+  - US OB 1ST TRIMESTER
+  - US OB LESS THAN 14 WEEKS
+  - US OB EARLY
+  - US OB DATING
+  - EARLY PREGNANCY
+  - ECTOPIC
+  - VIABILITY
+
+sections:
+  - id: clinical
+    title: Clinical
+    fields:
+      - id: indication
+        type: multi
+        label: Indication
+        required: true
+        other: true
+        options:
+          - { value: ectopic, label: Rule out ectopic, text: rule out ectopic pregnancy }
+          - { value: bleeding, label: Vaginal bleeding, text: vaginal bleeding }
+          - { value: pain, label: Pelvic pain, text: pelvic pain }
+          - { value: viability, label: Viability, text: assessment of viability }
+          - { value: dating, label: Dating, text: dating }
+          - { value: hcg, label: Positive pregnancy test, text: positive pregnancy test }
+          - { value: followup, label: Follow-up, text: follow-up of early pregnancy }
+      - id: lmp_status
+        type: choice
+        label: Last menstrual period
+        required: true
+        options:
+          - { value: date, label: Date known }
+          - { value: uncertain, label: Uncertain }
+          - { value: unknown, label: Unknown }
+      - id: lmp_date
+        type: date
+        label: LMP date
+        show_if: "lmp_status == 'date'"
+        required: true
+      - id: ga_lmp
+        type: calc
+        label: Gestational age by LMP
+        formula: "ga_text(days_between(lmp_date, exam.date))"
+        show_if: "lmp_status == 'date'"
+      - id: hcg
+        type: number
+        label: Serum β-hCG (if on the requisition)
+        unit: mIU/mL
+        min: 1
+        max: 500000
+      - id: ivf
+        type: boolean
+        label: Pregnancy by IVF / assisted reproduction
+      - id: comparison
+        type: text
+        label: Comparison
+        placeholder: "e.g. US early OB 03/14/2026, or leave blank for none"
+    report:
+      indication: |-
+        {{indication | cap}}.
+        {{#if lmp_status == 'date'}}
+        LMP: {{lmp_date}} ({{ga_lmp}}).
+        {{else if lmp_status == 'uncertain'}}
+        LMP: Uncertain.
+        {{else}}
+        LMP: Unknown.
+        {{/if}}
+        {{#if present(hcg)}}
+        Serum beta-hCG: {{hcg}}.
+        {{/if}}
+        {{#if ivf}}
+        Assisted reproduction (IVF).
+        {{/if}}
+      comparison: |-
+        {{#if present(comparison)}}{{comparison}}{{else}}None{{/if}}.
+
+  - id: technique
+    title: Technique
+    fields:
+      - id: approach
+        type: choice
+        label: Approach
+        required: true
+        default: both
+        options:
+          - { value: ta, label: Transabdominal, text: Transabdominal ultrasound of the pelvis was performed. }
+          - { value: tv, label: Endovaginal, text: Endovaginal ultrasound of the pelvis was performed. }
+          - { value: both, label: Both, text: Transabdominal and endovaginal ultrasound of the pelvis was performed. }
+      - id: tv_declined
+        type: boolean
+        label: Endovaginal exam declined by patient
+        show_if: "approach == 'ta'"
+      - id: mmode
+        type: boolean
+        label: Cardiac activity documented with M-mode
+        default: true
+    report_field: technique
+    report: |
+      {{approach}}{{#if tv_declined}} Endovaginal imaging was declined by the patient.{{/if}}{{#if mmode and embryo == 'seen' and cardiac == 'present'}} Embryonic cardiac activity was documented with M-mode.{{/if}}
+
+  - id: pregnancy
+    title: Uterus and pregnancy
+    fields:
+      - id: iup_status
+        type: choice
+        label: Intrauterine findings
+        required: true
+        options:
+          - { value: sac, label: Gestational sac seen }
+          - { value: collection, label: "Fluid collection, no yolk sac or embryo" }
+          - { value: none, label: No intrauterine sac or collection }
+      - id: gestations
+        type: choice
+        label: Number of sacs
+        required: true
+        default: single
+        show_if: "iup_status == 'sac'"
+        options:
+          - { value: single, label: Single }
+          - { value: multiple, label: "Multiple (describe below)" }
+      - id: multiple_note
+        type: textarea
+        label: "Multiple gestation: number of sacs and embryos, chorionicity and amnionicity"
+        rows: 2
+        required: true
+        show_if: "iup_status == 'sac' and gestations == 'multiple'"
+      - id: sac_location
+        type: choice
+        label: Sac location
+        required: true
+        default: normal
+        show_if: "iup_status in ['sac', 'collection']"
+        normal: normal
+        options:
+          - { value: normal, label: Uterine body (normal) }
+          - { value: low, label: "Low uterus / cervix" }
+          - { value: scar, label: Cesarean scar }
+          - { value: eccentric, label: "Eccentric, near a cornu" }
+      - id: sac
+        type: dims
+        label: "Sac size (3 diameters; larger sac if multiple)"
+        unit: mm
+        decimals: 1
+        required: true
+        show_if: "iup_status in ['sac', 'collection']"
+        min: 1
+        max: 80
+      - id: msd
+        type: calc
+        label: Mean sac diameter
+        formula: "if(count(sac) == 3, avg(sac))"
+        unit: mm
+        decimals: 1
+        show_if: "iup_status in ['sac', 'collection']"
+      - id: yolk_sac
+        type: choice
+        label: Yolk sac
+        required: true
+        show_if: "iup_status == 'sac'"
+        options:
+          - { value: seen, label: Seen, text: a yolk sac }
+          - { value: not_seen, label: Not seen, text: no yolk sac }
+      - id: ys_size
+        type: number
+        label: Yolk sac diameter
+        unit: mm
+        decimals: 1
+        min: 1
+        max: 15
+        show_if: "iup_status == 'sac' and yolk_sac == 'seen'"
+      - id: embryo
+        type: choice
+        label: Embryo
+        required: true
+        show_if: "iup_status == 'sac'"
+        options:
+          - { value: seen, label: Seen }
+          - { value: not_seen, label: Not seen }
+      - id: crl
+        type: number
+        label: Crown-rump length (CRL)
+        unit: mm
+        decimals: 1
+        required: true
+        min: 1
+        max: 90
+        show_if: "iup_status == 'sac' and embryo == 'seen'"
+      - id: cardiac
+        type: choice
+        label: Cardiac activity
+        required: true
+        show_if: "iup_status == 'sac' and embryo == 'seen'"
+        options:
+          - { value: present, label: Present }
+          - { value: absent, label: Absent }
+      - id: fhr
+        type: number
+        label: Heart rate
+        unit: bpm
+        min: 40
+        max: 250
+        show_if: "iup_status == 'sac' and embryo == 'seen' and cardiac == 'present'"
+      - id: ga_crl
+        type: calc
+        label: Gestational age by CRL
+        formula: ga_text(crl_ga(crl))
+        show_if: "iup_status == 'sac' and embryo == 'seen'"
+      - id: ga_msd
+        type: calc
+        label: Approximate gestational age by MSD
+        formula: ga_text(msd_ga(msd))
+        show_if: "iup_status == 'sac' and embryo == 'not_seen'"
+      - id: sch
+        type: choice
+        label: Subchorionic hemorrhage
+        default: none
+        normal: none
+        show_if: "iup_status == 'sac'"
+        options:
+          - { value: none, label: None }
+          - { value: small, label: Small, text: small }
+          - { value: moderate, label: Moderate, text: moderate }
+          - { value: large, label: Large, text: large }
+      - id: uterus_other
+        type: text
+        label: "Other uterine findings (e.g. fibroids)"
+    report:
+      findings: |-
+        {{#if iup_status == 'sac'}}
+        UTERUS: {{#if gestations == 'multiple'}}Multiple intrauterine gestational sacs. {{multiple_note | sentence}}{{else}}Single intrauterine gestational sac{{#if sac_location == 'low'}} located low in the uterus, near the cervix{{else if sac_location == 'scar'}} located at the cesarean section scar{{else if sac_location == 'eccentric'}} located eccentrically, near the cornu{{/if}}.{{/if}} Mean sac diameter {{msd}}. The sac contains {{yolk_sac}}{{#if present(ys_size)}} measuring {{ys_size}}{{/if}}{{#if embryo == 'seen'}} and an embryo with a crown-rump length of {{crl}}, corresponding to {{ga_crl}}{{else}} and no embryo{{/if}}.
+        {{#if embryo == 'seen' and cardiac == 'present'}}
+        Embryonic cardiac activity is present{{#if present(fhr)}}, heart rate {{fhr}}{{/if}}.
+        {{else if embryo == 'seen'}}
+        No embryonic cardiac activity is seen.
+        {{/if}}
+        {{#if sch != 'none' and present(sch)}}
+        There is a {{sch}} subchorionic hemorrhage.
+        {{/if}}
+        {{else if iup_status == 'collection'}}
+        UTERUS: Intrauterine fluid collection measuring {{sac}} (mean diameter {{msd}}), without a yolk sac or embryo{{#if sac_location != 'normal'}}, located {{#if sac_location == 'low'}}low in the uterus, near the cervix{{else if sac_location == 'scar'}}at the cesarean section scar{{else}}eccentrically, near the cornu{{/if}}{{/if}}.
+        {{else}}
+        UTERUS: No intrauterine gestational sac is seen.
+        {{/if}}
+        {{#if present(uterus_other)}}
+        {{uterus_other | sentence}}
+        {{/if}}
+      impression: |-
+        {{#if iup_status == 'sac' and embryo == 'seen' and cardiac == 'present'}}
+        {{#if gestations == 'multiple'}}Live intrauterine multiple gestation{{else}}Single live intrauterine pregnancy{{/if}}{{#if present(ga_crl)}} measuring {{ga_crl}} by crown-rump length{{/if}}.
+        {{else if iup_status == 'sac' and embryo == 'seen' and crl >= 7}}
+        Embryo with a crown-rump length of {{crl}} and no cardiac activity. This meets criteria for pregnancy failure.
+        {{else if iup_status == 'sac' and embryo == 'seen'}}
+        Embryo with a crown-rump length of {{crl}} and no cardiac activity. This is suspicious for, but not diagnostic of, pregnancy failure. Follow-up ultrasound in 7 to 10 days is suggested.
+        {{else if iup_status == 'sac' and msd >= 25}}
+        Gestational sac with a mean sac diameter of {{msd}} and no embryo. This meets criteria for pregnancy failure.
+        {{else if iup_status == 'sac' and (msd >= 16 or ys_size > 7 or days_between(lmp_date, exam.date) >= 42)}}
+        Intrauterine gestational sac without an embryo{{#if msd >= 16}} (mean sac diameter {{msd}}){{/if}}{{#if ys_size > 7}}, with an enlarged yolk sac{{/if}}. This is suspicious for, but not diagnostic of, pregnancy failure. Follow-up ultrasound in 7 to 10 days is suggested.
+        {{else if iup_status == 'sac' and yolk_sac == 'seen'}}
+        Early intrauterine pregnancy with a yolk sac but no embryo yet{{#if present(ga_msd)}}, approximately {{ga_msd}} by mean sac diameter{{/if}}. Follow-up ultrasound is suggested to confirm viability.
+        {{else if iup_status == 'sac'}}
+        Intrauterine gestational sac without a yolk sac or embryo, most likely an early intrauterine pregnancy. Follow-up ultrasound is suggested to confirm viability.
+        {{else if iup_status == 'collection'}}
+        Intrauterine fluid collection without a yolk sac or embryo. This is most likely an early gestational sac, but is not diagnostic of an intrauterine pregnancy. Correlation with serial beta-hCG and follow-up ultrasound are suggested.
+        {{/if}}
+        {{#if iup_status in ['sac', 'collection'] and sac_location == 'scar'}}
+        The sac is located at the cesarean section scar. Cesarean scar pregnancy should be considered.
+        {{else if iup_status in ['sac', 'collection'] and sac_location == 'eccentric'}}
+        The sac is eccentrically located near the cornu. Interstitial (cornual) ectopic pregnancy should be excluded.
+        {{else if iup_status in ['sac', 'collection'] and sac_location == 'low'}}
+        The sac is located low in the uterus. Cervical ectopic pregnancy and a miscarriage in progress are considerations.
+        {{/if}}
+
+  - id: dating
+    title: Dating
+    show_if: "iup_status == 'sac' and embryo == 'seen' and cardiac == 'present' and present(crl_ga(crl))"
+    fields:
+      - id: dating_note
+        type: note
+        label: Worked out from the CRL, the LMP and the exam date. Nothing to fill in. Shown for a live embryo with a CRL of 3 to 84 mm.
+      - id: ga_diff
+        type: calc
+        label: "Difference, CRL minus LMP"
+        formula: "crl_ga(crl) - days_between(lmp_date, exam.date)"
+        unit: days
+        show_if: "lmp_status == 'date'"
+      - id: dating_basis
+        type: calc
+        label: Dating used
+        formula: "if(lmp_status == 'date' and not redate_by_us(crl_ga(crl), days_between(lmp_date, exam.date)), 'LMP', 'Ultrasound (CRL)')"
+      - id: edd_lmp
+        type: calc
+        label: EDD by LMP
+        formula: edd_from_lmp(lmp_date)
+        show_if: "lmp_status == 'date'"
+      - id: edd_us
+        type: calc
+        label: EDD by ultrasound
+        formula: "edd_from_ga(crl_ga(crl), exam.date)"
+      - id: edd
+        type: calc
+        label: Assigned EDD
+        formula: "if(dating_basis == 'LMP', edd_lmp, edd_us)"
+    report:
+      findings: |-
+        DATING: Gestational age by crown-rump length is {{ga_crl}}, giving an estimated date of delivery of {{edd_us}}.{{#if lmp_status == 'date'}} Gestational age by LMP is {{ga_lmp}} (EDD {{edd_lmp}}).{{/if}}
+      impression: |-
+        {{#if lmp_status != 'date'}}
+        Estimated date of delivery {{edd}}, by ultrasound.
+        {{else if dating_basis == 'LMP'}}
+        Ultrasound is consistent with LMP dating. Estimated date of delivery {{edd}}, by LMP.
+        {{else}}
+        Ultrasound dating differs from LMP dating by {{abs(ga_diff)}} days. Estimated date of delivery {{edd}}, by ultrasound.
+        {{/if}}
+
+  - id: adnexa
+    title: Ovaries and adnexa
+    fields:
+      - id: r_ovary
+        type: choice
+        label: Right ovary
+        required: true
+        default: normal
+        normal: normal
+        options:
+          - { value: normal, label: Normal, text: normal in appearance }
+          - { value: cl, label: Corpus luteum, text: notable for a corpus luteum }
+          - { value: cyst, label: "Other cyst (describe below)", text: notable for a cyst as described below }
+          - { value: not_seen, label: Not visualized, text: not visualized }
+      - id: l_ovary
+        type: choice
+        label: Left ovary
+        required: true
+        default: normal
+        normal: normal
+        options:
+          - { value: normal, label: Normal, text: normal in appearance }
+          - { value: cl, label: Corpus luteum, text: notable for a corpus luteum }
+          - { value: cyst, label: "Other cyst (describe below)", text: notable for a cyst as described below }
+          - { value: not_seen, label: Not visualized, text: not visualized }
+      - id: mass_side
+        type: choice
+        label: Mass separate from the ovary
+        required: true
+        default: none
+        normal: none
+        options:
+          - { value: none, label: None }
+          - { value: right, label: Right, text: right }
+          - { value: left, label: Left, text: left }
+      - id: mass_type
+        type: choice
+        label: Mass appearance
+        required: true
+        show_if: "mass_side != 'none'"
+        options:
+          - { value: embryo, label: "Sac with yolk sac or embryo", text: an extrauterine gestational sac }
+          - { value: ring, label: "Tubal ring (echogenic ring)", text: an echogenic tubal ring }
+          - { value: complex, label: "Complex / solid mass", text: a complex mass }
+      - id: mass_size
+        type: dims
+        label: Mass size
+        unit: mm
+        decimals: 0
+        required: true
+        show_if: "mass_side != 'none'"
+        min: 1
+        max: 200
+      - id: mass_contents
+        type: choice
+        label: Contents
+        required: true
+        show_if: "mass_side != 'none' and mass_type == 'embryo'"
+        options:
+          - { value: ys, label: Yolk sac only, text: a yolk sac }
+          - { value: embryo_dead, label: "Embryo, no cardiac activity", text: an embryo without cardiac activity }
+          - { value: embryo_live, label: "Embryo with cardiac activity", text: an embryo with cardiac activity }
+      - id: adnexa_other
+        type: text
+        label: "Other adnexal findings (describe cysts here)"
+    report:
+      findings: |-
+        OVARIES: The right ovary is {{r_ovary}}. The left ovary is {{l_ovary}}.
+        {{#if mass_side != 'none'}}
+        ADNEXA: In the {{mass_side}} adnexa, separate from the ovary, there is {{mass_type}} measuring {{mass_size}}{{#if mass_type == 'embryo'}} containing {{mass_contents}}{{/if}}.
+        {{else}}
+        ADNEXA: No adnexal mass separate from the ovaries.
+        {{/if}}
+        {{#if present(adnexa_other)}}
+        {{adnexa_other | sentence}}
+        {{/if}}
+      impression: |-
+        {{#if mass_side != 'none' and mass_type == 'embryo'}}
+        {{#if mass_contents == 'embryo_live'}}Live ectopic{{else}}Ectopic{{/if}} pregnancy in the {{mass_side}} adnexa.
+        {{else if mass_side != 'none'}}
+        {{mass_side | cap}} adnexal mass separate from the ovary, highly suspicious for ectopic pregnancy.
+        {{else if iup_status == 'none'}}
+        No intrauterine pregnancy and no adnexal mass. Pregnancy of unknown location: early intrauterine pregnancy, completed miscarriage and occult ectopic pregnancy are all possible. Correlation with serial beta-hCG is suggested.
+        {{/if}}
+        {{#if iup_status == 'sac' and mass_side != 'none'}}
+        Heterotopic pregnancy (intrauterine and ectopic) should be considered{{#if ivf}}, particularly after assisted reproduction{{/if}}.
+        {{/if}}
+
+  - id: fluid
+    title: Free fluid
+    fields:
+      - id: free_fluid
+        type: choice
+        label: Pelvic free fluid
+        required: true
+        default: none
+        normal: none
+        options:
+          - { value: none, label: None }
+          - { value: small, label: Small, text: a small amount of }
+          - { value: moderate, label: Moderate, text: a moderate amount of }
+          - { value: large, label: Large, text: a large amount of }
+      - id: fluid_echogenic
+        type: boolean
+        label: "Echogenic fluid or clot (blood)"
+        show_if: "free_fluid != 'none'"
+      - id: morison
+        type: boolean
+        label: "Fluid in Morison's pouch (hepatorenal space)"
+        show_if: "free_fluid != 'none'"
+    report:
+      findings: |-
+        {{#if free_fluid == 'none'}}
+        FREE FLUID: None.
+        {{else}}
+        FREE FLUID: There is {{free_fluid}} {{#if fluid_echogenic}}echogenic {{/if}}free fluid in the pelvis{{#if morison}}, extending to Morison's pouch{{/if}}.
+        {{/if}}
+      impression: |-
+        {{#if free_fluid in ['moderate', 'large'] or fluid_echogenic or morison}}
+        {{#if free_fluid in ['moderate', 'large']}}{{free_fluid | cap}}{{else}}Free{{/if}} {{#if fluid_echogenic}}echogenic {{/if}}free fluid{{#if morison}} extending to Morison's pouch{{/if}}, which may represent hemoperitoneum.
+        {{/if}}

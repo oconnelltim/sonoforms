@@ -154,3 +154,72 @@ test('template whitespace: standalone tags vanish, inline tags stay', () => {
   assert.equal(renderTemplate('A {{#if false}}x{{/if}}.', scope), 'A.');
   assert.throws(() => parseTemplate('{{x | bogus}}'), /Unknown filter/);
 });
+
+test('early pregnancy: CRL and sac dating, due dates and redating', () => {
+  // Robinson & Fleming (default) and Hadlock, checked against their published tables.
+  assert.equal(FUNCTIONS.crl_ga(10), 49);                 // 7w0d
+  assert.equal(FUNCTIONS.crl_ga(45), 78);                 // 11w1d
+  assert.equal(FUNCTIONS.crl_ga(10, 'hadlock'), 49);
+  assert.equal(FUNCTIONS.crl_ga(45, 'hadlock'), 79);
+  assert.equal(FUNCTIONS.crl_ga(2), null, 'below the valid range');
+  assert.equal(FUNCTIONS.crl_ga(90), null, 'above the valid range');
+  assert.equal(FUNCTIONS.msd_ga(10), 40);
+  assert.equal(FUNCTIONS.ga_text(59), '8 weeks 3 days');
+  assert.equal(FUNCTIONS.ga_text(7), '1 week 0 days');
+  assert.equal(FUNCTIONS.ga_text(null), null);
+  assert.equal(FUNCTIONS.edd_from_lmp('2026-03-01'), '2026-12-06');
+  assert.equal(FUNCTIONS.edd_from_ga(56, '2026-10-25'), '2027-06-06');
+  assert.equal(FUNCTIONS.add_days('2026-02-28', 1), '2026-03-01');
+  assert.equal(FUNCTIONS.add_days('2026-03-07', 2), '2026-03-09', 'across a daylight-saving change');
+  // ACOG: > 5 days before 9w0d, > 7 days from 9w0d to 13w6d.
+  assert.equal(FUNCTIONS.redate_by_us(56, 62), true);
+  assert.equal(FUNCTIONS.redate_by_us(56, 61), false);
+  assert.equal(FUNCTIONS.redate_by_us(70, 78), true);
+  assert.equal(FUNCTIONS.redate_by_us(70, 77), false);
+  assert.equal(FUNCTIONS.redate_by_us(100, 70), null, 'not a first-trimester age');
+});
+
+test('early pregnancy starter form: live IUP, redating, failure, unknown location, ectopic', async () => {
+  const fs = await import('node:fs');
+  const YAML = (await import('yaml')).default;
+  const raw = YAML.parse(fs.readFileSync('forms/general/us-early-ob.yaml', 'utf8'));
+  assert.deepEqual(lintForm(raw).filter(p => p.level === 'error'), []);
+  const def = normalizeForm(raw);
+  const env = { patient: { age: 30, sex: 'F' }, exam: { date: '2026-10-25' } };
+  const base = { ...initialAnswers(def), indication: ['bleeding'], lmp_status: 'date', lmp_date: '2026-08-27' };
+  const live = { iup_status: 'sac', sac: [25, 20, 22], yolk_sac: 'seen', embryo: 'seen', crl: 16, cardiac: 'present', fhr: 160 };
+  const report = (answers) => {
+    const a = { ...base, ...answers };
+    assert.deepEqual(validateAnswers(def, a, env).missing, []);
+    const r = generateReport(def, a, env);
+    assert.deepEqual(r.errors, []);
+    return Object.fromEntries(r.fields.map(f => [f.id, f.text]));
+  };
+
+  let r = report(live);
+  assert.match(r.indication, /LMP: 08\/27\/2026 \(8 weeks 3 days\)/);
+  assert.match(r.findings, /crown-rump length of 16\.0 mm, corresponding to 8 weeks 0 days/);
+  assert.match(r.findings, /heart rate 160 bpm/);
+  assert.match(r.impression, /Single live intrauterine pregnancy measuring 8 weeks 0 days/);
+  assert.match(r.impression, /consistent with LMP dating\. Estimated date of delivery 06\/03\/2027, by LMP/);
+
+  r = report({ ...live, lmp_date: '2026-08-10' });
+  assert.match(r.impression, /differs from LMP dating by 20 days\. Estimated date of delivery 06\/06\/2027, by ultrasound/);
+
+  r = report({ ...live, crl: 9, cardiac: 'absent', fhr: null });
+  assert.match(r.impression, /meets criteria for pregnancy failure/);
+  assert.doesNotMatch(r.impression + r.findings, /date of delivery/, 'no due date for a failed pregnancy');
+  r = report({ ...live, crl: 5, cardiac: 'absent', fhr: null });
+  assert.match(r.impression, /suspicious for, but not diagnostic of, pregnancy failure/);
+  r = report({ ...live, sac: [27, 25, 26], embryo: 'not_seen', crl: null, cardiac: null, fhr: null });
+  assert.match(r.impression, /mean sac diameter of 26\.0 mm and no embryo\. This meets criteria for pregnancy failure/);
+
+  r = report({ lmp_status: 'unknown', iup_status: 'none' });
+  assert.match(r.findings, /No intrauterine gestational sac/);
+  assert.match(r.impression, /Pregnancy of unknown location/);
+
+  r = report({ iup_status: 'none', mass_side: 'left', mass_type: 'ring', mass_size: [22, 18, 15], free_fluid: 'moderate', fluid_echogenic: true });
+  assert.match(r.impression, /Left adnexal mass separate from the ovary, highly suspicious for ectopic pregnancy/);
+  assert.match(r.impression, /may represent hemoperitoneum/);
+  assert.doesNotMatch(r.impression, /unknown location/);
+});

@@ -49,7 +49,7 @@ See [docs/SECURITY.md](docs/SECURITY.md) for the security design, and [docs/SECU
 
 Forms pair what the tech fills in with the report text for each section. Build them in the app's visual builder, or write them as YAML. See [docs/FORMS.md](docs/FORMS.md). The starter forms in `forms/general/` are a starting point and **must be reviewed by your radiologists before clinical use**.
 
-Starter library: US pelvis (female), thyroid with ACR TI-RADS, abdomen complete, RUQ, renal/bladder (with prostate volume), scrotum, lower-extremity venous duplex.
+Starter library: US pelvis (female), early pregnancy (rule out ectopic, viability and dating), thyroid with ACR TI-RADS, abdomen complete, RUQ, renal/bladder (with prostate volume), scrotum, lower-extremity venous duplex.
 
 ## Development
 

@@ -50,13 +50,13 @@ export async function render({ root, session, navigate }) {
       h('td', f.current_version ? `v${f.current_version}` : h('span.muted', 'never published'), f.draft_version ? h('span.badge.accent', `draft v${f.draft_version}`) : null),
       h('td.muted.small', fmtDateTime(f.updated_at)),
       h('td', f.active ? (disabledHere ? h('span.badge', 'Off here') : h('span.badge.status-submitted', 'Active')) : h('span.badge', 'Inactive')),
-      h('td.right.nowrap',
+      h('td.right.nowrap', h('div.cell-actions',
         isGeneral && activeInst ? h('label.check.small', { title: 'Show this form to technologists at your current institution' },
           h('input', { type: 'checkbox', checked: !disabledHere, onchange: async (e) => {
             try { await put(`/forms/${f.id}/institution-setting`, { institution_id: activeInst, enabled: e.target.checked }); await load(); } catch (err) { toast(err.message, 'error'); e.target.checked = !e.target.checked; }
           } }), ' Use here') : null,
         isGeneral && f.current_version_id ? h('button.btn.small', { type: 'button', onclick: () => copyForm(f) }, 'Copy to institution') : null,
-        h('button.btn.small', { type: 'button', onclick: () => navigate(`/forms/${f.id}`) }, isGeneral && !data.can_edit_general ? 'View' : 'Edit')));
+        h('button.btn.small', { type: 'button', onclick: () => navigate(`/forms/${f.id}`) }, isGeneral && !data.can_edit_general ? 'View' : 'Edit'))));
   }
 
   function table(list) {

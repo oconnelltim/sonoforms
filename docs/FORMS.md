@@ -162,10 +162,15 @@ Context values: `patient.age`, `patient.sex` (`M`/`F`/`O`), `exam.date`, `exam.s
 | `label(field)`, `text(field)` | label / report text of the selected option(s) |
 | `shown(field)` | true if the field is currently visible |
 | `tirads(points)` → `TR1`..`TR5`; `tirads_rec(level, max_cm)` | ACR TI-RADS |
-| `days_between(d1, d2)`, `ga_from_lmp(lmp, exam.date)` | dates |
+| `days_between(d1, d2)`, `add_days(date, n)`, `ga_from_lmp(lmp, exam.date)` | dates |
+| `crl_ga(crl_mm)` | gestational age in days from crown-rump length (3–84 mm), Robinson & Fleming; `crl_ga(crl_mm, 'hadlock')` uses Hadlock 1992 |
+| `msd_ga(msd_mm)` | rough gestational age in days from mean sac diameter (MSD + 30), for a sac without an embryo |
+| `ga_text(days)` | a gestational age in words, e.g. `8 weeks 3 days` |
+| `edd_from_lmp(lmp)`, `edd_from_ga(days, exam.date)` | estimated date of delivery (280 days from the LMP, or from an ultrasound age on the exam date) |
+| `redate_by_us(us_days, lmp_days)` | true if first-trimester ultrasound dating should replace LMP dating: a difference of more than 5 days before 9w0d, or more than 7 days to 13w6d (ACOG Committee Opinion 700) |
 | `lower(s)`, `upper(s)`, `join(list, sep)` | text |
 
-A calculated field that is hidden by `show_if` has no value. Missing inputs make a result blank rather than an error, so a calculated field stays empty until its measurements are filled in.
+A calculated field whose result is a date (`edd_from_lmp`, `add_days`, …) prints like a date field, as MM/DD/YYYY. A calculated field that is hidden by `show_if` has no value. Missing inputs make a result blank rather than an error, so a calculated field stays empty until its measurements are filled in.
 
 ## Report templates
 

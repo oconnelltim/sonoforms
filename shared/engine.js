@@ -206,6 +206,7 @@ export function formatField(field, value, scope, opts = {}) {
     case 'number':
     case 'calc':
       if (typeof value === 'number' || !isNaN(Number(value))) return formatNumber(value, field.decimals) + unit;
+      if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) return formatDate(value);
       return String(value);
     case 'dims': {
       const parts = (Array.isArray(value) ? value : []).filter(x => !isEmpty(x)).map(x => formatNumber(x, field.decimals));

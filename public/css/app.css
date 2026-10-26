@@ -82,6 +82,8 @@ code { background: var(--code-bg); padding: 1px 4px; border-radius: 4px; border:
 .small { font-size: .84rem; }
 .strong { font-weight: 600; }
 .right { text-align: right; }
+.cell-actions { display: inline-flex; align-items: center; justify-content: flex-end; gap: 10px; }
+.cell-actions .check { margin: 0 4px 0 0; }
 .nowrap { white-space: nowrap; }
 .boot, .loading { padding: 40px; text-align: center; color: var(--muted); }
 .loading.small { padding: 8px; text-align: left; }

@@ -250,6 +250,7 @@ export function mockStudies(institution) {
     ['FICTION^FRANK', 'M', '19491111', 'US RENAL COMPLETE'],
     ['MOCK^GRACE^L', 'F', '20010215', 'US PELVIS TRANSABDOMINAL'],
     ['DUMMY^HENRY', 'M', '19630527', 'US VENOUS DUPLEX LOWER EXT LEFT'],
+    ['TRIAL^IRIS', 'F', '19960409', 'US OB 1ST TRIMESTER'],
   ];
   return people.map(([name, sex, dob, desc], i) => {
     const t = new Date(today.getTime() - (i * 47 + 5) * 60000);
