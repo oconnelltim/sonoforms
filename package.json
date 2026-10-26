@@ -1,6 +1,6 @@
 {
   "name": "sonoforms",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Structured ultrasound technologist worksheets that generate radiologist-ready findings text. Self-hosted, offline, no AI.",
   "license": "GPL-3.0-or-later",
   "type": "module",

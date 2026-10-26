@@ -4,9 +4,17 @@ All notable changes to SonoForms are documented here. The format follows [Keep a
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-25
+
+The visual form builder, reports split into dictation fields, multipart studies (linked studies and combined visit reports), early pregnancy and salivary gland starter forms, and local security scans.
+
 ### Upgrading
 
-- **Starter forms already in your general library are not updated automatically**, because admins may have edited them. Until they are replaced, their Indication and Comparison lines stay inside the Findings card. To pick up the new versions, run `./manage.sh update-forms` to see what would change, then `./manage.sh update-forms --apply`. Forms edited in the app are skipped unless you add `--force`.
+Docker installs: run `./manage.sh update`. The database change (a table for linked studies) is applied automatically. Then:
+
+- **Starter forms already in your general library are not updated automatically**, because admins may have edited them. Until they are replaced, their Indication and Comparison lines stay inside the Findings card, and they have no combined-report heading. Run `./manage.sh update-forms` to see what would change, then `./manage.sh update-forms --apply`. Forms edited in the app are skipped unless you add `--force`. The new early pregnancy and salivary gland forms are added by the same command (or automatically on start-up).
+- **Have your radiologists review** the new starter forms and the combined-report headings before clinical use.
+- **API changes** (only matters if something else calls the API): reports are stored and edited per report field; see *Changed* below.
 
 ### Added
 
@@ -35,7 +43,6 @@ All notable changes to SonoForms are documented here. The format follows [Keep a
 - **Form functions for early pregnancy:** `crl_ga` (Robinson & Fleming, or Hadlock), `msd_ga`, `ga_text`, `edd_from_lmp`, `edd_from_ga`, `redate_by_us` and `add_days`. Calculated dates print as MM/DD/YYYY.
 - **`update-general-forms` command** (`./manage.sh update-forms`): lists starter forms with newer versions and, with `--apply`, publishes them as each form's next version. Forms edited in the app or with an unpublished draft are left alone (`--force` replaces edited ones), institution copies are never touched, and each update is audited.
 - **Form editor:** undo and redo, and automatic draft saving (the "Save draft" button is gone; Ctrl+S still saves immediately). Leaving the editor saves pending changes instead of discarding them.
-
 - **PACS query guardrails:**
   - Worklist queries stop at a per-institution maximum (default 500, settable from 50 to 2000). The app asks PACS to cancel the rest and disconnects if PACS ignores the cancel. Technologists and the admin "Test query" are told when the list was cut short.
   - A worklist query must be narrowed by a modality or by an institution filter that PACS applies. Admin › Institutions refuses to save a configuration without one, and the server refuses to run it.
@@ -47,7 +54,6 @@ All notable changes to SonoForms are documented here. The format follows [Keep a
 - **Checks run locally.** `npm run check` (tests, form check, npm audit), `npm run check:linux` (the same in a clean Linux container) and `npm run security` (Semgrep, Gitleaks, Hadolint, ShellCheck and Grype, in Docker). The GitHub workflow now runs only when started by hand, and the Dependabot configuration was removed.
 - **Docker images:** both apply Alpine security updates when built; npm is removed from the app image after installing packages; the Apache image runs as `www-data` by default; the app health check no longer uses `wget`.
 - `adm-zip` (an unused dependency of the DICOM library) is pinned to 0.6.1, which fixes its high-severity advisories. `npm run check` fails on high as well as critical advisories.
-
 - The logo is now a small ultrasound probe, in the header, on the sign-in page and as the browser tab icon.
 - **API:** `PUT /api/exams/:id/report` and `POST /api/exams/:id/dictated` take `fields` (an object of edited text per report field, or `null`) instead of a single `report` string. `POST /api/exams/:id/copied` takes `field`. Exams store their report as `{ fields: [...] }`; reports saved before this change still display, as one Findings card.
 - A study lookup by UID never sends a blank UID (which would match every study) and fetches at most a handful of results.
@@ -57,9 +63,7 @@ All notable changes to SonoForms are documented here. The format follows [Keep a
 ### Fixed
 
 - A test failed on machines set to UTC late in the day: the fake PACS's studies could fall on the previous day, splitting a patient's visit. Fake studies are now always dated today.
-
 - The tech worklist showed a date under today's studies in the evening (it compared against the UTC date), and the form editor's preview used the UTC date as the exam date.
-
 - **Form editor layout:**
   - Hidden on/off-switch checkboxes in the tech-form preview escaped their scrolling pane and stretched the whole page.
   - The editor's panes now always fill the window and scroll independently in every browser (previously the Source box could be only a few lines tall, and the builder could fail to scroll on its own).
@@ -227,5 +231,7 @@ First release.
 - **Development:** `npm run dev` with an embedded PostgreSQL and a fake PACS worklist; `npm run mock-pacs` for testing real DICOM queries.
 - **Documentation:** README, docs/ADMIN.md, docs/FORMS.md, docs/SECURITY.md.
 
+[Unreleased]: https://github.com/oconnelltim/sonoforms/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/oconnelltim/sonoforms/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/oconnelltim/sonoforms/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/oconnelltim/sonoforms/releases/tag/v0.1.0
