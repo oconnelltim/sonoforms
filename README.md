@@ -96,23 +96,18 @@ To run the Docker setup from your working copy instead of released images, set `
 docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
 ```
 
-**Releasing:**
+**Releasing:** images are published by the *Release images* GitHub workflow, which signs in to ghcr.io with its own short-lived token, limited to this repository. No personal access token is involved.
+
 1. Set the new version in `package.json`, `.env.example` and `docker-compose.trial.yml`, and give it a dated section in `CHANGELOG.md`.
-2. Sign in to GHCR once with a token that has the `write:packages` permission:
+2. Commit, tag and push:
    ```bash
-   docker login ghcr.io -u oconnelltim
+   git tag -a v0.3.3 -m "SonoForms 0.3.3" && git push && git push origin v0.3.3
    ```
-3. Run:
-   ```bash
-   npm run release:images
-   ```
-   It checks the version, runs the tests, builds and scans the images, pushes them for x86-64 and ARM, and writes `sbom/v<version>/`.
-4. Commit the SBOM, tag `v<version>`, and push.
-5. Run:
-   ```bash
-   npm run bundle -- --with-images
-   ```
-   Attach the two files from `dist/` to the GitHub release.
+3. On GitHub, open **Actions → Release images → Run workflow**. Under *Use workflow from*, pick **Tags → v0.3.3**, and run it. It checks the version, runs the tests, builds and scans the images, and pushes them for x86-64 and ARM. It then makes the bundle, the offline images file and the SBOM, and creates a **draft** release with them attached.
+4. Review the draft under **Releases** and publish it.
+5. Optional: unzip the release's SBOM file into `sbom/` and commit it.
+
+To test the release script without publishing, run a registry on your computer and point `SONOFORMS_REGISTRY` at it (see the top of `scripts/release-images.sh`).
 
 All checks run locally; see "Checking the code" in [docs/SECURITY.md](docs/SECURITY.md). The GitHub workflow only runs when started by hand.
 

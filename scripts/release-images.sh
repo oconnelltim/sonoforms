@@ -6,20 +6,20 @@
 #   ghcr.io/oconnelltim/sonoforms-web:<version>  (and :latest)
 # for x86-64 servers and ARM machines (e.g. Apple Silicon laptops).
 #
-#   npm run release:images
+# Releases are published by the "Release images" GitHub workflow
+# (.github/workflows/release.yml), which runs this script with the job's own
+# short-lived token. Run locally, it's for testing against a registry on
+# this computer, e.g.:
+#   SONOFORMS_REGISTRY=localhost:5050/oconnelltim npm run release:images
 #
 # Steps: checks that the version is set everywhere, runs the tests, builds
 # the x86-64 images and scans them (nothing is pushed if a scan fails), then
 # builds both architectures from the same build cache and pushes them, and
 # finally writes the SBOM from the published images into sbom/v<version>/.
 #
-# Before the first run, sign in to GitHub's registry as the repo owner with a
-# token that has the write:packages permission:
-#   docker login ghcr.io -u oconnelltim
-#
-# Overrides (mainly for testing): SONOFORMS_REGISTRY (default
-# ghcr.io/oconnelltim), PLATFORMS (default linux/amd64,linux/arm64), BUILDER
-# (the docker buildx builder to use; created if missing).
+# Overrides: SONOFORMS_REGISTRY (default ghcr.io/oconnelltim), PLATFORMS
+# (default linux/amd64,linux/arm64), BUILDER (the docker buildx builder to
+# use; created if missing).
 
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -35,6 +35,17 @@ step() { printf '\n=== %s\n' "$1"; }
 
 docker info >/dev/null 2>&1 || fail "Docker is not running. Start Docker Desktop and try again."
 version=$(node -p "require('./package.json').version")
+
+# Publishing to ghcr.io happens only in the GitHub workflow. Pushing from a
+# laptop would need a personal token, and classic tokens (the only kind the
+# registry accepts) reach every organization the account belongs to.
+if [ "${GITHUB_ACTIONS:-}" != true ]; then
+  case "$REGISTRY" in
+    ghcr.io/*) fail "Publish releases with the \"Release images\" GitHub workflow, not from this computer. To test locally, set SONOFORMS_REGISTRY to a local registry (see the top of this script)." ;;
+  esac
+elif [ "${GITHUB_REF_NAME:-}" != "v$version" ]; then
+  fail "The workflow is running from '${GITHUB_REF_NAME:-?}', but package.json says $version. Run it from the tag v$version."
+fi
 
 step "Checking that version $version is set everywhere"
 grep -qx "SONOFORMS_VERSION=$version" .env.example || fail ".env.example must say SONOFORMS_VERSION=$version"
@@ -79,7 +90,7 @@ for spec in "app ." "web docker/apache"; do
   build "$name" "$context" --platform "$PLATFORMS" \
     --tag "$REGISTRY/sonoforms-$name:$version" --tag "$REGISTRY/sonoforms-$name:latest" \
     --provenance=mode=max --sbom=true --push \
-    || fail "pushing sonoforms-$name failed. Are you signed in (docker login ghcr.io -u oconnelltim)?"
+    || fail "pushing sonoforms-$name to $REGISTRY failed."
 done
 
 step "SBOM from the published images"
@@ -90,11 +101,4 @@ cat <<EOF
 Published version $version:
   $REGISTRY/sonoforms-app:$version
   $REGISTRY/sonoforms-web:$version
-
-Next:
-  1. Commit sbom/v$version, then tag and push the release (v$version).
-  2. First release only: on GitHub, open each package (your profile > Packages),
-     choose Package settings > Change visibility > Public, so hospitals can
-     pull without signing in.
-  3. Optional: npm run bundle -- --with-images  for an offline install bundle.
 EOF

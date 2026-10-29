@@ -1,0 +1,70 @@
+name: Release images
+# Publishes the release images to ghcr.io and drafts the GitHub release with
+# the install bundle, the offline images file and the SBOM.
+#
+# Run by hand only: Actions > Release images > Run workflow, and under
+# "Use workflow from" choose the release tag (e.g. v0.3.2), not a branch.
+#
+# It signs in to ghcr.io with this job's own GITHUB_TOKEN. That token can
+# only publish packages linked to this repository, can't reach any other
+# repository or organization, and expires when the job ends. No personal
+# token is needed or stored anywhere.
+on: workflow_dispatch
+
+permissions:
+  contents: write   # draft the GitHub release and upload its files
+  packages: write   # push ghcr.io/<owner>/sonoforms-app and -web
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Must run from a release tag
+        run: |
+          if [ "$GITHUB_REF_TYPE" != tag ]; then
+            echo "::error::Choose the release tag (e.g. v0.3.2) under 'Use workflow from', not a branch."
+            exit 1
+          fi
+
+      # Actions are pinned to exact commits.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 26
+          cache: npm
+      - run: npm ci
+
+      - name: Emulation for the ARM build
+        run: docker run --privileged --rm tonistiigi/binfmt:qemu-v10.2.3-68@sha256:400a4873b838d1b89194d982c45e5fb3cda4593fbfd7e08a02e76b03b21166f0 --install arm64
+
+      - name: Sign in to ghcr.io with this job's token
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+
+      - name: Test, build, scan, push and write the SBOM
+        env:
+          SONOFORMS_REGISTRY: ghcr.io/${{ github.repository_owner }}
+        run: npm run release:images
+
+      - name: Install bundle and offline images file
+        env:
+          SONOFORMS_REGISTRY: ghcr.io/${{ github.repository_owner }}
+        run: npm run bundle -- --with-images
+
+      - name: Draft the GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: bash scripts/draft-release.sh
+
+      - name: Sign out of ghcr.io
+        if: always()
+        run: docker logout ghcr.io

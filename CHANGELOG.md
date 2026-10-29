@@ -26,7 +26,13 @@ Installs from 0.3.1 or earlier built their images from the source on the server.
 - **Quick trial with Docker Desktop:** `docker-compose.trial.yml` is a single file. Run it with `docker compose -f docker-compose.trial.yml up -d` on Mac, Windows or Linux. It generates its own secrets and certificate, can use fake demo studies (`DICOM_MOCK=true`), and is removed with `down -v`. See "Try it on a laptop" in the README.
 - **Install bundle:** `npm run bundle` makes `sonoforms-<version>.tar.gz` (compose files, scripts, docs, SBOM; no source code), and `--with-images` adds an image file for servers without internet access. `install.sh` loads images from an `images/` folder when present.
 - **`./manage.sh version`** shows the version a server runs, and **`./manage.sh load FILE`** loads images from an offline file.
-- **For maintainers:** `npm run release:images` checks the version is set consistently, runs the tests, builds and scans the images, pushes both architectures, and writes the SBOM from the published images. `docker-compose.build.yml` builds from source for development.
+- **For maintainers:** releases are published by the *Release images* GitHub workflow, run by hand from a release tag. It signs in to ghcr.io with the job's own short-lived token, which is limited to this repository; no personal access token is needed. It then:
+  - checks the version is set consistently and runs the tests
+  - builds and scans the images, and pushes both architectures
+  - writes the SBOM from the published images
+  - drafts the GitHub release with the bundle, the offline images file and the SBOM attached
+  
+  `docker-compose.build.yml` builds from source for development.
 - **Software bill of materials:** `npm run sbom` writes CycloneDX and SPDX SBOMs for the app and web images and for the npm dependency tree to `sbom/v<version>/`, committed with each release. See "Software bill of materials" in [docs/SECURITY.md](docs/SECURITY.md).
 - **Hospital reverse proxy support.** SonoForms can sit behind the hospital's existing reverse proxy or load balancer, which then holds the hospital certificate. Set `UPSTREAM_PROXY` in `.env` to the proxy's address(es) or range. Apache then records each workstation's real address from that proxy's `X-Forwarded-For` (for the audit log and per-computer sign-in throttling), and ignores the header from any other computer. Setup steps are in [docs/ADMIN.md › Behind a hospital reverse proxy](docs/ADMIN.md#behind-a-hospital-reverse-proxy).
 
