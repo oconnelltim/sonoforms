@@ -18,4 +18,14 @@ if [ ! -s "$CERT" ] || [ ! -s "$KEY" ]; then
     -keyout "$KEY" -out "$CERT"
 fi
 echo "TLS certificate SHA-256 fingerprint: $(openssl x509 -noout -fingerprint -sha256 -in "$CERT" | cut -d= -f2)"
+
+# A hospital reverse proxy in front: trust the client address it forwards.
+# Only IP addresses and CIDR ranges are accepted, separated by spaces.
+if [ -n "${UPSTREAM_PROXY:-}" ]; then
+  if printf '%s' "$UPSTREAM_PROXY" | grep -Eq '^[0-9A-Fa-f.:/ ]+$'; then
+    echo "Trusting client addresses forwarded by: $UPSTREAM_PROXY"
+    exec "$@" -DUPSTREAM_PROXY
+  fi
+  echo "UPSTREAM_PROXY must be IP addresses or CIDR ranges separated by spaces; ignoring it." >&2
+fi
 exec "$@"

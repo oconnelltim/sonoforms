@@ -81,7 +81,7 @@ SonoForms handles protected health information. This document describes how it i
   * Apache is on an internal network shared only with the app.
   * The database is on an internal network shared only with the app and the migrate step.
   * The app's outbound network is for DICOM to the configured PACS.
-* **Client addresses:** the app trusts the client address reported in `X-Forwarded-For` only from Apache's network. Apache discards any `X-Forwarded-For` the client sends.
+* **Client addresses:** the app trusts the client address reported in `X-Forwarded-For` only from Apache's network. Apache discards any `X-Forwarded-For` the client sends. The one exception: when a hospital reverse proxy sits in front and is listed in `UPSTREAM_PROXY`, Apache accepts the address that proxy forwards, and from no other computer.
 * **Access log:** it records paths without query strings, and nothing identifying is ever sent in a URL; patient search uses a POST body. Container logs are size-limited and rotated.
 * **PACS:** the only outbound connection is DICOM C-FIND/C-ECHO to the PACS an administrator configures. Demographics for a new exam are re-queried from PACS by study UID, and only an answer for exactly that UID is accepted.
 

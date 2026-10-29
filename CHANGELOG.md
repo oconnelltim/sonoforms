@@ -4,7 +4,13 @@ All notable changes to SonoForms are documented here. The format follows [Keep a
 
 ## [Unreleased]
 
+### Added
+
+- **Hospital reverse proxy support.** SonoForms can sit behind the hospital's existing reverse proxy or load balancer, which then holds the hospital certificate. Set `UPSTREAM_PROXY` in `.env` to the proxy's address(es) or range; Apache then records each workstation's real address from that proxy's `X-Forwarded-For` (for the audit log and per-computer sign-in throttling), and ignores the header from any other computer. Setup steps are in [docs/ADMIN.md › Behind a hospital reverse proxy](docs/ADMIN.md#behind-a-hospital-reverse-proxy). Existing installs are unaffected unless the setting is added.
+
 ### Changed
+
+- Apache's access log records the client address Apache settled on (`%a`), which is the forwarded workstation address behind a trusted proxy.
 
 - The October 2026 security review ([docs/SECURITY-REVIEW-2026-10.md](docs/SECURITY-REVIEW-2026-10.md)) is brought up to date: the Docker deployment verification is folded into the main text (it no longer reads as unverified), the Dependabot and `adm-zip` notes reflect the current setup, and a new section records the automated scan findings and fixes from 0.3.0 and 0.3.1.
 

@@ -40,6 +40,21 @@ docker compose restart web
 
 `./manage.sh cert-fingerprint` shows the certificate's SHA-256 fingerprint. If you must use the self-signed certificate for a while, have staff compare it with what the browser shows before trusting it.
 
+## Behind a hospital reverse proxy
+
+Instead of installing a certificate on this server, IT can put SonoForms behind the hospital's existing reverse proxy or load balancer (F5, NetScaler, NGINX, IIS…), which already holds the hospital certificate. Staff then use the proxy's address, e.g. `https://sonoforms.hospital.ca`, and never see this server's own certificate.
+
+1. **Forward over HTTPS.** Have the proxy forward to `https://this-server:443`, re-encrypting rather than using plain HTTP, so patient data stays encrypted on the internal hop. The self-signed certificate is fine for that hop: IT can pin it using the fingerprint from `./manage.sh cert-fingerprint`.
+2. **Keep the address users type.** The proxy must pass the original `Host` header through (often called *preserve host*). Set `SERVER_NAME` in `.env` to that same public name. Otherwise SonoForms refuses sign-ins and saves as cross-site requests.
+3. **Pass on each user's address.** Have the proxy add the client's address to `X-Forwarded-For`; most do this by default. Then set the proxy's address in `.env`, so SonoForms records each workstation in the audit log and throttles sign-ins per computer, instead of seeing the proxy for everyone:
+
+   ```bash
+   UPSTREAM_PROXY=10.20.30.40          # or several, or a range: 10.20.30.40 10.20.30.41  /  10.20.30.0/28
+   ```
+
+   Apply it with `./manage.sh start`. The web log (`./manage.sh logs`) then shows "Trusting client addresses forwarded by: …", and new entries in Admin › Audit log show workstation addresses. SonoForms accepts forwarded addresses only from the addresses listed. A forwarded address from any other computer is ignored, so it can't be faked.
+4. **Let only the proxy in.** Firewall this server so port 443 accepts connections only from the proxy. Port 80 can be closed.
+
 ## Connecting to PACS
 
 SonoForms reads today's ultrasound studies with a study-level DICOM C-FIND, the same query a workstation uses to search PACS. It does not need a modality worklist. It never retrieves images and never writes to PACS.

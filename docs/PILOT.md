@@ -22,9 +22,13 @@ A checklist for trying SonoForms in one ultrasound department before wider use. 
 ## 3. Server
 
 - [ ] A Linux VM with Docker and Docker Compose v2. 2 CPUs, 4 GB of memory and 40 GB of disk is a reasonable start for one department.
-- [ ] An internal DNS name (e.g. `sonoforms.hospital.local`) and a **TLS certificate from the hospital CA**. The self-signed certificate is only for testing; see [ADMIN.md › HTTPS certificate](ADMIN.md#https-certificate).
+- [ ] An internal DNS name (e.g. `sonoforms.hospital.local`), and either:
+  - a **TLS certificate from the hospital CA** installed on this server ([ADMIN.md › HTTPS certificate](ADMIN.md#https-certificate)), or
+  - SonoForms placed **behind the hospital's reverse proxy**, which holds the certificate. This needs `UPSTREAM_PROXY` set; see [ADMIN.md › Behind a hospital reverse proxy](ADMIN.md#behind-a-hospital-reverse-proxy).
+
+  The self-signed certificate on its own is only for testing.
 - [ ] **Firewall:**
-  - Inbound: HTTPS (443) from the hospital network only.
+  - Inbound: HTTPS (443) from the hospital network only, or only from the reverse proxy if you use one.
   - Outbound: the PACS host and port only. The rules are in [ADMIN.md › Network and privacy](ADMIN.md#network-and-privacy).
 - [ ] The server's time zone (`TZ` in `.env`) and clock (NTP) are correct. "Today's" worklist depends on them.
 
