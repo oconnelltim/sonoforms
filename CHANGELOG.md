@@ -4,6 +4,18 @@ All notable changes to SonoForms are documented here. The format follows [Keep a
 
 ## [Unreleased]
 
+### Upgrading
+
+- **Node.js 26.** SonoForms now runs on Node.js 26, the current long-term-support version (Node.js 22 reaches end of life in April 2027). Docker installs get it automatically with `./manage.sh update`. Installs without Docker, and development machines, need Node.js 26 (`nvm install 26`).
+
+### Changed
+
+- The app image is built on `node:26-alpine`; `npm run check:linux` and the optional GitHub workflow use Node 26 too.
+
+### Security
+
+- `dcmjs` (used by the DICOM library) is pinned to 0.52.2, which fixes a low-severity advisory about lax validation of two numeric DICOM value types. `npm audit` now reports no vulnerabilities.
+
 ## [0.3.0] - 2026-10-25
 
 The visual form builder, reports split into dictation fields, multipart studies (linked studies and combined visit reports), early pregnancy and salivary gland starter forms, and local security scans.

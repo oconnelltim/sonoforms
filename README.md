@@ -53,6 +53,8 @@ Starter library: US pelvis (female), early pregnancy (rule out ectopic, viabilit
 
 ## Development
 
+Needs Node.js 26 (the `.nvmrc` file lets `nvm use` pick it).
+
 ```bash
 npm install
 npm run dev      # embedded PostgreSQL in .dev/, fake PACS, http://localhost:3000

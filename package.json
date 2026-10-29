@@ -6,7 +6,7 @@
   "type": "module",
   "private": true,
   "engines": {
-    "node": ">=20"
+    "node": ">=26"
   },
   "main": "server/index.js",
   "scripts": {
@@ -32,6 +32,7 @@
     "embedded-postgres": "^18.4.0-beta.17"
   },
   "overrides": {
-    "adm-zip": "^0.6.1"
+    "adm-zip": "^0.6.1",
+    "dcmjs": "^0.52.2"
   }
 }
