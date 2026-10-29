@@ -32,9 +32,13 @@ Installs from 0.3.1 or earlier built their images from the source on the server.
   - writes the SBOM from the published images
   - drafts the GitHub release with the bundle, the offline images file and the SBOM attached
   
-  `docker-compose.build.yml` builds from source for development.
+  `npm run check:release` rehearses the whole workflow under the same conditions as GitHub's Linux runner (native Linux Docker, a non-root user, a throwaway registry) and publishes nothing. `docker-compose.build.yml` builds from source for development.
 - **Software bill of materials:** `npm run sbom` writes CycloneDX and SPDX SBOMs for the app and web images and for the npm dependency tree to `sbom/v<version>/`, committed with each release. See "Software bill of materials" in [docs/SECURITY.md](docs/SECURITY.md).
 - **Hospital reverse proxy support.** SonoForms can sit behind the hospital's existing reverse proxy or load balancer, which then holds the hospital certificate. Set `UPSTREAM_PROXY` in `.env` to the proxy's address(es) or range. Apache then records each workstation's real address from that proxy's `X-Forwarded-For` (for the audit log and per-computer sign-in throttling), and ignores the header from any other computer. Setup steps are in [docs/ADMIN.md › Behind a hospital reverse proxy](docs/ADMIN.md#behind-a-hospital-reverse-proxy).
+
+### Fixed
+
+- The database tests no longer pass silently when the embedded test database can't start (for example on Alpine Linux). Before, Node exited before running them and reported success; now they fail with an explanation.
 
 ### Changed
 

@@ -88,6 +88,7 @@ npm run lint-forms
 npm run check    # tests + form check + npm audit, before committing
 npm run security # Semgrep, Gitleaks, Hadolint, ShellCheck, Grype (needs Docker)
 npm run sbom     # software bill of materials for a release, into sbom/ (needs Docker)
+npm run check:release  # rehearse the release workflow on Linux, publishing nothing (needs Docker)
 ```
 
 To run the Docker setup from your working copy instead of released images, set `SONOFORMS_VERSION=dev` in `.env`, then run:
@@ -99,13 +100,14 @@ docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
 **Releasing:** images are published by the *Release images* GitHub workflow, which signs in to ghcr.io with its own short-lived token, limited to this repository. No personal access token is involved.
 
 1. Set the new version in `package.json`, `.env.example` and `docker-compose.trial.yml`, and give it a dated section in `CHANGELOG.md`.
-2. Commit, tag and push:
+2. If you changed anything in `scripts/` or the workflow, run `npm run check:release`. It runs the whole release under the same conditions as GitHub's Linux runner, against a throwaway registry, and publishes nothing.
+3. Commit, tag and push:
    ```bash
    git tag -a v0.3.3 -m "SonoForms 0.3.3" && git push && git push origin v0.3.3
    ```
-3. On GitHub, open **Actions → Release images → Run workflow**. Under *Use workflow from*, pick **Tags → v0.3.3**, and run it. It checks the version, runs the tests, builds and scans the images, and pushes them for x86-64 and ARM. It then makes the bundle, the offline images file and the SBOM, and creates a **draft** release with them attached.
-4. Review the draft under **Releases** and publish it.
-5. Optional: unzip the release's SBOM file into `sbom/` and commit it.
+4. On GitHub, open **Actions → Release images → Run workflow**. Under *Use workflow from*, pick **Tags → v0.3.3**, and run it. It checks the version, runs the tests, builds and scans the images, and pushes them for x86-64 and ARM. It then makes the bundle, the offline images file and the SBOM, and creates a **draft** release with them attached.
+5. Review the draft under **Releases** and publish it.
+6. Optional: unzip the release's SBOM file into `sbom/` and commit it.
 
 To test the release script without publishing, run a registry on your computer and point `SONOFORMS_REGISTRY` at it (see the top of `scripts/release-images.sh`).
 

@@ -9,6 +9,18 @@ import assert from 'node:assert/strict';
 import pg from 'pg';
 import EmbeddedPostgres from 'embedded-postgres';
 
+// Fails instead of hanging if the embedded database never starts. Without
+// this, a database binary that can't run (e.g. on Alpine Linux) leaves a
+// promise that never settles; Node then exits with code 0 before any test
+// runs, and the run looks like a pass.
+function withTimeout(promise, what, ms = 90000) {
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`${what} did not finish within ${ms / 1000} s; the embedded PostgreSQL could not start on this machine.`)), ms);
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+}
+
 export async function startTestServer(extraEnv = {}) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'sonoforms-test-'));
   const port = 55000 + Math.floor(Math.random() * 9000);
@@ -20,9 +32,9 @@ export async function startTestServer(extraEnv = {}) {
     INITIAL_ADMIN_PASSWORD: 'initial-admin-pass', INSECURE_COOKIES: 'true', DICOM_MOCK: 'true', LOG_LEVEL: 'silent',
     ...extraEnv,
   });
-  await pgServer.initialise();
-  await pgServer.start();
-  await pgServer.createDatabase('sonoforms');
+  await withTimeout(pgServer.initialise(), 'Initialising the test database');
+  await withTimeout(pgServer.start(), 'Starting the test database');
+  await withTimeout(pgServer.createDatabase('sonoforms'), 'Creating the test database');
   const { initKeys } = await import('../server/crypto.js');
   const { migrate } = await import('../server/migrate.js');
   const { checkMasterKey } = await import('../server/settings.js');

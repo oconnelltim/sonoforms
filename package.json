@@ -20,6 +20,7 @@
     "security": "bash scripts/security-scan.sh",
     "sbom": "bash scripts/sbom.sh",
     "release:images": "bash scripts/release-images.sh",
+    "check:release": "bash scripts/check-release.sh",
     "bundle": "bash scripts/bundle.sh",
     "lint-forms": "node server/cli.js lint-forms"
   },
