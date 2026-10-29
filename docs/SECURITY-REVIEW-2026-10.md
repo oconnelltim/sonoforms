@@ -6,6 +6,7 @@
 | **Version reviewed** | 0.1.0 (initial release) |
 | **Fixes released in** | 0.2.0 |
 | **Review dates** | 24–25 October 2026 |
+| **Last updated** | 28 October 2026 (follow-up scans in 0.3.0 and 0.3.1; see [Follow-up](#follow-up-automated-scans-030031)) |
 | **Standard** | OWASP Top 10 (2021), plus OWASP ASVS checks for authentication, session management and access control |
 | **Performed by** | The developer, using Claude Code (AI-assisted review and testing). This was not an independent third-party penetration test. |
 
@@ -140,7 +141,8 @@ Severity reflects impact in a hospital deployment and how easily an attacker cou
 
 **M12. Base images never received security updates** · A06 Vulnerable components
 - *Issue:* updates rebuilt from cached images, and image tags floated.
-- *Fix:* `install.sh` and `./manage.sh update` pull fresh base images. Dependabot proposes npm, Docker and CI updates weekly.
+- *Fix:* `install.sh` and `./manage.sh update` pull fresh base images.
+- *Since then (0.3.0):* the images also apply Alpine security updates when built, and `npm run security` scans the npm packages and the built images with Grype. Dependabot, used at first for update proposals, was later replaced by these local scans.
 
 **M13. Self-signed certificate by default** · A02 / A05
 - *Issue:* low-skill installs would keep the generated certificate, training staff to click through browser warnings, which enables interception.
@@ -165,7 +167,7 @@ Severity reflects impact in a hospital deployment and how easily an attacker cou
 | L27 | Temporary passwords never expired (~22 bits of randomness) | Expire after 72 hours; ~28 bits; sign-in throttled |
 | L28 | Signing in kept the browser's old session; lowering the session limit didn't affect existing sessions; password changes weren't throttled; the CSRF comparison wasn't constant-time | All fixed; `__Host-` cookie prefix added |
 | L29 | Sign-in and sign-out had no cross-site checks; plain-text request bodies were accepted | Browser cross-site markers (`Sec-Fetch-Site`, `Origin`) are refused; only JSON bodies accepted |
-| L30 | CI actions weren't pinned to exact versions, and the workflow had default permissions | Pinned to commit hashes, read-only permissions, Dependabot |
+| L30 | CI actions weren't pinned to exact versions, and the workflow had default permissions | Pinned to commit hashes, read-only permissions. (Since 0.3.0 the workflow only runs when started by hand; checks run locally.) |
 | L31 | The last-name index was shared across institutions, allowing cross-institution linking in a database dump | Per-institution indexes. Remaining plaintext metadata is documented (see accepted risks) |
 | L33 | Reserved field ids (`__proto__`, `constructor`), huge `decimals` values, quadratic scanning of unclosed `{{`, unbounded form sources | Reserved ids rejected, decimals clamped, linear scanning, 200 KB source limit |
 
@@ -180,7 +182,7 @@ Severity reflects impact in a hospital deployment and how easily an attacker cou
 | L26 | The app container's outbound traffic isn't restricted at the network level | The app opens no connections except to the configured PACS, and the browser CSP blocks other sites. docs/ADMIN.md gives a firewall rule that limits containers to the PACS. |
 | L32 | Administrators can point PACS connection tests at any host and port | Administrator-only and audited, and the connection only speaks DICOM, so it can't send HTTP requests. Detailed errors are kept because administrators need them to troubleshoot. |
 | — | Exam dates, form titles and which patient record an exam belongs to are not encrypted | A database dump reveals which kinds of exams an anonymous record had, and when, but no identities. Encrypting these would prevent worklist queries. Documented in docs/SECURITY.md. |
-| — | `adm-zip` advisory reported by `npm audit` | `adm-zip` is declared by `dcmjs` but appears nowhere in its built code, and SonoForms never handles ZIP files. CI fails on any *critical* advisory. |
+| — | `adm-zip`, declared by the DICOM library's `dcmjs` dependency | `adm-zip` appears nowhere in `dcmjs`'s built code, and SonoForms never handles ZIP files. *Updated in 0.3.0:* pinned to 0.6.1, which fixes its high-severity advisories. One medium advisory (symlinks during ZIP extraction) has no fix yet and isn't reachable. |
 | — | Anyone with root on the server can read all data | The master key and owner password must be on the server for it to run. Protect the host, and use disk encryption. |
 
 ## What held up from the start
@@ -199,6 +201,8 @@ Severity reflects impact in a hospital deployment and how easily an attacker cou
 
 ## Verification of the fixes
 
+At the release of 0.2.0:
+
 - **Automated tests:** 30 tests pass. They include 21 security regression tests in `test/security.test.js`, one or more per finding.
 - **Re-run probes:** of the original 63, 61 now pass. The other two now behave differently by design:
   - An administrator trying to remove their own admin role is refused with `403` (the new rule against changing one's own roles) instead of `400`.
@@ -206,19 +210,17 @@ Severity reflects impact in a hospital deployment and how easily an attacker cou
 - **Upgrade path:** the database migrations ran on a development database created by 0.1.0. All records were re-encrypted to the new format, re-indexed, and remained readable. The mixed old/new audit chain verifies.
 - **User interface:** sign-in, patient search, user administration and audit verification were checked in a browser after the changes.
 
-### Not yet verified
+### Docker deployment
 
-**The Docker deployment.** Docker wasn't available on the review machine, so the changes to `docker-compose.yml`, the Apache image, `install.sh` and `manage.sh` were checked only by reading them. Before clinical use, install 0.2.0 on a staging server and confirm:
+Docker wasn't available on the machine used for the initial review, so the changes to `docker-compose.yml`, the Apache image, `install.sh` and `manage.sh` were first checked only by reading them. They were verified the same day (25 October 2026) with a full `./install.sh` run on Docker Desktop 29.9 (macOS, Apple Silicon), against this checklist:
 
 1. `docker compose ps` shows `db`, `app` and `web` healthy, and `migrate` exited with code 0.
 2. The app's logs show no "running as the database owner" warning, and audit log entries show real workstation IP addresses.
 3. `./manage.sh logs` shows access-log lines without query strings.
-4. A TLS scan (e.g. `testssl.sh https://your-server`) reports only TLS 1.2/1.3 and forward-secret ciphers.
-5. `./manage.sh backup`, `./manage.sh verify-audit` and a restore onto a scratch install all succeed.
+4. A TLS scan reports only TLS 1.2/1.3 and forward-secret ciphers.
+5. `./manage.sh backup`, `./manage.sh verify-audit` and a restore all succeed.
 
-### Addendum, 25 October 2026: Docker deployment verified
-
-A full `./install.sh` run on Docker Desktop 29.9 (macOS, Apple Silicon) went through the checklist above. It found four deployment bugs, all now fixed:
+The run found four deployment bugs, all fixed in 0.3.0:
 - Apache failed to start (its scratch space wasn't writable by its unprivileged user).
 - The installer's health check bypassed Apache, so it didn't notice.
 - The self-signed certificate was marked as a certificate authority.
@@ -239,13 +241,37 @@ After the fixes, everything passed:
 - **Restore:** a restore removed changes made after the backup, took a safety backup first, brought the app back up, and was itself audited.
 - **Update:** `./manage.sh update` made a pre-update backup, pulled fresh base images, rebuilt, migrated and restarted cleanly.
 
-Still to do on the production server: a TLS scan with the hospital's real certificate, and a test against the real PACS.
+Still to do on the production server: a TLS scan with the hospital's real certificate, and a test against the real PACS. Both are in the [pilot checklist](PILOT.md).
+
+## Follow-up: automated scans (0.3.0–0.3.1)
+
+After the review, automated scanners were added and run locally in Docker with `npm run security` (see [SECURITY.md › Checking the code](SECURITY.md#checking-the-code)):
+- Semgrep (JavaScript and Dockerfile rules)
+- Gitleaks (secrets in the git history)
+- Hadolint (Dockerfiles)
+- ShellCheck (shell scripts)
+- Grype (known vulnerabilities in npm packages and the built images)
+
+The tests also run in a clean Linux container in UTC (`npm run check:linux`).
+
+| Found by | Issue | Fix |
+|---|---|---|
+| Grype | 26 advisories in the app image. Most were in npm's own dependencies (`brace-expansion`, `picomatch`, `ip-address`, `sigstore`…), which ship with the Node.js base image | npm is removed from the app image after installing the app's packages; it isn't used at runtime |
+| Grype, npm audit | High-severity advisories in `adm-zip` (unused dependency of `dcmjs`) | Pinned to 0.6.1 with an npm override |
+| npm audit | Low-severity advisory in `dcmjs` (lax validation of two numeric DICOM value types) | Pinned to 0.52.2; DICOM tests pass against a fake PACS |
+| Grype | A critical advisory in the Apache image's `brotli-libs` | Both images apply Alpine security updates (`apk upgrade`) when built |
+| Semgrep | The Apache image didn't set a non-root user itself (Docker Compose already did) | It runs as `www-data` by default |
+| Hadolint, ShellCheck | Shell-form health check; minor script issues | Health check in JSON form, via Node; scripts fixed |
+| Gitleaks | — | No secrets in the git history |
+| Linux test run | One test depended on the time of day (fake PACS studies could fall on the previous day in UTC) | Fake studies always dated today |
+
+In 0.3.1 the app moved to Node.js 26 (long-term support; Node.js 22 reaches end of life in April 2027). With 0.3.1, every scan passes and `npm audit` reports no vulnerabilities.
 
 ## Recommendations for operators
 
 - Install your hospital's TLS certificate rather than the self-signed one.
 - Keep an offline copy of `secrets/master_key`, and copy `backups/` off the server regularly.
-- Run `./manage.sh update` at least monthly.
+- Run `./manage.sh update` at least monthly. Maintainers: run `npm run check` and `npm run security` before each release.
 - Apply the outbound firewall rule from docs/ADMIN.md.
 - Forward container logs to your SIEM, and occasionally record the audit chain head hash shown by **Verify integrity**.
 - Consider an independent penetration test before large-scale use. This review was AI-assisted, so a fresh set of human eyes on the deployed system is worthwhile.

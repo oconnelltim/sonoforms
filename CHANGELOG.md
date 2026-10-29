@@ -4,6 +4,10 @@ All notable changes to SonoForms are documented here. The format follows [Keep a
 
 ## [Unreleased]
 
+### Changed
+
+- The October 2026 security review ([docs/SECURITY-REVIEW-2026-10.md](docs/SECURITY-REVIEW-2026-10.md)) is brought up to date: the Docker deployment verification is folded into the main text (it no longer reads as unverified), the Dependabot and `adm-zip` notes reflect the current setup, and a new section records the automated scan findings and fixes from 0.3.0 and 0.3.1.
+
 ## [0.3.1] - 2026-10-28
 
 Runs on Node.js 26 (long-term support), with a clean dependency audit, and adds a pilot checklist for hospitals.
