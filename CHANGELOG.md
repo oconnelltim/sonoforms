@@ -6,6 +6,8 @@ All notable changes to SonoForms are documented here. The format follows [Keep a
 
 ### Added
 
+- **Software bill of materials:** `npm run sbom` writes CycloneDX and SPDX SBOMs for the app and web images and for the npm dependency tree, to attach to releases or give to hospital IT. See "Software bill of materials" in [docs/SECURITY.md](docs/SECURITY.md).
+
 - **Hospital reverse proxy support.** SonoForms can sit behind the hospital's existing reverse proxy or load balancer, which then holds the hospital certificate. Set `UPSTREAM_PROXY` in `.env` to the proxy's address(es) or range; Apache then records each workstation's real address from that proxy's `X-Forwarded-For` (for the audit log and per-computer sign-in throttling), and ignores the header from any other computer. Setup steps are in [docs/ADMIN.md › Behind a hospital reverse proxy](docs/ADMIN.md#behind-a-hospital-reverse-proxy). Existing installs are unaffected unless the setting is added.
 
 ### Changed

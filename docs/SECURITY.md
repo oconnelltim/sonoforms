@@ -133,6 +133,22 @@ npm run security       # security scans (needs Docker)
 
 Reports are written to `reports/` (git-ignored). Add `--no-images` to skip building and scanning the Docker images. Run it before each release and after updating dependencies.
 
+### Software bill of materials (SBOM)
+
+```bash
+npm run sbom           # needs Docker
+```
+
+This lists every component a release ships, with versions (and licenses for the npm packages), in both standard formats, CycloneDX and SPDX. It writes them to `reports/sbom-v<version>/`:
+
+| File | Contents |
+|---|---|
+| `sonoforms-app.cdx.json`, `.spdx.json` | the app image: Alpine packages, Node.js and the npm packages it contains |
+| `sonoforms-web.cdx.json`, `.spdx.json` | the Apache image |
+| `npm-packages.cdx.json`, `.spdx.json` | the app's npm dependency tree (production only), with licenses |
+
+Attach them to each GitHub release, or give them to hospital IT. They can be checked again later for newly published vulnerabilities, e.g. with `grype sbom:sonoforms-app.cdx.json`.
+
 ## Reporting a vulnerability
 
 Please report security issues privately to the maintainers rather than in a public issue.

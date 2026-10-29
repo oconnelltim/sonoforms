@@ -18,6 +18,7 @@
     "check": "npm test && npm run lint-forms && npm audit --omit=dev --audit-level=high",
     "check:linux": "bash scripts/check-linux.sh",
     "security": "bash scripts/security-scan.sh",
+    "sbom": "bash scripts/sbom.sh",
     "lint-forms": "node server/cli.js lint-forms"
   },
   "dependencies": {

@@ -62,6 +62,7 @@ npm test         # form engine, API and security regression tests
 npm run lint-forms
 npm run check    # tests + form check + npm audit, before committing
 npm run security # Semgrep, Gitleaks, Hadolint, ShellCheck, Grype (needs Docker)
+npm run sbom     # software bill of materials for a release (needs Docker)
 ```
 
 All checks run locally; see "Checking the code" in [docs/SECURITY.md](docs/SECURITY.md). The GitHub workflow only runs when started by hand.
