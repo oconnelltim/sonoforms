@@ -24,7 +24,7 @@ Users can have several roles. A **superuser** can do everything. One installatio
 Requirements: a Linux server (or VM) with Docker and Docker Compose v2.
 
 ```bash
-git clone https://github.com/YOUR-ORG/sonoforms.git
+git clone https://github.com/oconnelltim/sonoforms.git
 cd sonoforms
 ./install.sh
 ```
@@ -39,7 +39,7 @@ The installer creates secrets and starts everything. It prints the address and t
 
 To try it without a PACS, set `DICOM_MOCK=true` in `.env` and run `./manage.sh restart`. The worklist then shows fake demo patients.
 
-See [docs/ADMIN.md](docs/ADMIN.md) for everyday administration, certificates, PACS setup, backups and upgrades.
+See [docs/ADMIN.md](docs/ADMIN.md) for everyday administration, certificates, PACS setup, backups and upgrades. Planning a trial in your department? Start with the [pilot checklist](docs/PILOT.md).
 
 ## Security
 

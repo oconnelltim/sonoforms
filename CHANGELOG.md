@@ -4,9 +4,17 @@ All notable changes to SonoForms are documented here. The format follows [Keep a
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-10-28
+
+Runs on Node.js 26 (long-term support), with a clean dependency audit, and adds a pilot checklist for hospitals.
+
 ### Upgrading
 
 - **Node.js 26.** SonoForms now runs on Node.js 26, the current long-term-support version (Node.js 22 reaches end of life in April 2027). Docker installs get it automatically with `./manage.sh update`. Installs without Docker, and development machines, need Node.js 26 (`nvm install 26`).
+
+### Added
+
+- **Pilot checklist** ([docs/PILOT.md](docs/PILOT.md)): people, approvals, server, PACS, forms review, dictation, backups and a restore drill, training, and how to run and measure a departmental pilot.
 
 ### Changed
 
@@ -243,7 +251,8 @@ First release.
 - **Development:** `npm run dev` with an embedded PostgreSQL and a fake PACS worklist; `npm run mock-pacs` for testing real DICOM queries.
 - **Documentation:** README, docs/ADMIN.md, docs/FORMS.md, docs/SECURITY.md.
 
-[Unreleased]: https://github.com/oconnelltim/sonoforms/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/oconnelltim/sonoforms/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/oconnelltim/sonoforms/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/oconnelltim/sonoforms/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/oconnelltim/sonoforms/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/oconnelltim/sonoforms/releases/tag/v0.1.0
