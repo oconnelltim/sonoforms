@@ -62,7 +62,7 @@ npm test         # form engine, API and security regression tests
 npm run lint-forms
 npm run check    # tests + form check + npm audit, before committing
 npm run security # Semgrep, Gitleaks, Hadolint, ShellCheck, Grype (needs Docker)
-npm run sbom     # software bill of materials for a release (needs Docker)
+npm run sbom     # software bill of materials for a release, into sbom/ (needs Docker)
 ```
 
 All checks run locally; see "Checking the code" in [docs/SECURITY.md](docs/SECURITY.md). The GitHub workflow only runs when started by hand.
@@ -83,6 +83,7 @@ shared/        Form engine used by both browser and server (expressions, templat
 public/        Browser app: plain ES modules, no build step, no CDN
 forms/general/ Starter form library (YAML)
 docs/          Admin, form-writing and security documentation
+sbom/          Software bills of materials, one folder per release
 docker/        Apache HTTPS front end
 ```
 

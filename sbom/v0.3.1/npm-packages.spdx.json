@@ -1,0 +1,2740 @@
+{
+  "spdxVersion": "SPDX-2.3",
+  "dataLicense": "CC0-1.0",
+  "SPDXID": "SPDXRef-DOCUMENT",
+  "name": "sonoforms@0.3.1",
+  "documentNamespace": "http://spdx.org/spdxdocs/sonoforms-0.3.1-16518379-a683-4a24-86a8-309dcbe2eb91",
+  "creationInfo": {
+    "created": "2026-10-29T07:25:39.540Z",
+    "creators": [
+      "Tool: npm/cli-10.9.8"
+    ]
+  },
+  "documentDescribes": [
+    "SPDXRef-Package-sonoforms-0.3.1"
+  ],
+  "packages": [
+    {
+      "name": "sonoforms",
+      "SPDXID": "SPDXRef-Package-sonoforms-0.3.1",
+      "versionInfo": "0.3.1",
+      "packageFileName": "",
+      "description": "Structured ultrasound technologist worksheets that generate radiologist-ready findings text. Self-hosted, offline, no AI.",
+      "primaryPackagePurpose": "LIBRARY",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "homepage": "NOASSERTION",
+      "licenseDeclared": "GPL-3.0-or-later",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/sonoforms@0.3.1"
+        }
+      ]
+    },
+    {
+      "name": "@babel/runtime-corejs3",
+      "SPDXID": "SPDXRef-Package-babel.runtime-corejs3-7.29.2",
+      "versionInfo": "7.29.2",
+      "packageFileName": "node_modules/@babel/runtime-corejs3",
+      "description": "babel's modular runtime helpers with core-js@3 polyfilling",
+      "downloadLocation": "https://registry.npmjs.org/@babel/runtime-corejs3/-/runtime-corejs3-7.29.2.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/babel/babel#readme",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/%40babel/runtime-corejs3@7.29.2"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "2dcf7814e0f9fb469785d6f44dd837454b6a4fac966c8fc16c55af95a489de001bf4ab3ef7d9c74432800d5a82dfb7abe1e081d1f1f2593fb2f8add03af24a6f"
+        }
+      ]
+    },
+    {
+      "name": "@fastify/accept-negotiator",
+      "SPDXID": "SPDXRef-Package-fastify.accept-negotiator-2.1.2",
+      "versionInfo": "2.1.2",
+      "packageFileName": "node_modules/@fastify/accept-negotiator",
+      "description": "a negotiator for the accept-headers",
+      "downloadLocation": "https://registry.npmjs.org/@fastify/accept-negotiator/-/accept-negotiator-2.1.2.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/fastify/accept-negotiator#readme",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/%40fastify/accept-negotiator@2.1.2"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "2d5ecc66a4f05d312ddc6c414fa054f000b3b569effbe85290c12c3f7bac207888d2d03817910ee131e10c23abe49fe08a733d0c29cb0a667abb724b03dc7c23"
+        }
+      ]
+    },
+    {
+      "name": "@fastify/ajv-compiler",
+      "SPDXID": "SPDXRef-Package-fastify.ajv-compiler-4.0.7",
+      "versionInfo": "4.0.7",
+      "packageFileName": "node_modules/@fastify/ajv-compiler",
+      "description": "Build and manage the AJV instances for the fastify framework",
+      "downloadLocation": "https://registry.npmjs.org/@fastify/ajv-compiler/-/ajv-compiler-4.0.7.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/fastify/ajv-compiler#readme",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/%40fastify/ajv-compiler@4.0.7"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "54fd3221fc25735a218fbdf791e603ab21e6d5559e3fd550c58a26ba786bf748e40b868d3626db92b46268d80f82a8f5391c547a720b478ab303fa69601340b5"
+        }
+      ]
+    },
+    {
+      "name": "@fastify/cookie",
+      "SPDXID": "SPDXRef-Package-fastify.cookie-11.1.3",
+      "versionInfo": "11.1.3",
+      "packageFileName": "node_modules/@fastify/cookie",
+      "description": "Plugin for fastify to add support for cookies",
+      "downloadLocation": "https://registry.npmjs.org/@fastify/cookie/-/cookie-11.1.3.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/fastify/fastify-cookie#readme",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/%40fastify/cookie@11.1.3"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "44186530db26486e82e4a1a24e48525c117be7122b50c4b2b430c17299d57b0849f175589c94eef9257a1582970a5211b01b918ce7ca6c14942ef9cf0f75ff9a"
+        }
+      ]
+    },
+    {
+      "name": "@fastify/deepmerge",
+      "SPDXID": "SPDXRef-Package-fastify.deepmerge-3.2.4",
+      "versionInfo": "3.2.4",
+      "packageFileName": "node_modules/@fastify/deepmerge",
+      "description": "Merges the enumerable properties of two or more objects deeply.",
+      "downloadLocation": "https://registry.npmjs.org/@fastify/deepmerge/-/deepmerge-3.2.4.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/fastify/deepmerge#readme",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/%40fastify/deepmerge@3.2.4"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "91cf0642ae605fd451870d2ba2fdc332b37cc12f32465c4945d0f3b18c3074157fc1acee56073fd4aec228bf74b65beedd19476a7e98d11d1a1379c9b41cf679"
+        }
+      ]
+    },
+    {
+      "name": "@fastify/error",
+      "SPDXID": "SPDXRef-Package-fastify.error-4.2.1",
+      "versionInfo": "4.2.1",
+      "packageFileName": "node_modules/@fastify/error",
+      "description": "A small utility, used by Fastify itself, for generating consistent error objects across your codebase and plugins.",
+      "downloadLocation": "https://registry.npmjs.org/@fastify/error/-/error-4.2.1.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/fastify/fastify-error#readme",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/%40fastify/error@4.2.1"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "31806e9ae2303fee4c2295d2c8a9bafe8d448a07288a3d7cea5594b2c5f72c7e54f0a5aa53492d661cc2e0212b217f4425e41e44623ecc965059a9019456d472"
+        }
+      ]
+    },
+    {
+      "name": "@fastify/fast-json-stringify-compiler",
+      "SPDXID": "SPDXRef-Package-fastify.fast-json-stringify-compiler-5.1.1",
+      "versionInfo": "5.1.1",
+      "packageFileName": "node_modules/@fastify/fast-json-stringify-compiler",
+      "description": "Build and manage the fast-json-stringify instances for the fastify framework",
+      "downloadLocation": "https://registry.npmjs.org/@fastify/fast-json-stringify-compiler/-/fast-json-stringify-compiler-5.1.1.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/fastify/fast-json-stringify-compiler#readme",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/%40fastify/fast-json-stringify-compiler@5.1.1"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "a72c512a4ed4a549e7af3b4ff69178f99631bac110e0b89f4f2cd17625e6caa97541eccd1f13b4d83db9315536a3890c7803185808c6e912919688e091b88303"
+        }
+      ]
+    },
+    {
+      "name": "@fastify/forwarded",
+      "SPDXID": "SPDXRef-Package-fastify.forwarded-3.1.2",
+      "versionInfo": "3.1.2",
+      "packageFileName": "node_modules/@fastify/forwarded",
+      "description": "Parse HTTP X-Forwarded-For header",
+      "downloadLocation": "https://registry.npmjs.org/@fastify/forwarded/-/forwarded-3.1.2.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/fastify/forwarded#readme",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/%40fastify/forwarded@3.1.2"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "f3d5a2446fa15b755049f0b08381dbf1be373dec845f5e4ae7e9447ec678114b61fc5c8e8d2fe5bfc1ec56eb3050d5d68929f1306368b84fdfabfd30dd5ba61d"
+        }
+      ]
+    },
+    {
+      "name": "@fastify/merge-json-schemas",
+      "SPDXID": "SPDXRef-Package-fastify.merge-json-schemas-0.2.2",
+      "versionInfo": "0.2.2",
+      "packageFileName": "node_modules/@fastify/merge-json-schemas",
+      "description": "Builds a logical conjunction (AND) of multiple JSON schemas",
+      "downloadLocation": "https://registry.npmjs.org/@fastify/merge-json-schemas/-/merge-json-schemas-0.2.2.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/fastify/merge-json-schemas#readme",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/%40fastify/merge-json-schemas@0.2.2"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "77f831f6c45b5025601911b399ae3ac0b730898f27a13a8ed8d9a383fbdb4c04711d11396dd8793c82fcb3decbb755fb49c456456e76795631c08a0fc0875550"
+        }
+      ]
+    },
+    {
+      "name": "@fastify/proxy-addr",
+      "SPDXID": "SPDXRef-Package-fastify.proxy-addr-5.1.2",
+      "versionInfo": "5.1.2",
+      "packageFileName": "node_modules/@fastify/proxy-addr",
+      "description": "Determine the address of a proxied request",
+      "downloadLocation": "https://registry.npmjs.org/@fastify/proxy-addr/-/proxy-addr-5.1.2.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/fastify/proxy-addr#readme",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/%40fastify/proxy-addr@5.1.2"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "baa07842c815a2ba345c30be0c87ed20c1971dd04f9fe94ae84937c57008c4f30225fab19dbb721283029b628f5153ae228b1dec2cb0f476b012a30533f500fa"
+        }
+      ]
+    },
+    {
+      "name": "@fastify/send",
+      "SPDXID": "SPDXRef-Package-fastify.send-4.2.0",
+      "versionInfo": "4.2.0",
+      "packageFileName": "node_modules/@fastify/send",
+      "description": "Better streaming static file server with Range and conditional-GET support",
+      "downloadLocation": "https://registry.npmjs.org/@fastify/send/-/send-4.2.0.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/fastify/send#readme",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/%40fastify/send@4.2.0"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "0791ebf8816c3dba89250bba147136305a671df6cf9423954143d3766e8fc427229581ab110b2e95b3b4cfd6e581b8e7748c8b2706b63561482235e93e16f052"
+        }
+      ]
+    },
+    {
+      "name": "@fastify/static",
+      "SPDXID": "SPDXRef-Package-fastify.static-10.1.7",
+      "versionInfo": "10.1.7",
+      "packageFileName": "node_modules/@fastify/static",
+      "description": "Plugin for serving static files as fast as possible.",
+      "downloadLocation": "https://registry.npmjs.org/@fastify/static/-/static-10.1.7.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/fastify/fastify-static",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/%40fastify/static@10.1.7"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "efe95488f46b6843428942e08e172a6725925baaa7c084fcec8b34bb7736677886104106078e70261631ceb49dceed76807338a9cbe211870f12209ee09e8c09"
+        }
+      ]
+    },
+    {
+      "name": "@lukeed/ms",
+      "SPDXID": "SPDXRef-Package-lukeed.ms-2.0.2",
+      "versionInfo": "2.0.2",
+      "packageFileName": "node_modules/@lukeed/ms",
+      "description": "A tiny (414B) and fast utility to convert milliseconds to and from strings.",
+      "downloadLocation": "https://registry.npmjs.org/@lukeed/ms/-/ms-2.0.2.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/lukeed/ms#readme",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/%40lukeed/ms@2.0.2"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "f48d999faf8d24b7da1a8cfd8cdde5a700e0018bdf19e35875b0088c93aacece13a5cf9553726aab82287d250129a8e20d2f24f5f648835f3fcf5de6a64d5bb0"
+        }
+      ]
+    },
+    {
+      "name": "@pinojs/redact",
+      "SPDXID": "SPDXRef-Package-pinojs.redact-0.4.0",
+      "versionInfo": "0.4.0",
+      "packageFileName": "node_modules/@pinojs/redact",
+      "description": "Redact JS objects",
+      "downloadLocation": "https://registry.npmjs.org/@pinojs/redact/-/redact-0.4.0.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/pinojs/redact#readme",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/%40pinojs/redact@0.4.0"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "93610d9e606e804febcd07c471d58770263efc533754bcc7f5c604b1b76ca2aaefcc029185465e44d84066f07c3a2b502754c179ddf2a96b5d8f34bac09281c2"
+        }
+      ]
+    },
+    {
+      "name": "abstract-logging",
+      "SPDXID": "SPDXRef-Package-abstract-logging-2.0.1",
+      "versionInfo": "2.0.1",
+      "packageFileName": "node_modules/abstract-logging",
+      "description": "A noop logger that conforms to the Log4j interface for modules to stub out internal logging",
+      "downloadLocation": "https://registry.npmjs.org/abstract-logging/-/abstract-logging-2.0.1.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/jsumners/abstract-logging#readme",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/abstract-logging@2.0.1"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "d818d14d9c533ef85e3af19b06c94549839492bf928cfb4e9eb2cfdf77fe54858bcdecd0a5972a560ee36b72f87415e6cf38304fe6b4dbd8d1c793c28b726e88"
+        }
+      ]
+    },
+    {
+      "name": "adm-zip",
+      "SPDXID": "SPDXRef-Package-adm-zip-0.6.1",
+      "versionInfo": "0.6.1",
+      "packageFileName": "node_modules/adm-zip",
+      "description": "Javascript implementation of zip for nodejs with support for electron original-fs. Allows user to create or extract zip files both in memory or to/from disk",
+      "downloadLocation": "https://registry.npmjs.org/adm-zip/-/adm-zip-0.6.1.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/cthackers/adm-zip",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/adm-zip@0.6.1"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "5f0ae36bc9f1f5ee68d8dd66cb80ec28278aa5dae7002cabd70b5b3f1043806ccaccac84f6446d04503c99695d23e455943ec205935663fc10dbec9dc0e47a91"
+        }
+      ]
+    },
+    {
+      "name": "ajv",
+      "SPDXID": "SPDXRef-Package-ajv-8.20.0",
+      "versionInfo": "8.20.0",
+      "packageFileName": "node_modules/ajv",
+      "description": "Another JSON Schema Validator",
+      "downloadLocation": "https://registry.npmjs.org/ajv/-/ajv-8.20.0.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://ajv.js.org",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/ajv@8.20.0"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "4e16e58be3a53a3fa230f60505505f2773a60809da4b2367e0cd6fcfd4fa1a46b926df5b6bf1c8479ea3a32eb9b58ea4c7f142179557341f35f58eff194ac118"
+        }
+      ]
+    },
+    {
+      "name": "ajv-formats",
+      "SPDXID": "SPDXRef-Package-ajv-formats-3.0.1",
+      "versionInfo": "3.0.1",
+      "packageFileName": "node_modules/ajv-formats",
+      "description": "Format validation for Ajv v7+",
+      "downloadLocation": "https://registry.npmjs.org/ajv-formats/-/ajv-formats-3.0.1.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/ajv-validator/ajv-formats#readme",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/ajv-formats@3.0.1"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "f2252a979d04511fae51c7514371c3a9ae84572a3776870bf20e5627714d7169aeeb621b90652e7bfa44c8b056f1518a2ae7133e0a9e92ce1f214d43038ca8c1"
+        }
+      ]
+    },
+    {
+      "name": "fast-uri",
+      "SPDXID": "SPDXRef-Package-fast-uri-3.1.9",
+      "versionInfo": "3.1.9",
+      "packageFileName": "node_modules/ajv/node_modules/fast-uri",
+      "description": "Dependency-free RFC 3986 URI toolbox",
+      "downloadLocation": "https://registry.npmjs.org/fast-uri/-/fast-uri-3.1.9.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/fastify/fast-uri",
+      "licenseDeclared": "BSD-3-Clause",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/fast-uri@3.1.9"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "852ff45addd86b4e37a0a5ecd2c231acca4a4084d784c2c8ad500a2978b8828cc60bdbfb6115959d7219ce334f4ced3633d05dc4b096a8ad7245780dce257225"
+        }
+      ]
+    },
+    {
+      "name": "async",
+      "SPDXID": "SPDXRef-Package-async-3.2.6",
+      "versionInfo": "3.2.6",
+      "packageFileName": "node_modules/async",
+      "description": "Higher-order functions and common patterns for asynchronous code",
+      "downloadLocation": "https://registry.npmjs.org/async/-/async-3.2.6.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://caolan.github.io/async/",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/async@3.2.6"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "86d0940e5c72c822cc81a337c578340b42d6db1a9fb90ea9d39a42108b17bb243e6b592860a4ee04ccd13709b26df2e0bc90cc774af52d39f8f84d138ba0b600"
+        }
+      ]
+    },
+    {
+      "name": "async-event-emitter2",
+      "SPDXID": "SPDXRef-Package-async-event-emitter2-0.0.2",
+      "versionInfo": "0.0.2",
+      "packageFileName": "node_modules/async-event-emitter2",
+      "description": "Just like EventEmitter, but with support for callbacks and interruption of the listener-chain",
+      "downloadLocation": "https://registry.npmjs.org/async-event-emitter2/-/async-event-emitter2-0.0.2.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/PantelisGeorgiadis/async-event-emitter2",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/async-event-emitter2@0.0.2"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "493681cab402c0395011bd6cb67b58cd5633692df3034dbedce326e8087a8635168669ad852d1a25a0f9b7d18643f43c1fdbc797c3b5d4f526f6cfb3ddb35475"
+        }
+      ]
+    },
+    {
+      "name": "atomic-sleep",
+      "SPDXID": "SPDXRef-Package-atomic-sleep-1.0.0",
+      "versionInfo": "1.0.0",
+      "packageFileName": "node_modules/atomic-sleep",
+      "description": "Zero CPU overhead, zero dependency, true event-loop blocking sleep",
+      "downloadLocation": "https://registry.npmjs.org/atomic-sleep/-/atomic-sleep-1.0.0.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/davidmarkclements/atomic-sleep#readme",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/atomic-sleep@1.0.0"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "90d3a30ea021ee9c745d6348fb841bce8891fe74e41c058db9ddaebe726ab83d7fc796bb11064c253d00733a8ad109faee863f4d34352db50a6a3669a7723db5"
+        }
+      ]
+    },
+    {
+      "name": "avvio",
+      "SPDXID": "SPDXRef-Package-avvio-9.3.1",
+      "versionInfo": "9.3.1",
+      "packageFileName": "node_modules/avvio",
+      "description": "Asynchronous bootstrapping of Node applications",
+      "downloadLocation": "https://registry.npmjs.org/avvio/-/avvio-9.3.1.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/fastify/avvio#readme",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/avvio@9.3.1"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "4324ca5bad7faa56daf9c510066fec4fd5fc96b8b851da26a920f00a7ae78f522f2d50d14625d1933e0280145607efdc99f0bb48ae5641cf13d6f49d1af69471"
+        }
+      ]
+    },
+    {
+      "name": "balanced-match",
+      "SPDXID": "SPDXRef-Package-balanced-match-4.0.4",
+      "versionInfo": "4.0.4",
+      "packageFileName": "node_modules/balanced-match",
+      "description": "Match balanced character pairs, like \"{\" and \"}\"",
+      "downloadLocation": "https://registry.npmjs.org/balanced-match/-/balanced-match-4.0.4.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/juliangruber/balanced-match#readme",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/balanced-match@4.0.4"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "04bae011c453c17da8ea01b118e08dc8cbc64a9df96287ee633c3d87520c4d198aaadb40659554ebb6dd6fd3ebdaf50703cfa3de2dad25f8cee82ebee26c864c"
+        }
+      ]
+    },
+    {
+      "name": "brace-expansion",
+      "SPDXID": "SPDXRef-Package-brace-expansion-5.0.12",
+      "versionInfo": "5.0.12",
+      "packageFileName": "node_modules/brace-expansion",
+      "description": "Brace expansion as known from sh/bash",
+      "downloadLocation": "https://registry.npmjs.org/brace-expansion/-/brace-expansion-5.0.12.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/juliangruber/brace-expansion#readme",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/brace-expansion@5.0.12"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "628bd0debce168b308ac38cd0cc90d4b4d6d79af77aa11211b9c72f1febe47497e770dca8bee6c0a822823de368ae2d94c75a881692d830543854d3d88d12299"
+        }
+      ]
+    },
+    {
+      "name": "content-disposition",
+      "SPDXID": "SPDXRef-Package-content-disposition-3.0.0",
+      "versionInfo": "3.0.0",
+      "packageFileName": "node_modules/content-disposition",
+      "description": "Create and parse Content-Disposition header",
+      "downloadLocation": "https://registry.npmjs.org/content-disposition/-/content-disposition-3.0.0.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/jshttp/content-disposition#readme",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/content-disposition@3.0.0"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "647ff45ecf6b30815608e9867664bd78705317adaaa9060dcf89d58d08647483bf6b47c23f8508337991cffc22a8bd0bd78620033ff5c62a3839a498e3e38dfc"
+        }
+      ]
+    },
+    {
+      "name": "cookie",
+      "SPDXID": "SPDXRef-Package-cookie-2.0.1",
+      "versionInfo": "2.0.1",
+      "packageFileName": "node_modules/cookie",
+      "description": "HTTP server cookie parsing and serialization",
+      "downloadLocation": "https://registry.npmjs.org/cookie/-/cookie-2.0.1.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/jshttp/cookie#readme",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/cookie@2.0.1"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "cae4e8a95bd1ae3ea97c35d113240002ff12900124ffc192de34114e250c9bae9356d0589aa41ea048cbd8b9aaf11a68eb6ef5bc7efa2274c28538ad1009bae7"
+        }
+      ]
+    },
+    {
+      "name": "core-js-pure",
+      "SPDXID": "SPDXRef-Package-core-js-pure-3.51.0",
+      "versionInfo": "3.51.0",
+      "packageFileName": "node_modules/core-js-pure",
+      "description": "Standard library",
+      "downloadLocation": "https://registry.npmjs.org/core-js-pure/-/core-js-pure-3.51.0.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://core-js.io",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/core-js-pure@3.51.0"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "344e1214327eab341ea871b6bd548dc28a734bacd934f609e648a722ab3e3a87d3a86cce9880a04fcf44ff2bd2f5763baf06f7794d6eb565d327d9d516abfbe0"
+        }
+      ]
+    },
+    {
+      "name": "dcmjs",
+      "SPDXID": "SPDXRef-Package-dcmjs-0.52.2",
+      "versionInfo": "0.52.2",
+      "packageFileName": "node_modules/dcmjs",
+      "description": "Javascript implementation of DICOM manipulation",
+      "downloadLocation": "https://registry.npmjs.org/dcmjs/-/dcmjs-0.52.2.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/dcmjs-org/dcmjs#readme",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/dcmjs@0.52.2"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "8edfa4c8235c8c235c7d03430e9876e8d654061dda94e10cdfa6a8f75f1aa2d91bd96c6452adce56ef38ab710e0ac25cc2431fb048a88e2080f3e45868247802"
+        }
+      ]
+    },
+    {
+      "name": "dcmjs-codecs",
+      "SPDXID": "SPDXRef-Package-dcmjs-codecs-0.0.8",
+      "versionInfo": "0.0.8",
+      "packageFileName": "node_modules/dcmjs-codecs",
+      "description": "DICOM file and dataset transcoding for Node.js and browser using dcmjs",
+      "downloadLocation": "https://registry.npmjs.org/dcmjs-codecs/-/dcmjs-codecs-0.0.8.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/PantelisGeorgiadis/dcmjs-codecs",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/dcmjs-codecs@0.0.8"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "a988a573e92aaa92d885aeb0cad9088f3aac881ca0ee897729b38d70931c37bc86e86dc524e268dacd0faad68230ce2cc3d22572bf48c8f8242965beb5fb8a40"
+        }
+      ]
+    },
+    {
+      "name": "dcmjs-dimse",
+      "SPDXID": "SPDXRef-Package-dcmjs-dimse-0.3.4",
+      "versionInfo": "0.3.4",
+      "packageFileName": "node_modules/dcmjs-dimse",
+      "description": "DICOM DIMSE implementation for Node.js using dcmjs",
+      "downloadLocation": "https://registry.npmjs.org/dcmjs-dimse/-/dcmjs-dimse-0.3.4.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/PantelisGeorgiadis/dcmjs-dimse",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/dcmjs-dimse@0.3.4"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "2ad691bb280ab77b304df14bc3c4cd27ccae59cf4c68e619223ec2fe8574b2266b8e84037f973f46dca5d56d42d4c33854fb10017add33090fd0fc915372151d"
+        }
+      ]
+    },
+    {
+      "name": "depd",
+      "SPDXID": "SPDXRef-Package-depd-2.0.0",
+      "versionInfo": "2.0.0",
+      "packageFileName": "node_modules/depd",
+      "description": "Deprecate all the things",
+      "downloadLocation": "https://registry.npmjs.org/depd/-/depd-2.0.0.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/dougwilson/nodejs-depd#readme",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/depd@2.0.0"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "83b9c7e8fe9dc838a8268800006a6b1a90ad5489898693e4feba02cdd6f77c887ad7fb3f9cfb1f47aa27c8cc2408047f3a50b7c810b49444af52840402cb08af"
+        }
+      ]
+    },
+    {
+      "name": "dequal",
+      "SPDXID": "SPDXRef-Package-dequal-2.0.3",
+      "versionInfo": "2.0.3",
+      "packageFileName": "node_modules/dequal",
+      "description": "A tiny (304B to 489B) utility for check for deep equality",
+      "downloadLocation": "https://registry.npmjs.org/dequal/-/dequal-2.0.3.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/lukeed/dequal#readme",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/dequal@2.0.3"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "d237bea8f28710ca21bdf453084a370ab3c6e9c033018826ccacb1462612483912e9e1897725499bb59a600e4409a003f702c1d93e0411eca603968555c61708"
+        }
+      ]
+    },
+    {
+      "name": "escape-html",
+      "SPDXID": "SPDXRef-Package-escape-html-1.0.3",
+      "versionInfo": "1.0.3",
+      "packageFileName": "node_modules/escape-html",
+      "description": "Escape string for use in HTML",
+      "downloadLocation": "https://registry.npmjs.org/escape-html/-/escape-html-1.0.3.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/component/escape-html#readme",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/escape-html@1.0.3"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "3624aea59e0e7ae1b0afaf251887b29bf92c219309a1d506392099fc54a74f172b7a46efaab81d53194938ca628da299563009ad6ac6b3fe89cbc38cbb28fda3"
+        }
+      ]
+    },
+    {
+      "name": "fast-decode-uri-component",
+      "SPDXID": "SPDXRef-Package-fast-decode-uri-component-1.0.1",
+      "versionInfo": "1.0.1",
+      "packageFileName": "node_modules/fast-decode-uri-component",
+      "description": "Fast and safe decodeURIComponent",
+      "downloadLocation": "https://registry.npmjs.org/fast-decode-uri-component/-/fast-decode-uri-component-1.0.1.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/delvedor/fast-decode-uri-component#readme",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/fast-decode-uri-component@1.0.1"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "58a80a5a0e5e531bd1646c16f05bdf6da1fb0174a1d9c2fede3e5f306cd4302c56049ddd5776bb5b3f32d9ffee4347b707a5a6a1d0f7a12e788d343d1d54c822"
+        }
+      ]
+    },
+    {
+      "name": "fast-deep-equal",
+      "SPDXID": "SPDXRef-Package-fast-deep-equal-3.1.3",
+      "versionInfo": "3.1.3",
+      "packageFileName": "node_modules/fast-deep-equal",
+      "description": "Fast deep equal",
+      "downloadLocation": "https://registry.npmjs.org/fast-deep-equal/-/fast-deep-equal-3.1.3.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/epoberezkin/fast-deep-equal#readme",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/fast-deep-equal@3.1.3"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "7f7a90f68432f63d808417bf1fd542f75c0b98a042094fe00ce9ca340606e61b303bb04b2a3d3d1dce4760dcfd70623efb19690c22200da8ad56cd3701347ce1"
+        }
+      ]
+    },
+    {
+      "name": "fast-json-stringify",
+      "SPDXID": "SPDXRef-Package-fast-json-stringify-7.1.3",
+      "versionInfo": "7.1.3",
+      "packageFileName": "node_modules/fast-json-stringify",
+      "description": "Stringify your JSON at max speed",
+      "downloadLocation": "https://registry.npmjs.org/fast-json-stringify/-/fast-json-stringify-7.1.3.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/fastify/fast-json-stringify#readme",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/fast-json-stringify@7.1.3"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "e530ccd72385fc10c539c94acf61baaecd51b089791d7302ae0fe7a6674d20f35009ecec851e642078e1c0136e318ebb8e19135009bd0e0b8bf3190bff1d16b7"
+        }
+      ]
+    },
+    {
+      "name": "fast-querystring",
+      "SPDXID": "SPDXRef-Package-fast-querystring-1.1.2",
+      "versionInfo": "1.1.2",
+      "packageFileName": "node_modules/fast-querystring",
+      "description": "A fast alternative to legacy querystring module",
+      "downloadLocation": "https://registry.npmjs.org/fast-querystring/-/fast-querystring-1.1.2.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/anonrig/fast-querystring#readme",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/fast-querystring@1.1.2"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "83a2ae2969855dcd1f203f16587d238ade20d00181a0984290931bd5199bb1211436f43e642f03e82519f86b45f2733348f5e786278fcb2aaa8a9ccd3449c78e"
+        }
+      ]
+    },
+    {
+      "name": "fast-uri",
+      "SPDXID": "SPDXRef-Package-fast-uri-4.2.3",
+      "versionInfo": "4.2.3",
+      "packageFileName": "node_modules/fast-uri",
+      "description": "Dependency-free RFC 3986 URI toolbox",
+      "downloadLocation": "https://registry.npmjs.org/fast-uri/-/fast-uri-4.2.3.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/fastify/fast-uri",
+      "licenseDeclared": "BSD-3-Clause",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/fast-uri@4.2.3"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "2353d7c0fe5e02194d95c7698edf42801e7da29d99bd97f1c3e064a861552143a03690954dc4eaa771e14d7edbaf18f9bec8a9fa7498e274ef7dff9e200efa86"
+        }
+      ]
+    },
+    {
+      "name": "fastify",
+      "SPDXID": "SPDXRef-Package-fastify-5.12.7",
+      "versionInfo": "5.12.7",
+      "packageFileName": "node_modules/fastify",
+      "description": "Fast and low overhead web framework, for Node.js",
+      "downloadLocation": "https://registry.npmjs.org/fastify/-/fastify-5.12.7.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://fastify.dev/",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/fastify@5.12.7"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "bf8a443ec4d13eeaa50c862240507e0478d537849d1d7f6ed00064d190d429b6dd635bec36bc947758f867e8d01196a3bd8215934e3b2a29af6bdfc027bf4663"
+        }
+      ]
+    },
+    {
+      "name": "fastify-plugin",
+      "SPDXID": "SPDXRef-Package-fastify-plugin-6.0.1",
+      "versionInfo": "6.0.1",
+      "packageFileName": "node_modules/fastify-plugin",
+      "description": "Plugin helper for Fastify",
+      "downloadLocation": "https://registry.npmjs.org/fastify-plugin/-/fastify-plugin-6.0.1.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/fastify/fastify-plugin#readme",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/fastify-plugin@6.0.1"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "e305b84714a6bcf5cbae1e66810122bb8dea5376f0e38376b2ce054e44e44086e9ad4844fbfb38dd05f48ffb6d733b5d58aecf1241ea56d85d73919d1060ef8c"
+        }
+      ]
+    },
+    {
+      "name": "fastq",
+      "SPDXID": "SPDXRef-Package-fastq-1.20.3",
+      "versionInfo": "1.20.3",
+      "packageFileName": "node_modules/fastq",
+      "description": "Fast, in memory work queue",
+      "downloadLocation": "https://registry.npmjs.org/fastq/-/fastq-1.20.3.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/mcollina/fastq#readme",
+      "licenseDeclared": "ISC",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/fastq@1.20.3"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "5cabf99e72ecea72c5ef536088a24b21914b90fc8812e3ac7a52c6eee8d99c6ad17d02bc1e9bd8f96a8a84025401d2e89b054712b552e0b7f11653ead3f15303"
+        }
+      ]
+    },
+    {
+      "name": "find-my-way",
+      "SPDXID": "SPDXRef-Package-find-my-way-9.10.0",
+      "versionInfo": "9.10.0",
+      "packageFileName": "node_modules/find-my-way",
+      "description": "Crazy fast http radix based router",
+      "downloadLocation": "https://registry.npmjs.org/find-my-way/-/find-my-way-9.10.0.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/delvedor/find-my-way#readme",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/find-my-way@9.10.0"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "7abbbeb823d0da0fa72c191ff383073ff2b234d31aaf4043cb48fe8bc15bef6185f7f607059e7cabb14e0d4b5f555ed753d9df4541d74a668cf0d9997086d9e1"
+        }
+      ]
+    },
+    {
+      "name": "gl-matrix",
+      "SPDXID": "SPDXRef-Package-gl-matrix-3.4.4",
+      "versionInfo": "3.4.4",
+      "packageFileName": "node_modules/gl-matrix",
+      "description": "Javascript Matrix and Vector library for High Performance WebGL apps",
+      "downloadLocation": "https://registry.npmjs.org/gl-matrix/-/gl-matrix-3.4.4.tgz",
+      "filesAnalyzed": false,
+      "homepage": "http://glmatrix.net",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/gl-matrix@3.4.4"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "95ab529f20cdb7ff3361407a54827a3c28768c18c95fa8270eca0267b2f25bb1a4aab0f9d445b06bda82a068b18fc62a06d11340aff163b3a6a5317cc73d4375"
+        }
+      ]
+    },
+    {
+      "name": "glob",
+      "SPDXID": "SPDXRef-Package-glob-13.0.6",
+      "versionInfo": "13.0.6",
+      "packageFileName": "node_modules/glob",
+      "description": "the most correct and second fastest glob implementation in JavaScript",
+      "downloadLocation": "https://registry.npmjs.org/glob/-/glob-13.0.6.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/isaacs/node-glob#readme",
+      "licenseDeclared": "BlueOak-1.0.0",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/glob@13.0.6"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "5a3972ae89669bcb83a66fe8806c976576f567e09ad81f0d6c9c2a0558346b12bd19b05ea12ef2195eaf8d79d87469ba5f9de27a112ec716f288aa7c42637857"
+        }
+      ]
+    },
+    {
+      "name": "http-errors",
+      "SPDXID": "SPDXRef-Package-http-errors-2.0.1",
+      "versionInfo": "2.0.1",
+      "packageFileName": "node_modules/http-errors",
+      "description": "Create HTTP error objects",
+      "downloadLocation": "https://registry.npmjs.org/http-errors/-/http-errors-2.0.1.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/jshttp/http-errors#readme",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/http-errors@2.0.1"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "e056d17405fe6d2766a3801416e4b458d88fcfc36016dfabf138603569a5ae3423b7543b651f7ecd395c7b6f39f71e0a497af022c69e4ea0e82909ad3fca4b99"
+        }
+      ]
+    },
+    {
+      "name": "inherits",
+      "SPDXID": "SPDXRef-Package-inherits-2.0.4",
+      "versionInfo": "2.0.4",
+      "packageFileName": "node_modules/inherits",
+      "description": "Browser-friendly inheritance fully compatible with standard node.js inherits()",
+      "downloadLocation": "https://registry.npmjs.org/inherits/-/inherits-2.0.4.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/isaacs/inherits#readme",
+      "licenseDeclared": "ISC",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/inherits@2.0.4"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "93fbc6697e3f6256b75b3c8c0af4d039761e207bea38ab67a8176ecd31e9ce9419cc0b2428c859d8af849c189233dcc64a820578ca572b16b8758799210a9ec1"
+        }
+      ]
+    },
+    {
+      "name": "iota-array",
+      "SPDXID": "SPDXRef-Package-iota-array-1.0.0",
+      "versionInfo": "1.0.0",
+      "packageFileName": "node_modules/iota-array",
+      "description": "Generates an array of consecutive integers starting at 0",
+      "downloadLocation": "https://registry.npmjs.org/iota-array/-/iota-array-1.0.0.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/mikolalysenko/iota-array#readme",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/iota-array@1.0.0"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "a59db14fe2ce1dc9026ad190dc3706fdaf90b84aafa31aa488beedbc4f279f7baebbe7fa8b54eda41e7f16d5856f152e56be4f642c7c2ac92e19ab5b2435ce58"
+        }
+      ]
+    },
+    {
+      "name": "ipaddr.js",
+      "SPDXID": "SPDXRef-Package-ipaddr.js-2.5.0",
+      "versionInfo": "2.5.0",
+      "packageFileName": "node_modules/ipaddr.js",
+      "description": "A library for manipulating IPv4 and IPv6 addresses in JavaScript.",
+      "downloadLocation": "https://registry.npmjs.org/ipaddr.js/-/ipaddr.js-2.5.0.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/whitequark/ipaddr.js#readme",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/ipaddr.js@2.5.0"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "6aafade4d01cf9c4baad94105560b6c7df023ea1ad28a4cc0dde066a876fd304a19c8b5d2a0ff9d5d8e4189d61a87f8ecb48af0dfb426d22c24286fcceca34d7"
+        }
+      ]
+    },
+    {
+      "name": "is-buffer",
+      "SPDXID": "SPDXRef-Package-is-buffer-1.1.6",
+      "versionInfo": "1.1.6",
+      "packageFileName": "node_modules/is-buffer",
+      "description": "Determine if an object is a Buffer",
+      "downloadLocation": "https://registry.npmjs.org/is-buffer/-/is-buffer-1.1.6.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/feross/is-buffer#readme",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/is-buffer@1.1.6"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "35c7402f0a579139b966fbdb93ba303944af56f04a0e028fe7f7b07d71339e64057ece194666a739e2814e34558e46b7405a0de9727ef45dd44aa7c7a93694e7"
+        }
+      ]
+    },
+    {
+      "name": "json-schema-ref-resolver",
+      "SPDXID": "SPDXRef-Package-json-schema-ref-resolver-3.0.1",
+      "versionInfo": "3.0.1",
+      "packageFileName": "node_modules/json-schema-ref-resolver",
+      "description": "JSON schema reference resolver",
+      "downloadLocation": "https://registry.npmjs.org/json-schema-ref-resolver/-/json-schema-ref-resolver-3.0.1.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/fastify/json-schema-ref-resolver#readme",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/json-schema-ref-resolver@3.0.1"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "c3e1f08258d7a55c19dc889da14475a8f67148e43e351416b957ba6b9a5ef176c7b0d644e1403054f52fcd96a09fbc8129b26db7a5099d11586cd4d13d9238e5"
+        }
+      ]
+    },
+    {
+      "name": "json-schema-traverse",
+      "SPDXID": "SPDXRef-Package-json-schema-traverse-1.0.0",
+      "versionInfo": "1.0.0",
+      "packageFileName": "node_modules/json-schema-traverse",
+      "description": "Traverse JSON Schema passing each schema object to callback",
+      "downloadLocation": "https://registry.npmjs.org/json-schema-traverse/-/json-schema-traverse-1.0.0.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/epoberezkin/json-schema-traverse#readme",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/json-schema-traverse@1.0.0"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "34cf3f3fd9f75e35e12199f594b86415a0024ce5114178d6855e0103f4673aff31be0aadaa9017f483b89914314b1d51968e2dab37aa6f4b0e96bb9a3b2dddba"
+        }
+      ]
+    },
+    {
+      "name": "light-my-request",
+      "SPDXID": "SPDXRef-Package-light-my-request-6.8.0",
+      "versionInfo": "6.8.0",
+      "packageFileName": "node_modules/light-my-request",
+      "description": "Fake HTTP injection library",
+      "downloadLocation": "https://registry.npmjs.org/light-my-request/-/light-my-request-6.8.0.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/fastify/light-my-request#readme",
+      "licenseDeclared": "BSD-3-Clause",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/light-my-request@6.8.0"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "e50f0f8e848476d18807c7e2919b137a6e6f811a38176991eaf50a4c35bf1f583a32d02df1edddb906e0fd0c4be72ce0e81661a2bd8a3949b786158c58b4d9c2"
+        }
+      ]
+    },
+    {
+      "name": "lodash.clonedeep",
+      "SPDXID": "SPDXRef-Package-lodash.clonedeep-4.5.0",
+      "versionInfo": "4.5.0",
+      "packageFileName": "node_modules/lodash.clonedeep",
+      "description": "The lodash method `_.cloneDeep` exported as a module.",
+      "downloadLocation": "https://registry.npmjs.org/lodash.clonedeep/-/lodash.clonedeep-4.5.0.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://lodash.com/",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/lodash.clonedeep@4.5.0"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "1f9661085db9ae215df6e0795029152a8eb59b74bfc59935c78c00eb2a7f2f74453fa67f7871f5ca641c18ba3b27718c3df9b457fee6d6daf21ee195c69a8405"
+        }
+      ]
+    },
+    {
+      "name": "loglevel",
+      "SPDXID": "SPDXRef-Package-loglevel-1.9.2",
+      "versionInfo": "1.9.2",
+      "packageFileName": "node_modules/loglevel",
+      "description": "Minimal lightweight logging for JavaScript, adding reliable log level methods to any available console.log methods",
+      "downloadLocation": "https://registry.npmjs.org/loglevel/-/loglevel-1.9.2.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/pimterry/loglevel",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/loglevel@1.9.2"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "1e03260aa2094802aaa3af25d2b4b601a9c459f931699e703621056f98209b4f250ecf579762b10655f73d371a0f672104cd605c061fe3dd7f33646ff09c1aca"
+        }
+      ]
+    },
+    {
+      "name": "loglevel-plugin-prefix",
+      "SPDXID": "SPDXRef-Package-loglevel-plugin-prefix-0.8.4",
+      "versionInfo": "0.8.4",
+      "packageFileName": "node_modules/loglevel-plugin-prefix",
+      "description": "Plugin for loglevel message prefixing",
+      "downloadLocation": "https://registry.npmjs.org/loglevel-plugin-prefix/-/loglevel-plugin-prefix-0.8.4.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/kutuluk/loglevel-plugin-prefix",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/loglevel-plugin-prefix@0.8.4"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "5a91bd09c1403a3cff16d361b7e409786a6f565fdc751e8fd33e8e7174a4afcc0524eb15d86463da3d7424b7e3b80e1a62470a08d204a91182c9389f7bd47cfe"
+        }
+      ]
+    },
+    {
+      "name": "lru-cache",
+      "SPDXID": "SPDXRef-Package-lru-cache-11.5.3",
+      "versionInfo": "11.5.3",
+      "packageFileName": "node_modules/lru-cache",
+      "description": "A cache object that deletes the least-recently-used items.",
+      "downloadLocation": "https://registry.npmjs.org/lru-cache/-/lru-cache-11.5.3.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/isaacs/node-lru-cache#readme",
+      "licenseDeclared": "BlueOak-1.0.0",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/lru-cache@11.5.3"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "53837c160ce65b173c935547f0aafa950835f14ec58ef6f2eb05c75515ff659ec8c166d1320ad16cfd16adbe6ae4d5629ebca9e1241a9a91ca76fb5e708b7152"
+        }
+      ]
+    },
+    {
+      "name": "memorystream",
+      "SPDXID": "SPDXRef-Package-memorystream-0.3.1",
+      "versionInfo": "0.3.1",
+      "packageFileName": "node_modules/memorystream",
+      "description": "This is lightweight memory stream module for node.js.",
+      "downloadLocation": "https://registry.npmjs.org/memorystream/-/memorystream-0.3.1.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/JSBizon/node-memorystream",
+      "licenseDeclared": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/memorystream@0.3.1"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "4b7530337ca3e66b544847cfe355199adff4482a15614714d6b917bfe050e4883c9dd2f8b0fa0934150911169f74f6f98e31c91ae320cad80abca21fe7c5cd07"
+        }
+      ]
+    },
+    {
+      "name": "mime",
+      "SPDXID": "SPDXRef-Package-mime-3.0.0",
+      "versionInfo": "3.0.0",
+      "packageFileName": "node_modules/mime",
+      "description": "A comprehensive library for mime-type mapping",
+      "downloadLocation": "https://registry.npmjs.org/mime/-/mime-3.0.0.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/broofa/mime#readme",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/mime@3.0.0"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "8d2094eff541d65a0858165ed7868460753ffb550c107a1a3bbab108e5493b0f46807ef65405a9a7135c8d4fb1f5ada4dc648805734ac57405a91bef67bbebdc"
+        }
+      ]
+    },
+    {
+      "name": "minimatch",
+      "SPDXID": "SPDXRef-Package-minimatch-10.2.6",
+      "versionInfo": "10.2.6",
+      "packageFileName": "node_modules/minimatch",
+      "description": "a glob matcher in javascript",
+      "downloadLocation": "https://registry.npmjs.org/minimatch/-/minimatch-10.2.6.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/isaacs/minimatch#readme",
+      "licenseDeclared": "BlueOak-1.0.0",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/minimatch@10.2.6"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "be92d012cf952c2af59d4d015d2d3b99a628170943007d209e042ebadb71230bad0c510c1ead9b957fbcbe98310dd2b72753f08c22627a9efb3a2b536782e5d4"
+        }
+      ]
+    },
+    {
+      "name": "minipass",
+      "SPDXID": "SPDXRef-Package-minipass-7.1.3",
+      "versionInfo": "7.1.3",
+      "packageFileName": "node_modules/minipass",
+      "description": "minimal implementation of a PassThrough stream",
+      "downloadLocation": "https://registry.npmjs.org/minipass/-/minipass-7.1.3.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/isaacs/minipass#readme",
+      "licenseDeclared": "BlueOak-1.0.0",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/minipass@7.1.3"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "b44047a839c8a0cff5ad7304d738246bd83a43695ca029311cbb9cece0c9e41c5b3f977873667970682d5c092ee7ddb4d02c7b762b874ce61f4810fc9fa9a6f0"
+        }
+      ]
+    },
+    {
+      "name": "ndarray",
+      "SPDXID": "SPDXRef-Package-ndarray-1.0.19",
+      "versionInfo": "1.0.19",
+      "packageFileName": "node_modules/ndarray",
+      "description": "Multidimensional Arrays",
+      "downloadLocation": "https://registry.npmjs.org/ndarray/-/ndarray-1.0.19.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/mikolalysenko/ndarray#readme",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/ndarray@1.0.19"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "078247038bddc99537d042c1c3783bfe9f5b66ea727b0e5aeed5f563f806785da169facf69066182b1907ecbe07d86e0745663630b847276a86de33f58c5be1d"
+        }
+      ]
+    },
+    {
+      "name": "on-exit-leak-free",
+      "SPDXID": "SPDXRef-Package-on-exit-leak-free-2.1.2",
+      "versionInfo": "2.1.2",
+      "packageFileName": "node_modules/on-exit-leak-free",
+      "description": "Execute a function on exit without leaking memory, allowing all objects to be garbage collected",
+      "downloadLocation": "https://registry.npmjs.org/on-exit-leak-free/-/on-exit-leak-free-2.1.2.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/mcollina/on-exit-or-gc#readme",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/on-exit-leak-free@2.1.2"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "d1e24963a8572c67f5b9d1f07cd7ed06a1fe83bdc4538079d389d978aa73d6c61129a7c0821c31109ba70763bbac36642f83c67ec3159d35d9d848e26dba9cb0"
+        }
+      ]
+    },
+    {
+      "name": "pako",
+      "SPDXID": "SPDXRef-Package-pako-2.1.0",
+      "versionInfo": "2.1.0",
+      "packageFileName": "node_modules/pako",
+      "description": "zlib port to javascript - fast, modularized, with browser support",
+      "downloadLocation": "https://registry.npmjs.org/pako/-/pako-2.1.0.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/nodeca/pako#readme",
+      "licenseDeclared": "(MIT AND Zlib)",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/pako@2.1.0"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "c3e7ae7e26755ae25880f5db57f3cedcd08c11cdf1ab2964287ce9f1bc69d6e5b8a9a48d41493098b2c473790ab1fcfc96957517c1eddd4d429bef52ae8836ba"
+        }
+      ]
+    },
+    {
+      "name": "path-scurry",
+      "SPDXID": "SPDXRef-Package-path-scurry-2.0.2",
+      "versionInfo": "2.0.2",
+      "packageFileName": "node_modules/path-scurry",
+      "description": "walk paths fast and efficiently",
+      "downloadLocation": "https://registry.npmjs.org/path-scurry/-/path-scurry-2.0.2.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/isaacs/path-scurry#readme",
+      "licenseDeclared": "BlueOak-1.0.0",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/path-scurry@2.0.2"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "dcefe2555b0900fb0e9e9c1621e0fe77acffecf9aa029c9078f52d0a77636ad8fff48e4bca51efb79aa5b856814f7239877af57a37d1d39e9cf850aff8d9cd5e"
+        }
+      ]
+    },
+    {
+      "name": "pino",
+      "SPDXID": "SPDXRef-Package-pino-10.4.0",
+      "versionInfo": "10.4.0",
+      "packageFileName": "node_modules/pino",
+      "description": "super fast, all natural json logger",
+      "downloadLocation": "https://registry.npmjs.org/pino/-/pino-10.4.0.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://getpino.io",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/pino@10.4.0"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "6e4d59313c06fd5ca6c7eccfa1adbc321373b9c16f5c95a9ddcb2b4aec6e1cf48c7947adb5a0a843926f834ee6b42e0918da5c7d3c33e35a150a736004af7ebc"
+        }
+      ]
+    },
+    {
+      "name": "pino-abstract-transport",
+      "SPDXID": "SPDXRef-Package-pino-abstract-transport-3.0.0",
+      "versionInfo": "3.0.0",
+      "packageFileName": "node_modules/pino-abstract-transport",
+      "description": "Write Pino transports easily",
+      "downloadLocation": "https://registry.npmjs.org/pino-abstract-transport/-/pino-abstract-transport-3.0.0.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/pinojs/pino-abstract-transport#readme",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/pino-abstract-transport@3.0.0"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "c257d473353e9fb1f2fc76b98fd6bf819372ed67b9f9c5e9f182fe5fe3c6f12d0a5f1c3b9ff257037738e98d334339c827cdd44498b0cbb2e1e7a58ba2436ec6"
+        }
+      ]
+    },
+    {
+      "name": "pino-std-serializers",
+      "SPDXID": "SPDXRef-Package-pino-std-serializers-7.1.0",
+      "versionInfo": "7.1.0",
+      "packageFileName": "node_modules/pino-std-serializers",
+      "description": "A collection of standard object serializers for Pino",
+      "downloadLocation": "https://registry.npmjs.org/pino-std-serializers/-/pino-std-serializers-7.1.0.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/pinojs/pino-std-serializers#readme",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/pino-std-serializers@7.1.0"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "06774f1faeff271184c518225f5757d30d45bd9724e566b869a97dd7df12ad18598c7dc6c4a4142880676094dd8f61c3377510012d3a1e57dc49b423d8e1e66b"
+        }
+      ]
+    },
+    {
+      "name": "process-warning",
+      "SPDXID": "SPDXRef-Package-process-warning-5.1.1",
+      "versionInfo": "5.1.1",
+      "packageFileName": "node_modules/process-warning",
+      "description": "A small utility for creating warnings and emitting them.",
+      "downloadLocation": "https://registry.npmjs.org/process-warning/-/process-warning-5.1.1.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/fastify/fastify-warning#readme",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/process-warning@5.1.1"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "a0290d563e0e2a728472871505c0df888ba0375fdc13aae07d3de70adcdea993c0f3eac8c4c690d315f322418ff068f6a9468fd5447bba1275543f25502a730a"
+        }
+      ]
+    },
+    {
+      "name": "quick-format-unescaped",
+      "SPDXID": "SPDXRef-Package-quick-format-unescaped-4.0.4",
+      "versionInfo": "4.0.4",
+      "packageFileName": "node_modules/quick-format-unescaped",
+      "description": "Solves a problem with util.format",
+      "downloadLocation": "https://registry.npmjs.org/quick-format-unescaped/-/quick-format-unescaped-4.0.4.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/davidmarkclements/quick-format#readme",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/quick-format-unescaped@4.0.4"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "b580b5435860c91b87825a15fd85ecdb0d79ba73d587ca9fbbfa824df85361a99ac3b7f286e98a6b6c86a5d4a8f3bbd8df6ac87258fee1f59841750cb3d107be"
+        }
+      ]
+    },
+    {
+      "name": "real-require",
+      "SPDXID": "SPDXRef-Package-real-require-1.0.0",
+      "versionInfo": "1.0.0",
+      "packageFileName": "node_modules/real-require",
+      "description": "Keep require and import consistent after bundling or transpiling",
+      "downloadLocation": "https://registry.npmjs.org/real-require/-/real-require-1.0.0.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/pinojs/real-require",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/real-require@1.0.0"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "3f89db41841f78f271452998faffca20dc55b9c9b8345de9decee926f78c4eda26e76151e181a5b5440b07c89d0d7c030d65be798ad60c56eecd49e3a161c5ee"
+        }
+      ]
+    },
+    {
+      "name": "require-from-string",
+      "SPDXID": "SPDXRef-Package-require-from-string-2.0.2",
+      "versionInfo": "2.0.2",
+      "packageFileName": "node_modules/require-from-string",
+      "description": "Require module from string",
+      "downloadLocation": "https://registry.npmjs.org/require-from-string/-/require-from-string-2.0.2.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/floatdrop/require-from-string#readme",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/require-from-string@2.0.2"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "5dfd2759ee91b1ece214cbbe029f5b8a251b9a996ae92f7fa7eef0ed85cffc904786b5030d48706bebc0372b9bbaa7d9593bde53ffc36151ac0c6ed128bfef13"
+        }
+      ]
+    },
+    {
+      "name": "ret",
+      "SPDXID": "SPDXRef-Package-ret-0.5.1",
+      "versionInfo": "0.5.1",
+      "packageFileName": "node_modules/ret",
+      "description": "Tokenizes a string that represents a regular expression.",
+      "downloadLocation": "https://registry.npmjs.org/ret/-/ret-0.5.1.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/fent/ret.js#readme",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/ret@0.5.1"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "67f9f2bc00707119d10f698c3fb2b3e86d5d15966a5f598d12b3a7c45e3638240a134edbf64f612bd490c472f72c511951dcd068b33874877513f13a566e1684"
+        }
+      ]
+    },
+    {
+      "name": "reusify",
+      "SPDXID": "SPDXRef-Package-reusify-1.1.0",
+      "versionInfo": "1.1.0",
+      "packageFileName": "node_modules/reusify",
+      "description": "Reuse objects and functions with style",
+      "downloadLocation": "https://registry.npmjs.org/reusify/-/reusify-1.1.0.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/mcollina/reusify#readme",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/reusify@1.1.0"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "83a4147dfd38a19a47b34786e69f37ac52e11de574d2e83f61ff6764ce9f2de52b3e0b814e44d039da40596b29321e794d97d54033da37735025f6d5440c5d23"
+        }
+      ]
+    },
+    {
+      "name": "rfdc",
+      "SPDXID": "SPDXRef-Package-rfdc-1.4.1",
+      "versionInfo": "1.4.1",
+      "packageFileName": "node_modules/rfdc",
+      "description": "Really Fast Deep Clone",
+      "downloadLocation": "https://registry.npmjs.org/rfdc/-/rfdc-1.4.1.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/davidmarkclements/rfdc#readme",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/rfdc@1.4.1"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "ab56f737942445459497b8b2ca569a8f790ea484f43768bd32a2044173fbdc656c37d730ddf771f17eb77049968491a2d8f3c2176dc88e9ee4b66777f6b6b020"
+        }
+      ]
+    },
+    {
+      "name": "safe-regex2",
+      "SPDXID": "SPDXRef-Package-safe-regex2-5.1.2",
+      "versionInfo": "5.1.2",
+      "packageFileName": "node_modules/safe-regex2",
+      "description": "detect possibly catastrophic, exponential-time regular expressions",
+      "downloadLocation": "https://registry.npmjs.org/safe-regex2/-/safe-regex2-5.1.2.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/fastify/safe-regex2",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/safe-regex2@5.1.2"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "b40b421853cf3f4d95ae80d5ce9e1d6868ba6c2ee3586fb8d43e3b18a7f5f05787fee6ef2901d3f559a1024bed8cd3a6270aad029cd6794a44864c846142ef9b"
+        }
+      ]
+    },
+    {
+      "name": "safe-stable-stringify",
+      "SPDXID": "SPDXRef-Package-safe-stable-stringify-2.5.0",
+      "versionInfo": "2.5.0",
+      "packageFileName": "node_modules/safe-stable-stringify",
+      "description": "Deterministic and safely JSON.stringify to quickly serialize JavaScript objects",
+      "downloadLocation": "https://registry.npmjs.org/safe-stable-stringify/-/safe-stable-stringify-2.5.0.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/BridgeAR/safe-stable-stringify#readme",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/safe-stable-stringify@2.5.0"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "6f7ae9a532a6f53f8fb1508110e511e3a19623b7dd3acd3454a675fbd7351160da0ccbe341cead530b85c88a6b806813716a151d22ab53c1f7d591c0d9ed111c"
+        }
+      ]
+    },
+    {
+      "name": "secure-json-parse",
+      "SPDXID": "SPDXRef-Package-secure-json-parse-4.1.1",
+      "versionInfo": "4.1.1",
+      "packageFileName": "node_modules/secure-json-parse",
+      "description": "JSON parse with prototype poisoning protection",
+      "downloadLocation": "https://registry.npmjs.org/secure-json-parse/-/secure-json-parse-4.1.1.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/fastify/secure-json-parse#readme",
+      "licenseDeclared": "BSD-3-Clause",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/secure-json-parse@4.1.1"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "96777cd4c40464a8e15bf19dd9342a75de173fa41835d0d6fc43fe23b9d3ac51cff72d8b99a18f20793dc6c9f370e884af5737f5cfdef38c45806be240a05347"
+        }
+      ]
+    },
+    {
+      "name": "semver",
+      "SPDXID": "SPDXRef-Package-semver-7.8.5",
+      "versionInfo": "7.8.5",
+      "packageFileName": "node_modules/semver",
+      "description": "The semantic version parser used by npm.",
+      "downloadLocation": "https://registry.npmjs.org/semver/-/semver-7.8.5.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/npm/node-semver#readme",
+      "licenseDeclared": "ISC",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/semver@7.8.5"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "63bfca0ec6fc2e3a28669c1aa86cae94ee8342592c8029dc7211c693eb19218e1206f52870c044147e54af57c8e1d57e26f974c3a723bee71a222e34a6e462a0"
+        }
+      ]
+    },
+    {
+      "name": "set-cookie-parser",
+      "SPDXID": "SPDXRef-Package-set-cookie-parser-3.2.1",
+      "versionInfo": "3.2.1",
+      "packageFileName": "node_modules/set-cookie-parser",
+      "description": "Parses set-cookie headers into objects",
+      "downloadLocation": "https://registry.npmjs.org/set-cookie-parser/-/set-cookie-parser-3.2.1.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/nfriedly/set-cookie-parser",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/set-cookie-parser@3.2.1"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "3697753edfb8cdbdc1ad26433dddaa1704694ba6f511411ab11acef314b4ccc262d1f0295d72b962eccfd268a7c899f1c27147a15a09c00e79ab403472eeb781"
+        }
+      ]
+    },
+    {
+      "name": "setprototypeof",
+      "SPDXID": "SPDXRef-Package-setprototypeof-1.2.0",
+      "versionInfo": "1.2.0",
+      "packageFileName": "node_modules/setprototypeof",
+      "description": "A small polyfill for Object.setprototypeof",
+      "downloadLocation": "https://registry.npmjs.org/setprototypeof/-/setprototypeof-1.2.0.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/wesleytodd/setprototypeof",
+      "licenseDeclared": "ISC",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/setprototypeof@1.2.0"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "1392c35fb5aba7ce4a8a5e5b859bf8ea3f2339e6e82aae4932660cde05467461fcc45a4f59750cb0dae53830ab928c4c11e362fd7648c2e46f6385cdc18309a7"
+        }
+      ]
+    },
+    {
+      "name": "smart-buffer",
+      "SPDXID": "SPDXRef-Package-smart-buffer-4.2.0",
+      "versionInfo": "4.2.0",
+      "packageFileName": "node_modules/smart-buffer",
+      "description": "smart-buffer is a Buffer wrapper that adds automatic read & write offset tracking, string operations, data insertions, and more.",
+      "downloadLocation": "https://registry.npmjs.org/smart-buffer/-/smart-buffer-4.2.0.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/JoshGlazebrook/smart-buffer/",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/smart-buffer@4.2.0"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "f7884ad0787cacfa90976c577371ec681a0e5ca576d0c4e83e4717bf06c84962c4b3eeb8b01ab9905827da42431dbd4faf2f72acfd1dc6b088f5145c8bb4572a"
+        }
+      ]
+    },
+    {
+      "name": "sonic-boom",
+      "SPDXID": "SPDXRef-Package-sonic-boom-4.2.1",
+      "versionInfo": "4.2.1",
+      "packageFileName": "node_modules/sonic-boom",
+      "description": "Extremely fast utf8 only stream implementation",
+      "downloadLocation": "https://registry.npmjs.org/sonic-boom/-/sonic-boom-4.2.1.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/pinojs/sonic-boom#readme",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/sonic-boom@4.2.1"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "c3a031b6e6d76b6c135c052c64c316111aec21101dacad1273e154cad5af60084124bcae238965acc202d43b65352748f7d108f3a299ba6d8c32adc4019945f5"
+        }
+      ]
+    },
+    {
+      "name": "statuses",
+      "SPDXID": "SPDXRef-Package-statuses-2.0.2",
+      "versionInfo": "2.0.2",
+      "packageFileName": "node_modules/statuses",
+      "description": "HTTP status utility",
+      "downloadLocation": "https://registry.npmjs.org/statuses/-/statuses-2.0.2.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/jshttp/statuses#readme",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/statuses@2.0.2"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "0ef132e795770c1eee927468fb888e193e5f3f5b2547cc10a2155d9278a064f32932cb5a289416870898040089137525da94e70138a18416274616501c606247"
+        }
+      ]
+    },
+    {
+      "name": "thread-stream",
+      "SPDXID": "SPDXRef-Package-thread-stream-4.2.0",
+      "versionInfo": "4.2.0",
+      "packageFileName": "node_modules/thread-stream",
+      "description": "A streaming way to send data to a Node.js Worker Thread",
+      "downloadLocation": "https://registry.npmjs.org/thread-stream/-/thread-stream-4.2.0.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/mcollina/thread-stream#readme",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/thread-stream@4.2.0"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "7b6cd9f7ac120a16b306c6c435ffcf726ff8b301edd9c10a43ddab8548e42fd1822a24c324869305e9e313f9bd0d78b44019933039050dd3a8994cb6d00d6d0d"
+        }
+      ]
+    },
+    {
+      "name": "toad-cache",
+      "SPDXID": "SPDXRef-Package-toad-cache-3.7.4",
+      "versionInfo": "3.7.4",
+      "packageFileName": "node_modules/toad-cache",
+      "description": "LRU and FIFO caches for Client or Server",
+      "downloadLocation": "https://registry.npmjs.org/toad-cache/-/toad-cache-3.7.4.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/kibertoad/toad-cache",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/toad-cache@3.7.4"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "9b54dd47faef4fb920189661b2936d5ddb1d624d1f75d1692491651b9b3e5243c5a3a9642e867760b39aa2f3d88ead51ef934fe497de4e548768eb04d3da5e0a"
+        }
+      ]
+    },
+    {
+      "name": "toidentifier",
+      "SPDXID": "SPDXRef-Package-toidentifier-1.0.1",
+      "versionInfo": "1.0.1",
+      "packageFileName": "node_modules/toidentifier",
+      "description": "Convert a string of words to a JavaScript identifier",
+      "downloadLocation": "https://registry.npmjs.org/toidentifier/-/toidentifier-1.0.1.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/component/toidentifier#readme",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/toidentifier@1.0.1"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "a39b123ca12483f0c840d987e37574fee7ab2eba7355e764521f2d18dbda797a5fa6ec2329e9e54a8c7fd8efc14e5654b447be246eece58844cfad3c3e500744"
+        }
+      ]
+    },
+    {
+      "name": "ts-mixer",
+      "SPDXID": "SPDXRef-Package-ts-mixer-6.0.4",
+      "versionInfo": "6.0.4",
+      "packageFileName": "node_modules/ts-mixer",
+      "description": "A very small TypeScript library that provides tolerable Mixin functionality.",
+      "downloadLocation": "https://registry.npmjs.org/ts-mixer/-/ts-mixer-6.0.4.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://github.com/tannerntannern/ts-mixer#readme",
+      "licenseDeclared": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/ts-mixer@6.0.4"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "b9f2a96e6aee833e40a2ee3072be5673551415638b86af859baa9ae8fd30d0ae50c36ca1694a225acce1095b8d432370ae51a2b1c1ce9aa628028c753edbe08c"
+        }
+      ]
+    },
+    {
+      "name": "yaml",
+      "SPDXID": "SPDXRef-Package-yaml-2.9.1",
+      "versionInfo": "2.9.1",
+      "packageFileName": "node_modules/yaml",
+      "description": "JavaScript parser and stringifier for YAML",
+      "downloadLocation": "https://registry.npmjs.org/yaml/-/yaml-2.9.1.tgz",
+      "filesAnalyzed": false,
+      "homepage": "https://eemeli.org/yaml/",
+      "licenseDeclared": "ISC",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/yaml@2.9.1"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "dcdc4df3eefc39dcdb4fb0bf5a31acc9f3c0b4968ddc5343b16c6fed8ee6703b13fe83a6816f01a72410145067bd91378fd63649dcf550b14b7b32fb11bdb217"
+        }
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relatedSpdxElement": "SPDXRef-Package-sonoforms-0.3.1",
+      "relationshipType": "DESCRIBES"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-fastify.cookie-11.1.3",
+      "relatedSpdxElement": "SPDXRef-Package-sonoforms-0.3.1",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-fastify.static-10.1.7",
+      "relatedSpdxElement": "SPDXRef-Package-sonoforms-0.3.1",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-dcmjs-dimse-0.3.4",
+      "relatedSpdxElement": "SPDXRef-Package-sonoforms-0.3.1",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-fastify-5.12.7",
+      "relatedSpdxElement": "SPDXRef-Package-sonoforms-0.3.1",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-yaml-2.9.1",
+      "relatedSpdxElement": "SPDXRef-Package-sonoforms-0.3.1",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-core-js-pure-3.51.0",
+      "relatedSpdxElement": "SPDXRef-Package-babel.runtime-corejs3-7.29.2",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-ajv-8.20.0",
+      "relatedSpdxElement": "SPDXRef-Package-fastify.ajv-compiler-4.0.7",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-ajv-formats-3.0.1",
+      "relatedSpdxElement": "SPDXRef-Package-fastify.ajv-compiler-4.0.7",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-fast-uri-4.2.3",
+      "relatedSpdxElement": "SPDXRef-Package-fastify.ajv-compiler-4.0.7",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-cookie-2.0.1",
+      "relatedSpdxElement": "SPDXRef-Package-fastify.cookie-11.1.3",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-fastify-plugin-6.0.1",
+      "relatedSpdxElement": "SPDXRef-Package-fastify.cookie-11.1.3",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-fast-json-stringify-7.1.3",
+      "relatedSpdxElement": "SPDXRef-Package-fastify.fast-json-stringify-compiler-5.1.1",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-dequal-2.0.3",
+      "relatedSpdxElement": "SPDXRef-Package-fastify.merge-json-schemas-0.2.2",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-fastify.forwarded-3.1.2",
+      "relatedSpdxElement": "SPDXRef-Package-fastify.proxy-addr-5.1.2",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-ipaddr.js-2.5.0",
+      "relatedSpdxElement": "SPDXRef-Package-fastify.proxy-addr-5.1.2",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-lukeed.ms-2.0.2",
+      "relatedSpdxElement": "SPDXRef-Package-fastify.send-4.2.0",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-escape-html-1.0.3",
+      "relatedSpdxElement": "SPDXRef-Package-fastify.send-4.2.0",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-fast-decode-uri-component-1.0.1",
+      "relatedSpdxElement": "SPDXRef-Package-fastify.send-4.2.0",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-http-errors-2.0.1",
+      "relatedSpdxElement": "SPDXRef-Package-fastify.send-4.2.0",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-mime-3.0.0",
+      "relatedSpdxElement": "SPDXRef-Package-fastify.send-4.2.0",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-fastify.accept-negotiator-2.1.2",
+      "relatedSpdxElement": "SPDXRef-Package-fastify.static-10.1.7",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-fastify.error-4.2.1",
+      "relatedSpdxElement": "SPDXRef-Package-fastify.static-10.1.7",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-fastify.send-4.2.0",
+      "relatedSpdxElement": "SPDXRef-Package-fastify.static-10.1.7",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-content-disposition-3.0.0",
+      "relatedSpdxElement": "SPDXRef-Package-fastify.static-10.1.7",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-fastify-plugin-6.0.1",
+      "relatedSpdxElement": "SPDXRef-Package-fastify.static-10.1.7",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-fastq-1.20.3",
+      "relatedSpdxElement": "SPDXRef-Package-fastify.static-10.1.7",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-glob-13.0.6",
+      "relatedSpdxElement": "SPDXRef-Package-fastify.static-10.1.7",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-fast-deep-equal-3.1.3",
+      "relatedSpdxElement": "SPDXRef-Package-ajv-8.20.0",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-fast-uri-3.1.9",
+      "relatedSpdxElement": "SPDXRef-Package-ajv-8.20.0",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-json-schema-traverse-1.0.0",
+      "relatedSpdxElement": "SPDXRef-Package-ajv-8.20.0",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-require-from-string-2.0.2",
+      "relatedSpdxElement": "SPDXRef-Package-ajv-8.20.0",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-ajv-8.20.0",
+      "relatedSpdxElement": "SPDXRef-Package-ajv-formats-3.0.1",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-async-3.2.6",
+      "relatedSpdxElement": "SPDXRef-Package-async-event-emitter2-0.0.2",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-fastify.error-4.2.1",
+      "relatedSpdxElement": "SPDXRef-Package-avvio-9.3.1",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-fastq-1.20.3",
+      "relatedSpdxElement": "SPDXRef-Package-avvio-9.3.1",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-balanced-match-4.0.4",
+      "relatedSpdxElement": "SPDXRef-Package-brace-expansion-5.0.12",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-babel.runtime-corejs3-7.29.2",
+      "relatedSpdxElement": "SPDXRef-Package-dcmjs-0.52.2",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-adm-zip-0.6.1",
+      "relatedSpdxElement": "SPDXRef-Package-dcmjs-0.52.2",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-gl-matrix-3.4.4",
+      "relatedSpdxElement": "SPDXRef-Package-dcmjs-0.52.2",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-lodash.clonedeep-4.5.0",
+      "relatedSpdxElement": "SPDXRef-Package-dcmjs-0.52.2",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-loglevel-1.9.2",
+      "relatedSpdxElement": "SPDXRef-Package-dcmjs-0.52.2",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-ndarray-1.0.19",
+      "relatedSpdxElement": "SPDXRef-Package-dcmjs-0.52.2",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-pako-2.1.0",
+      "relatedSpdxElement": "SPDXRef-Package-dcmjs-0.52.2",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-dcmjs-0.52.2",
+      "relatedSpdxElement": "SPDXRef-Package-dcmjs-codecs-0.0.8",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-loglevel-1.9.2",
+      "relatedSpdxElement": "SPDXRef-Package-dcmjs-codecs-0.0.8",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-loglevel-plugin-prefix-0.8.4",
+      "relatedSpdxElement": "SPDXRef-Package-dcmjs-codecs-0.0.8",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-async-event-emitter2-0.0.2",
+      "relatedSpdxElement": "SPDXRef-Package-dcmjs-dimse-0.3.4",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-dcmjs-0.52.2",
+      "relatedSpdxElement": "SPDXRef-Package-dcmjs-dimse-0.3.4",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-dcmjs-codecs-0.0.8",
+      "relatedSpdxElement": "SPDXRef-Package-dcmjs-dimse-0.3.4",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-loglevel-1.9.2",
+      "relatedSpdxElement": "SPDXRef-Package-dcmjs-dimse-0.3.4",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-loglevel-plugin-prefix-0.8.4",
+      "relatedSpdxElement": "SPDXRef-Package-dcmjs-dimse-0.3.4",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-memorystream-0.3.1",
+      "relatedSpdxElement": "SPDXRef-Package-dcmjs-dimse-0.3.4",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-smart-buffer-4.2.0",
+      "relatedSpdxElement": "SPDXRef-Package-dcmjs-dimse-0.3.4",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-ts-mixer-6.0.4",
+      "relatedSpdxElement": "SPDXRef-Package-dcmjs-dimse-0.3.4",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-fastify.merge-json-schemas-0.2.2",
+      "relatedSpdxElement": "SPDXRef-Package-fast-json-stringify-7.1.3",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-ajv-8.20.0",
+      "relatedSpdxElement": "SPDXRef-Package-fast-json-stringify-7.1.3",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-ajv-formats-3.0.1",
+      "relatedSpdxElement": "SPDXRef-Package-fast-json-stringify-7.1.3",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-fast-uri-4.2.3",
+      "relatedSpdxElement": "SPDXRef-Package-fast-json-stringify-7.1.3",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-json-schema-ref-resolver-3.0.1",
+      "relatedSpdxElement": "SPDXRef-Package-fast-json-stringify-7.1.3",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-rfdc-1.4.1",
+      "relatedSpdxElement": "SPDXRef-Package-fast-json-stringify-7.1.3",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-fast-decode-uri-component-1.0.1",
+      "relatedSpdxElement": "SPDXRef-Package-fast-querystring-1.1.2",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-fastify.ajv-compiler-4.0.7",
+      "relatedSpdxElement": "SPDXRef-Package-fastify-5.12.7",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-fastify.error-4.2.1",
+      "relatedSpdxElement": "SPDXRef-Package-fastify-5.12.7",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-fastify.fast-json-stringify-compiler-5.1.1",
+      "relatedSpdxElement": "SPDXRef-Package-fastify-5.12.7",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-fastify.proxy-addr-5.1.2",
+      "relatedSpdxElement": "SPDXRef-Package-fastify-5.12.7",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-abstract-logging-2.0.1",
+      "relatedSpdxElement": "SPDXRef-Package-fastify-5.12.7",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-avvio-9.3.1",
+      "relatedSpdxElement": "SPDXRef-Package-fastify-5.12.7",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-fast-json-stringify-7.1.3",
+      "relatedSpdxElement": "SPDXRef-Package-fastify-5.12.7",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-find-my-way-9.10.0",
+      "relatedSpdxElement": "SPDXRef-Package-fastify-5.12.7",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-light-my-request-6.8.0",
+      "relatedSpdxElement": "SPDXRef-Package-fastify-5.12.7",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-pino-10.4.0",
+      "relatedSpdxElement": "SPDXRef-Package-fastify-5.12.7",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-process-warning-5.1.1",
+      "relatedSpdxElement": "SPDXRef-Package-fastify-5.12.7",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-rfdc-1.4.1",
+      "relatedSpdxElement": "SPDXRef-Package-fastify-5.12.7",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-secure-json-parse-4.1.1",
+      "relatedSpdxElement": "SPDXRef-Package-fastify-5.12.7",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-semver-7.8.5",
+      "relatedSpdxElement": "SPDXRef-Package-fastify-5.12.7",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-toad-cache-3.7.4",
+      "relatedSpdxElement": "SPDXRef-Package-fastify-5.12.7",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-reusify-1.1.0",
+      "relatedSpdxElement": "SPDXRef-Package-fastq-1.20.3",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-fast-deep-equal-3.1.3",
+      "relatedSpdxElement": "SPDXRef-Package-find-my-way-9.10.0",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-fast-querystring-1.1.2",
+      "relatedSpdxElement": "SPDXRef-Package-find-my-way-9.10.0",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-safe-regex2-5.1.2",
+      "relatedSpdxElement": "SPDXRef-Package-find-my-way-9.10.0",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-minimatch-10.2.6",
+      "relatedSpdxElement": "SPDXRef-Package-glob-13.0.6",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-minipass-7.1.3",
+      "relatedSpdxElement": "SPDXRef-Package-glob-13.0.6",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-path-scurry-2.0.2",
+      "relatedSpdxElement": "SPDXRef-Package-glob-13.0.6",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-depd-2.0.0",
+      "relatedSpdxElement": "SPDXRef-Package-http-errors-2.0.1",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-inherits-2.0.4",
+      "relatedSpdxElement": "SPDXRef-Package-http-errors-2.0.1",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-setprototypeof-1.2.0",
+      "relatedSpdxElement": "SPDXRef-Package-http-errors-2.0.1",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-statuses-2.0.2",
+      "relatedSpdxElement": "SPDXRef-Package-http-errors-2.0.1",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-toidentifier-1.0.1",
+      "relatedSpdxElement": "SPDXRef-Package-http-errors-2.0.1",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-dequal-2.0.3",
+      "relatedSpdxElement": "SPDXRef-Package-json-schema-ref-resolver-3.0.1",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-fastify.deepmerge-3.2.4",
+      "relatedSpdxElement": "SPDXRef-Package-light-my-request-6.8.0",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-cookie-2.0.1",
+      "relatedSpdxElement": "SPDXRef-Package-light-my-request-6.8.0",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-process-warning-5.1.1",
+      "relatedSpdxElement": "SPDXRef-Package-light-my-request-6.8.0",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-set-cookie-parser-3.2.1",
+      "relatedSpdxElement": "SPDXRef-Package-light-my-request-6.8.0",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-brace-expansion-5.0.12",
+      "relatedSpdxElement": "SPDXRef-Package-minimatch-10.2.6",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-iota-array-1.0.0",
+      "relatedSpdxElement": "SPDXRef-Package-ndarray-1.0.19",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-is-buffer-1.1.6",
+      "relatedSpdxElement": "SPDXRef-Package-ndarray-1.0.19",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-lru-cache-11.5.3",
+      "relatedSpdxElement": "SPDXRef-Package-path-scurry-2.0.2",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-minipass-7.1.3",
+      "relatedSpdxElement": "SPDXRef-Package-path-scurry-2.0.2",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-pinojs.redact-0.4.0",
+      "relatedSpdxElement": "SPDXRef-Package-pino-10.4.0",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-atomic-sleep-1.0.0",
+      "relatedSpdxElement": "SPDXRef-Package-pino-10.4.0",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-on-exit-leak-free-2.1.2",
+      "relatedSpdxElement": "SPDXRef-Package-pino-10.4.0",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-pino-abstract-transport-3.0.0",
+      "relatedSpdxElement": "SPDXRef-Package-pino-10.4.0",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-pino-std-serializers-7.1.0",
+      "relatedSpdxElement": "SPDXRef-Package-pino-10.4.0",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-process-warning-5.1.1",
+      "relatedSpdxElement": "SPDXRef-Package-pino-10.4.0",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-quick-format-unescaped-4.0.4",
+      "relatedSpdxElement": "SPDXRef-Package-pino-10.4.0",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-real-require-1.0.0",
+      "relatedSpdxElement": "SPDXRef-Package-pino-10.4.0",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-safe-stable-stringify-2.5.0",
+      "relatedSpdxElement": "SPDXRef-Package-pino-10.4.0",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-sonic-boom-4.2.1",
+      "relatedSpdxElement": "SPDXRef-Package-pino-10.4.0",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-thread-stream-4.2.0",
+      "relatedSpdxElement": "SPDXRef-Package-pino-10.4.0",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-ret-0.5.1",
+      "relatedSpdxElement": "SPDXRef-Package-safe-regex2-5.1.2",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-atomic-sleep-1.0.0",
+      "relatedSpdxElement": "SPDXRef-Package-sonic-boom-4.2.1",
+      "relationshipType": "DEPENDENCY_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-real-require-1.0.0",
+      "relatedSpdxElement": "SPDXRef-Package-thread-stream-4.2.0",
+      "relationshipType": "DEPENDENCY_OF"
+    }
+  ]
+}

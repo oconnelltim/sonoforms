@@ -139,7 +139,7 @@ Reports are written to `reports/` (git-ignored). Add `--no-images` to skip build
 npm run sbom           # needs Docker
 ```
 
-This lists every component a release ships, with versions (and licenses for the npm packages), in both standard formats, CycloneDX and SPDX. It writes them to `reports/sbom-v<version>/`:
+This lists every component a release ships, with versions (and licenses for the npm packages), in both standard formats, CycloneDX and SPDX. It writes them to `sbom/v<version>/`, which is committed with each release (e.g. [sbom/v0.3.1](../sbom/v0.3.1)):
 
 | File | Contents |
 |---|---|
@@ -147,7 +147,9 @@ This lists every component a release ships, with versions (and licenses for the 
 | `sonoforms-web.cdx.json`, `.spdx.json` | the Apache image |
 | `npm-packages.cdx.json`, `.spdx.json` | the app's npm dependency tree (production only), with licenses |
 
-Attach them to each GitHub release, or give them to hospital IT. They can be checked again later for newly published vulnerabilities, e.g. with `grype sbom:sonoforms-app.cdx.json`.
+Generate them when cutting a release and commit them with it. Attach them to the GitHub release too, or give them to hospital IT. They can be checked again later for newly published vulnerabilities, e.g. with `grype sbom:sonoforms-app.cdx.json`.
+
+The images are built from current base images at that time, so the SBOM records the exact Alpine package versions in that build. A scan that includes advisories with no fix available (`npm run security` reports only fixable ones) may list a few medium-severity issues in Alpine packages. For 0.3.1 these were busybox's `ssl_client` and `perl` in the Apache image; they are fixed when Alpine publishes updates and the images are rebuilt.
 
 ## Reporting a vulnerability
 
