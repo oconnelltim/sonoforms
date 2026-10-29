@@ -27,6 +27,9 @@ docker info >/dev/null 2>&1 || { echo "Docker is not running. Start Docker Deskt
 
 version=$(node -p "require('./package.json').version")
 out="sbom/v$version"
+# Start clean. Files written by the Syft container are owned by root on Linux,
+# so they're replaced (written anew, renamed into place), never edited.
+rm -rf "$out"
 mkdir -p "$out"
 
 registry="${SBOM_FROM_REGISTRY:-}"
@@ -59,7 +62,8 @@ for f in "$out"/sonoforms-*.spdx.json; do
     delete d.files;
     d.relationships = (d.relationships || []).filter(r => !files.has(r.spdxElementId) && !files.has(r.relatedSpdxElement));
     for (const p of d.packages || []) { delete p.hasFiles; }
-    fs.writeFileSync(f, JSON.stringify(d, null, 1));
+    fs.writeFileSync(f + ".tmp", JSON.stringify(d, null, 1));
+    fs.renameSync(f + ".tmp", f);
   ' "$f"
 done
 

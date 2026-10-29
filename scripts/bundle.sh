@@ -44,7 +44,14 @@ if [ "$with_images" = 1 ]; then
   for arch in "${arches[@]}"; do
     for img in "${images[@]}"; do docker pull -q --platform "linux/$arch" "$img" >/dev/null; done
     file="dist/$name-images-$arch.tar.gz"
-    docker image save --platform "linux/$arch" "${images[@]}" | gzip > "$file"
+    # On a machine of the same architecture (e.g. the x86-64 release runner)
+    # the pulled images are already that architecture; elsewhere, ask Docker
+    # to save just that platform.
+    if [ "$(docker info --format '{{.Architecture}}')" = "$( [ "$arch" = amd64 ] && echo x86_64 || echo aarch64 )" ]; then
+      docker image save "${images[@]}" | gzip > "$file"
+    else
+      docker image save --platform "linux/$arch" "${images[@]}" | gzip > "$file"
+    fi
     echo "Images ($arch): $file"
   done
   echo
