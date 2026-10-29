@@ -19,25 +19,50 @@ The problem it solves: tech notes come in random order and often miss items, so 
 
 Users can have several roles. A **superuser** can do everything. One installation can serve **several institutions**, each with its own worklist, patients, forms and users.
 
+## Try it on a laptop
+
+With nothing but [Docker Desktop](https://www.docker.com/products/docker-desktop/) (Mac, Windows or Linux), e.g. for a PACS team evaluating it:
+
+1. Download [`docker-compose.trial.yml`](docker-compose.trial.yml) into an empty folder.
+2. In a terminal in that folder:
+   ```bash
+   docker compose -f docker-compose.trial.yml up -d
+   docker compose -f docker-compose.trial.yml logs setup
+   ```
+   The second command shows the admin password.
+3. Open **https://localhost:8443** and accept the certificate warning.
+
+- **To look around without a PACS:** start it with `DICOM_MOCK=true` in front of the first command for fake demo studies. In Windows PowerShell, run `$env:DICOM_MOCK="true"` first.
+- **To try it against a real PACS:** enter its details in **Admin › Institutions**. The PACS must accept queries from the laptop's IP address and SonoForms' AE title.
+- **To remove it with all its data:**
+  ```bash
+  docker compose -f docker-compose.trial.yml down -v
+  ```
+
+The trial generates its own secrets and a self-signed certificate. It's for evaluation, not patient care.
+
 ## Install
 
-Requirements: a Linux server (or VM) with Docker and Docker Compose v2.
+Requirements: a Linux server (or VM) with Docker and Docker Compose v2. SonoForms runs from released, pre-built images (`ghcr.io/oconnelltim/sonoforms-app` and `-web`), so the server never builds anything.
 
-```bash
-git clone https://github.com/oconnelltim/sonoforms.git
-cd sonoforms
-./install.sh
-```
+1. **Get the release.** Download `sonoforms-<version>.tar.gz` from the [releases page](https://github.com/oconnelltim/sonoforms/releases) and unpack it. It contains the compose files, scripts and docs, but no source code. Or clone the repository:
+   ```bash
+   git clone https://github.com/oconnelltim/sonoforms.git
+   ```
+2. **Run the installer** in that folder:
+   ```bash
+   ./install.sh
+   ```
+   It creates the secrets and pulls the images for the version in `.env`. It then starts everything and prints the address and the first admin password.
+   
+   **No internet on the server?** Also download `sonoforms-<version>-images-amd64.tar.gz` and put it in an `images/` folder next to `install.sh`; the installer loads the images from there.
+3. **Sign in** as `admin` and choose a new password.
+4. **Admin › Institutions:** rename "Main Hospital" and enter your PACS details. Use *Test connection* and *Test query*.
+5. **Admin › Users:** create accounts for techs, tech managers and radiologists.
+6. **Forms:** review the starter forms with your radiologists. Copy and customize them for your institution.
+7. **Back up `secrets/master_key`** somewhere safe. Without it, the data and backups cannot be decrypted.
 
-The installer creates secrets and starts everything. It prints the address and the first admin password. Then:
-
-1. Sign in as `admin` and choose a new password.
-2. **Admin › Institutions**: rename "Main Hospital" and enter your PACS details. Use *Test connection* and *Test query*.
-3. **Admin › Users**: create accounts for techs, tech managers and radiologists.
-4. **Forms**: review the starter forms with your radiologists. Copy and customize them for your institution.
-5. **Back up `secrets/master_key`** somewhere safe. Without it, the data and backups cannot be decrypted.
-
-To try it without a PACS, set `DICOM_MOCK=true` in `.env` and run `./manage.sh restart`. The worklist then shows fake demo patients.
+**To try it without a PACS:** set `DICOM_MOCK=true` in `.env` and run `./manage.sh start`. The worklist then shows fake demo patients.
 
 See [docs/ADMIN.md](docs/ADMIN.md) for everyday administration, certificates, PACS setup, backups and upgrades. Planning a trial in your department? Start with the [pilot checklist](docs/PILOT.md).
 
@@ -64,6 +89,30 @@ npm run check    # tests + form check + npm audit, before committing
 npm run security # Semgrep, Gitleaks, Hadolint, ShellCheck, Grype (needs Docker)
 npm run sbom     # software bill of materials for a release, into sbom/ (needs Docker)
 ```
+
+To run the Docker setup from your working copy instead of released images, set `SONOFORMS_VERSION=dev` in `.env`, then run:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
+```
+
+**Releasing:**
+1. Set the new version in `package.json`, `.env.example` and `docker-compose.trial.yml`, and give it a dated section in `CHANGELOG.md`.
+2. Sign in to GHCR once with a token that has the `write:packages` permission:
+   ```bash
+   docker login ghcr.io -u oconnelltim
+   ```
+3. Run:
+   ```bash
+   npm run release:images
+   ```
+   It checks the version, runs the tests, builds and scans the images, pushes them for x86-64 and ARM, and writes `sbom/v<version>/`.
+4. Commit the SBOM, tag `v<version>`, and push.
+5. Run:
+   ```bash
+   npm run bundle -- --with-images
+   ```
+   Attach the two files from `dist/` to the GitHub release.
 
 All checks run locally; see "Checking the code" in [docs/SECURITY.md](docs/SECURITY.md). The GitHub workflow only runs when started by hand.
 

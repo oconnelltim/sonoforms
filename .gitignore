@@ -8,3 +8,4 @@ backups/
 certs/
 *.log
 reports/
+dist/

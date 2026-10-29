@@ -34,7 +34,8 @@ A checklist for trying SonoForms in one ultrasound department before wider use. 
 
 ## 4. Install
 
-- [ ] Run `./install.sh`. Sign in as `admin` and choose a new password.
+- [ ] **Optional, before the server is ready:** the PACS team can try SonoForms on a laptop with just Docker Desktop. This includes test queries against PACS. See "Try it on a laptop" in the [README](../README.md#try-it-on-a-laptop).
+- [ ] Unpack the release bundle on the server, or clone the repository, and run `./install.sh`. For a server without internet, add the images file; see the README. Sign in as `admin` and choose a new password.
 - [ ] **Store `secrets/master_key` in two safe places off the server**, e.g. the hospital password vault and a sealed offline copy. Without it, neither the data nor the backups can be decrypted.
 - [ ] Rename the institution in **Admin › Institutions**.
 - [ ] Create accounts in **Admin › Users** for each person in the pilot, with the right roles. (Active Directory sign-in comes later.)

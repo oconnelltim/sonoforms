@@ -116,11 +116,29 @@ This stops the app, saves a safety backup of the current state, replaces all dat
 
 ## Upgrading
 
+SonoForms runs released images at the version in `.env` (`SONOFORMS_VERSION`). An update moves to a release you choose; it never picks up unreleased code.
+
 ```bash
-./manage.sh update
+./manage.sh version          # what this server runs
+./manage.sh update 0.3.3     # move to a new release (see the releases page and CHANGELOG.md)
+./manage.sh update           # re-pull the current version
 ```
 
-This makes a backup, pulls the new version, pulls fresh base images (bringing operating-system security fixes), rebuilds and restarts. Database changes are applied by a short-lived `migrate` container before the app starts. That's the only container with the database owner password; the app itself runs with a restricted database account. Run `update` at least monthly.
+**What an update does:**
+1. Makes a backup.
+2. Sets the version and pulls its images. In a git-clone install it also checks out that release's files.
+3. Restarts. Database changes are applied by a short-lived `migrate` container before the app starts. That's the only container with the database owner password; the app itself runs with a restricted database account.
+
+**Bundle installs:** if the release notes say `docker-compose.yml` or the scripts changed, unpack the new bundle over the install folder first. Your `.env`, `secrets/`, `certs/` and `backups/` aren't in the bundle, so they're kept.
+
+**Servers without internet:**
+1. Copy the release's images file to the server.
+2. Run `./manage.sh load sonoforms-0.3.3-images-amd64.tar.gz`.
+3. Run `./manage.sh update 0.3.3`.
+
+**Your own registry:** if the hospital keeps its own copy of the images, e.g. Harbor or Artifactory, set `SONOFORMS_REGISTRY` in `.env` to it.
+
+New releases bring operating-system security fixes in their images, so stay on a current release. Check for one at least monthly.
 
 ### Newer starter forms
 

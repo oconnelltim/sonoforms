@@ -97,8 +97,9 @@ SonoForms handles protected health information. This document describes how it i
 * **Concurrent edits:** optimistic locking (row versions) prevents silent overwrites when two people edit the same exam.
 * **Least-privilege database access:** a one-off migrate container applies schema changes as the database owner. The long-running app connects as a restricted role and never receives the owner password.
 * **Containers:** every SonoForms container runs as a non-root user with a read-only root filesystem, all Linux capabilities dropped, and `no-new-privileges`. Apache listens on unprivileged ports inside its container.
+* **Released images:** releases are published as pre-built images on GitHub's container registry. They're scanned before publishing and carry build provenance and an SBOM attestation, so a server runs exactly the images that were tested, and never builds anything itself.
 * **Images:** both images apply the base image's security updates (`apk upgrade`) when built. npm is removed from the app image after installing packages, so its own dependencies aren't shipped.
-* **Updates and pinning:** updates rebuild from freshly pulled base images. The optional GitHub workflow (started by hand only) has its actions pinned to commit hashes.
+* **Updates and pinning:** a server runs a pinned release (`SONOFORMS_VERSION`) and moves only when an administrator chooses a new one. The optional GitHub workflow (started by hand only) has its actions pinned to commit hashes.
 * **Security scans:** `npm run security` runs Semgrep, Gitleaks, Hadolint, ShellCheck and Grype locally in Docker (see [Checking the code](#checking-the-code)).
 
 ## Known limitations

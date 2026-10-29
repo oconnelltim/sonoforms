@@ -1,0 +1,141 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Try SonoForms on a laptop with nothing but Docker Desktop (Mac, Windows or
+# Linux). Download this one file, then in a terminal in the same folder:
+#
+#   docker compose -f docker-compose.trial.yml up -d
+#   docker compose -f docker-compose.trial.yml logs setup     # shows the admin password
+#
+# Open https://localhost:8443 and accept the certificate warning. To look
+# around without a PACS, start it with DICOM_MOCK=true for fake demo studies:
+#   DICOM_MOCK=true docker compose -f docker-compose.trial.yml up -d       (Mac/Linux)
+#   $env:DICOM_MOCK="true"; docker compose -f docker-compose.trial.yml up -d   (Windows PowerShell)
+#
+# Remove it and all its data:  docker compose -f docker-compose.trial.yml down -v
+#
+# For trials only: secrets are generated into a Docker volume and the
+# certificate is self-signed. Production installs use ./install.sh.
+
+name: sonoforms-trial
+
+x-app-image: &app-image "${SONOFORMS_REGISTRY:-ghcr.io/oconnelltim}/sonoforms-app:${SONOFORMS_VERSION:-0.3.2}"
+
+x-hardening: &hardening
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: ["no-new-privileges:true"]
+
+services:
+  setup:
+    image: *app-image
+    user: "0:0"
+    command: ["node", "server/trial-setup.js"]
+    restart: "no"
+    environment:
+      TRIAL_PORT: "${TRIAL_PORT:-8443}"
+    volumes:
+      - trial-secrets:/trial
+      - backups:/backups
+    network_mode: none
+    <<: *hardening
+    cap_add: [CHOWN]
+
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    depends_on:
+      setup:
+        condition: service_completed_successfully
+    environment:
+      POSTGRES_DB: sonoforms
+      POSTGRES_USER: sonoforms
+      POSTGRES_PASSWORD_FILE: /trial/secrets/db_password
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - trial-secrets:/trial:ro
+    networks: [backend]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sonoforms -d sonoforms"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    security_opt: ["no-new-privileges:true"]
+
+  migrate:
+    image: *app-image
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+    user: "1000:1000"
+    environment:
+      SONOFORMS_MODE: migrate
+      PGHOST: db
+      PGDATABASE: sonoforms
+      PGUSER: sonoforms
+      PGPASSWORD_FILE: /trial/secrets/db_password
+      PGAPPUSER: sonoforms_app
+      PGAPPPASSWORD_FILE: /trial/secrets/db_app_password
+      SONOFORMS_MASTER_KEY_FILE: /trial/secrets/master_key
+      INITIAL_ADMIN_PASSWORD_FILE: /trial/secrets/initial_admin_password
+      BACKUP_DIR: /backups
+    volumes:
+      - trial-secrets:/trial:ro
+      - backups:/backups
+    networks: [backend]
+    tmpfs: ["/tmp:mode=1777"]
+    <<: *hardening
+
+  app:
+    image: *app-image
+    restart: unless-stopped
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    user: "1000:1000"
+    environment:
+      SONOFORMS_MODE: serve
+      PGHOST: db
+      PGDATABASE: sonoforms
+      PGUSER: sonoforms_app
+      PGPASSWORD_FILE: /trial/secrets/db_app_password
+      SONOFORMS_MASTER_KEY_FILE: /trial/secrets/master_key
+      TRUST_PROXY: 172.31.251.0/28
+      BACKUP_DIR: /backups
+      DICOM_MOCK: "${DICOM_MOCK:-false}"
+    volumes:
+      - trial-secrets:/trial:ro
+      - backups:/backups
+    networks: [backend, proxy, pacs]
+    tmpfs: ["/tmp:mode=1777"]
+    <<: *hardening
+
+  web:
+    image: "${SONOFORMS_REGISTRY:-ghcr.io/oconnelltim}/sonoforms-web:${SONOFORMS_VERSION:-0.3.2}"
+    restart: unless-stopped
+    depends_on: [app]
+    environment:
+      SERVER_NAME: localhost
+      HTTPS_PORT: "${TRIAL_PORT:-8443}"
+    ports:
+      - "${TRIAL_PORT:-8443}:8443"
+    networks: [proxy, public]
+    # A fresh self-signed certificate on each start.
+    tmpfs: ["/certs:mode=1777", "/usr/local/apache2/logs:mode=1777", "/tmp:mode=1777"]
+    <<: *hardening
+
+networks:
+  public: {}
+  proxy:
+    internal: true
+    ipam:
+      config:
+        - subnet: 172.31.251.0/28
+  backend:
+    internal: true
+  pacs: {}
+
+volumes:
+  db-data: {}
+  trial-secrets: {}
+  backups: {}

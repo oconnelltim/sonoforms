@@ -1,6 +1,6 @@
 {
   "name": "sonoforms",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Structured ultrasound technologist worksheets that generate radiologist-ready findings text. Self-hosted, offline, no AI.",
   "license": "GPL-3.0-or-later",
   "type": "module",
@@ -19,6 +19,8 @@
     "check:linux": "bash scripts/check-linux.sh",
     "security": "bash scripts/security-scan.sh",
     "sbom": "bash scripts/sbom.sh",
+    "release:images": "bash scripts/release-images.sh",
+    "bundle": "bash scripts/bundle.sh",
     "lint-forms": "node server/cli.js lint-forms"
   },
   "dependencies": {

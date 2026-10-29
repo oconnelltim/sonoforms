@@ -4,17 +4,40 @@ All notable changes to SonoForms are documented here. The format follows [Keep a
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-10-29
+
+Ready-built images: SonoForms is now installed by pulling released images instead of building them on the server, and the PACS team can try it on a laptop with just Docker Desktop. Also hospital reverse-proxy support and a software bill of materials for each release.
+
+### Upgrading
+
+Installs from 0.3.1 or earlier built their images from the source on the server. From 0.3.2 they pull released images from `ghcr.io/oconnelltim` instead.
+
+- **Git-clone installs:** run `git pull`, then `./manage.sh update 0.3.2`. The update adds `SONOFORMS_VERSION` and `SONOFORMS_REGISTRY` to `.env` and pulls the images.
+- **Servers without internet access:** download `sonoforms-0.3.2-images-amd64.tar.gz` from the release, then run `./manage.sh load sonoforms-0.3.2-images-amd64.tar.gz` and `./manage.sh update 0.3.2`.
+- `./manage.sh update` no longer follows `main`. It stays on the version in `.env` unless you give it one, e.g. `./manage.sh update 0.3.3`.
+
 ### Added
 
-- **Software bill of materials:** `npm run sbom` writes CycloneDX and SPDX SBOMs for the app and web images and for the npm dependency tree to `sbom/v<version>/`, committed with each release. The SBOM for 0.3.1 is in [sbom/v0.3.1](sbom/v0.3.1). See "Software bill of materials" in [docs/SECURITY.md](docs/SECURITY.md).
-
-- **Hospital reverse proxy support.** SonoForms can sit behind the hospital's existing reverse proxy or load balancer, which then holds the hospital certificate. Set `UPSTREAM_PROXY` in `.env` to the proxy's address(es) or range; Apache then records each workstation's real address from that proxy's `X-Forwarded-For` (for the audit log and per-computer sign-in throttling), and ignores the header from any other computer. Setup steps are in [docs/ADMIN.md › Behind a hospital reverse proxy](docs/ADMIN.md#behind-a-hospital-reverse-proxy). Existing installs are unaffected unless the setting is added.
+- **Released images** on GitHub's container registry, for x86-64 servers and ARM machines (e.g. Apple Silicon laptops):
+  - `ghcr.io/oconnelltim/sonoforms-app`
+  - `ghcr.io/oconnelltim/sonoforms-web`
+  
+  Each release image is scanned before it's published and carries build provenance and an SBOM attestation. `SONOFORMS_REGISTRY` can point at a hospital's own registry mirror.
+- **Quick trial with Docker Desktop:** `docker-compose.trial.yml` is a single file. Run it with `docker compose -f docker-compose.trial.yml up -d` on Mac, Windows or Linux. It generates its own secrets and certificate, can use fake demo studies (`DICOM_MOCK=true`), and is removed with `down -v`. See "Try it on a laptop" in the README.
+- **Install bundle:** `npm run bundle` makes `sonoforms-<version>.tar.gz` (compose files, scripts, docs, SBOM; no source code), and `--with-images` adds an image file for servers without internet access. `install.sh` loads images from an `images/` folder when present.
+- **`./manage.sh version`** shows the version a server runs, and **`./manage.sh load FILE`** loads images from an offline file.
+- **For maintainers:** `npm run release:images` checks the version is set consistently, runs the tests, builds and scans the images, pushes both architectures, and writes the SBOM from the published images. `docker-compose.build.yml` builds from source for development.
+- **Software bill of materials:** `npm run sbom` writes CycloneDX and SPDX SBOMs for the app and web images and for the npm dependency tree to `sbom/v<version>/`, committed with each release. See "Software bill of materials" in [docs/SECURITY.md](docs/SECURITY.md).
+- **Hospital reverse proxy support.** SonoForms can sit behind the hospital's existing reverse proxy or load balancer, which then holds the hospital certificate. Set `UPSTREAM_PROXY` in `.env` to the proxy's address(es) or range. Apache then records each workstation's real address from that proxy's `X-Forwarded-For` (for the audit log and per-computer sign-in throttling), and ignores the header from any other computer. Setup steps are in [docs/ADMIN.md › Behind a hospital reverse proxy](docs/ADMIN.md#behind-a-hospital-reverse-proxy).
 
 ### Changed
 
+- `install.sh` and `./manage.sh update` pull the released images for `SONOFORMS_VERSION` instead of building them.
 - Apache's access log records the client address Apache settled on (`%a`), which is the forwarded workstation address behind a trusted proxy.
-
-- The October 2026 security review ([docs/SECURITY-REVIEW-2026-10.md](docs/SECURITY-REVIEW-2026-10.md)) is brought up to date: the Docker deployment verification is folded into the main text (it no longer reads as unverified), the Dependabot and `adm-zip` notes reflect the current setup, and a new section records the automated scan findings and fixes from 0.3.0 and 0.3.1.
+- The October 2026 security review ([docs/SECURITY-REVIEW-2026-10.md](docs/SECURITY-REVIEW-2026-10.md)) is brought up to date:
+  - The Docker deployment verification is folded into the main text, so it no longer reads as unverified.
+  - The Dependabot and `adm-zip` notes reflect the current setup.
+  - A new section records the automated scan findings and fixes from 0.3.0 and 0.3.1.
 
 ## [0.3.1] - 2026-10-28
 
@@ -263,7 +286,8 @@ First release.
 - **Development:** `npm run dev` with an embedded PostgreSQL and a fake PACS worklist; `npm run mock-pacs` for testing real DICOM queries.
 - **Documentation:** README, docs/ADMIN.md, docs/FORMS.md, docs/SECURITY.md.
 
-[Unreleased]: https://github.com/oconnelltim/sonoforms/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/oconnelltim/sonoforms/compare/v0.3.2...HEAD
+[0.3.2]: https://github.com/oconnelltim/sonoforms/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/oconnelltim/sonoforms/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/oconnelltim/sonoforms/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/oconnelltim/sonoforms/compare/v0.1.0...v0.2.0

@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# For development: build the images from this source tree instead of pulling
+# released ones. Use together with docker-compose.yml:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
+#
+# The built images get the same names as the released ones, so set
+# SONOFORMS_VERSION in .env to something like "dev" to avoid confusing them.
+
+services:
+  migrate:
+    build: .
+  app:
+    build: .
+  web:
+    build: ./docker/apache

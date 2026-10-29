@@ -83,9 +83,16 @@ if [ ! -s certs/server.crt ]; then
   fi
 fi
 
-bold "Building and starting containers (this can take a few minutes the first time)"
-docker compose pull db
-docker compose build --pull
+VERSION="$(grep ^SONOFORMS_VERSION= .env | cut -d= -f2)"
+[ -n "$VERSION" ] || fail "SONOFORMS_VERSION is missing from .env (copy it from .env.example)."
+bold "Getting SonoForms $VERSION"
+# A server without internet loads the images from the bundle's images/ folder.
+if ls images/*.tar* >/dev/null 2>&1; then
+  for f in images/*.tar*; do echo "  loading $f"; docker load -i "$f" >/dev/null; done
+else
+  docker compose pull
+fi
+bold "Starting SonoForms"
 docker compose up -d
 
 SERVER_NAME="$(grep ^SERVER_NAME= .env | cut -d= -f2)"

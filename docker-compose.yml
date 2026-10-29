@@ -3,6 +3,11 @@
 # SonoForms: Apache (HTTPS) -> Node.js app -> PostgreSQL.
 # Run ./install.sh for first-time setup; it creates .env and secrets/.
 #
+# Images: released, pre-built images are pulled from the registry, at the
+# version set by SONOFORMS_VERSION in .env (SONOFORMS_REGISTRY can point at a
+# hospital's own mirror). Developers build from source instead:
+#   docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
+#
 # Networks:
 #   public   web only; the published HTTPS/HTTP ports
 #   proxy    web <-> app (internal: no outside access)
@@ -21,6 +26,8 @@ x-logging: &logging
   options:
     max-size: "10m"
     max-file: "5"
+
+x-app-image: &app-image "${SONOFORMS_REGISTRY:-ghcr.io/oconnelltim}/sonoforms-app:${SONOFORMS_VERSION:?Set SONOFORMS_VERSION in .env}"
 
 x-hardening: &hardening
   read_only: true
@@ -49,8 +56,7 @@ services:
     logging: *logging
 
   migrate:
-    build: .
-    image: sonoforms-app:latest
+    image: *app-image
     restart: "no"
     depends_on:
       db:
@@ -77,8 +83,7 @@ services:
     logging: *logging
 
   app:
-    build: .
-    image: sonoforms-app:latest
+    image: *app-image
     restart: unless-stopped
     depends_on:
       migrate:
@@ -108,8 +113,7 @@ services:
     logging: *logging
 
   web:
-    build: ./docker/apache
-    image: sonoforms-web:latest
+    image: "${SONOFORMS_REGISTRY:-ghcr.io/oconnelltim}/sonoforms-web:${SONOFORMS_VERSION:?Set SONOFORMS_VERSION in .env}"
     restart: unless-stopped
     depends_on: [app]
     # Runs unprivileged on ports 8443/8080 inside the container.
