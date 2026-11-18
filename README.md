@@ -130,6 +130,7 @@ public/        Browser app: plain ES modules, no build step, no CDN
 forms/general/ Starter form library (YAML)
 docs/          Admin, form-writing and security documentation
 sbom/          Software bills of materials, one folder per release
+tools/         Helpers for developers, e.g. the DICOM SR viewer (see tools/README.md)
 docker/        Apache HTTPS front end
 ```
 

@@ -4,6 +4,10 @@ All notable changes to SonoForms are documented here. The format follows [Keep a
 
 ## [Unreleased]
 
+### Added
+
+- **SR viewer** ([tools/sr-viewer](tools/README.md)): a single-file browser tool for looking inside the DICOM Structured Reports that ultrasound machines send. It shows measurements with their location, side, modifiers and the chosen value, plus the content tree, vendor data (including GE's XML measurement list) and every element. It also exports CSV and JSON. It runs entirely in the browser and is blocked from making any network connections.
+
 ## [0.3.2] - 2026-10-29
 
 Ready-built images: SonoForms is now installed by pulling released images instead of building them on the server, and the PACS team can try it on a laptop with just Docker Desktop. Also hospital reverse-proxy support and a software bill of materials for each release.
