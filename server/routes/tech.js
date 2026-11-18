@@ -17,6 +17,8 @@ import { matchScore } from '../../shared/formdef.js';
 import { validateAnswers, computeCalcs } from '../../shared/engine.js';
 import { generateReport } from '../../shared/template.js';
 import { assertAnswersOk } from '../validate.js';
+import { reportsForExam, releaseReports } from '../scanner.js';
+import { prefill } from '../../shared/sr.js';
 
 const versionBody = { row_version: { type: 'integer' } };
 
@@ -245,6 +247,30 @@ export default async function techRoutes(app) {
     return { exam, form: version ? { version_id: version.id, version: version.version, definition: version.definition } : null, env: templateEnv(exam) };
   });
 
+  // Scanner reports for this exam (matched by Study UID) and the values they
+  // give the exam's form. Values are only offered when the report's patient
+  // ID agrees with the exam's patient.
+  app.get('/exams/:id/scanner', { preHandler: requireAuth(can.tech, can.rad) }, async (req) => {
+    const exam = await loadExamFor(req, Number(req.params.id));
+    const reports = await reportsForExam(exam);
+    const version = exam.form_version_id ? await getVersion(exam.form_version_id) : null;
+    const mrn = String(exam.patient?.mrn || '').trim();
+    const usable = reports.filter(r => !r.summary.patientId || !mrn || r.summary.patientId === mrn);
+    const fill = version ? prefill(version.definition, usable) : { values: {}, sources: {}, missing: [] };
+    if (reports.length) {
+      await auditOnce(`scanner-view:${req.user.id}:${exam.id}`, FIFTEEN_MIN, { req, institutionId: exam.institution_id, action: 'exam.scanner_values', entityType: 'exam', entityId: exam.id, details: { reports: reports.length, filled: Object.keys(fill.values).length } });
+    }
+    return {
+      reports: reports.map(r => ({
+        id: r.id, device: r.device, template: r.template, title: r.summary.title, received_at: r.received_at,
+        content_date: r.summary.contentDate, content_time: r.summary.contentTime,
+        patient_mismatch: !usable.includes(r),
+        measurements: r.measurements.filter(m => m.chosen).map(m => ({ path: m.path, name: m.concept?.meaning, key: m.mappingKey, value: m.value, unit: m.unit, side: m.side })),
+      })),
+      ...fill,
+    };
+  });
+
   app.get('/exams', tech, async (req) => {
     const institutionId = await activeInstitution(req);
     const days = Math.min(Number(req.query.days) || 7, 90);
@@ -333,6 +359,7 @@ export default async function techRoutes(app) {
     requireStatus(exam, ['draft', 'returned', 'submitted'], 'cancelled');
     const rowVersion = await updateExam(exam.id, { status: 'cancelled' }, req.body.row_version);
     await unlinkStudies(exam.id);   // its linked studies can now get their own forms
+    await releaseReports(exam.id);  // and its scanner reports can match a new exam
     await audit({ req, institutionId: exam.institution_id, action: 'exam.cancel', entityType: 'exam', entityId: exam.id });
     return { row_version: rowVersion };
   });

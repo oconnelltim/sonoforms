@@ -6,7 +6,7 @@ import { h, mount, toast, modal, confirmDialog, fmtDateTime, downloadUrl, copyTe
 import { get, post, put } from '../api.js';
 
 const TABS = [
-  ['status', 'Status'], ['users', 'Users'], ['institutions', 'Institutions'], ['audit', 'Audit log'], ['settings', 'Settings'], ['backups', 'Backups'],
+  ['status', 'Status'], ['users', 'Users'], ['institutions', 'Institutions'], ['scanners', 'Scanner reports'], ['audit', 'Audit log'], ['settings', 'Settings'], ['backups', 'Backups'],
 ];
 
 export async function render({ root, params, session, navigate, refreshSession }) {
@@ -16,7 +16,7 @@ export async function render({ root, params, session, navigate, refreshSession }
     h('div.page-head', h('h1', 'Administration')),
     h('nav.subtabs', TABS.map(([id, label]) => h(`a.subtab${id === tab ? '.active' : ''}`, { href: `#/admin/${id}` }, label))),
     body));
-  const views = { status, users, institutions, audit, settings, backups };
+  const views = { status, users, institutions, scanners, audit, settings, backups };
   try {
     await views[tab](body, { session, navigate, refreshSession });
   } catch (e) {
@@ -183,6 +183,7 @@ async function institutions(box, { refreshSession }) {
         h('option', { value: 'range', selected: d.date_mode !== 'single' }, 'Date range (most PACS)'),
         h('option', { value: 'single', selected: d.date_mode === 'single' }, 'One day at a time')),
       max_results: h('input.input', { value: d.max_results || 500, inputmode: 'numeric', id: 'd-max' }),
+      scanners: h('input.input', { value: (d.scanners || []).join(' '), id: 'd-scan', placeholder: 'e.g. RCH_US1 RCH_US2', spellcheck: 'false' }),
     };
     const filters = (d.filters || []).map(x => ({ ...x }));
     const filterBox = h('div');
@@ -201,6 +202,7 @@ async function institutions(box, { refreshSession }) {
       enabled: f.enabled.checked, host: f.host.value.trim(), port: Number(f.port.value) || 104,
       called_ae: f.called_ae.value.trim(), calling_ae: f.calling_ae.value.trim(), modality: f.modality.value.trim(), filters,
       modality_key: f.modality_key.value, date_mode: f.date_mode.value, max_results: Number(f.max_results.value) || 500,
+      scanners: f.scanners.value.split(/[\s,]+/).filter(Boolean),
     });
     const el = h('div.form-stack',
       mock ? h('div.alert.warn.small', 'DICOM_MOCK is on, so worklists show demo data whatever is set here. The Test buttons still contact the real PACS.') : null,
@@ -218,6 +220,8 @@ async function institutions(box, { refreshSession }) {
       h('p.hint', 'Many PACS hold studies for several sites. Add a filter, e.g. InstitutionName = GENERAL HOSP*. If your PACS ignores a filter, switch it to "Filter results here". * matches anything.'),
       filterBox,
       h('p.hint', 'Your PACS administrator must add our AE title, and this server’s IP address, to the PACS as a query (C-FIND) client.'),
+      h('div', h('label.label', { for: 'd-scan' }, 'Scanners (AE titles)'), f.scanners,
+        h('p.hint', 'Ultrasound machines allowed to send their measurement reports (DICOM SR) to this institution, separated by spaces. They send to our AE title above. Machines not listed are refused.')),
       result);
     return { el, values, result };
   }
@@ -276,6 +280,28 @@ async function institutions(box, { refreshSession }) {
 }
 
 // ---- Audit log --------------------------------------------------------------
+
+// ---- Scanner reports ----------------------------------------------------------
+// What ultrasound machines have sent, for checking they're set up correctly.
+// No patient details are shown here.
+
+async function scanners(box) {
+  const r = await get('/admin/scanner-reports');
+  const fmt = d => (d ? new Date(d).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : '');
+  mount(box,
+    h('p.muted', 'Ultrasound machines send their measurement reports (DICOM SR) here when a study is done. Each report waits until an exam for the same study (Study Instance UID) exists, then fills in that exam’s form. ',
+      `Reports that match no exam are deleted after ${r.unmatched_keep_days} days.`),
+    r.receiver_port
+      ? h('p.small', `Receiving on port ${r.receiver_port}. Add each machine’s AE title under Institutions › Scanners; machines must send to that institution’s AE title (“Our AE title”).`)
+      : h('div.alert.warn.small', 'The scanner receiver is off (SCANNER_PORT is not set).'),
+    r.reports.length
+      ? h('div.table-wrap', h('table.table',
+        h('thead', h('tr', h('th', 'Received'), h('th', 'Institution'), h('th', 'Scanner'), h('th', 'Device'), h('th', 'Report'), h('th', 'Matched'))),
+        h('tbody', r.reports.map(x => h('tr',
+          h('td.nowrap', fmt(x.received_at)), h('td', x.institution_name), h('td.mono', x.calling_ae), h('td', x.device || '—'), h('td.small', x.template || '—'),
+          h('td', x.matched ? h('span.badge.status-submitted', `exam ${fmt(x.matched_at)}`) : h('span.badge', 'waiting')))))))
+      : h('div.empty', 'No scanner reports received yet.'));
+}
 
 async function audit(box) {
   const q = { from: '', to: '', user: '', action: '', entity_type: '', entity_id: '' };

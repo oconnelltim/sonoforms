@@ -77,6 +77,37 @@ The worklist refreshes every minute. It looks back 24 hours by default (Admin �
 - *Send modality as*: most PACS match the modality on *Modalities in Study*. Some only accept *Modality*.
 - *Date matching*: if your PACS rejects date ranges, choose *One day at a time*. SonoForms then sends one query per day of the look-back period.
 
+## Scanner reports
+
+Ultrasound machines can send their measurement reports (DICOM Structured Reports) to SonoForms when a study is done. A report waits in a holding area until an exam for the same study exists, matched by Study Instance UID. Its measurements then fill in that exam's form, wherever the form says which value goes where (see [FORMS.md](FORMS.md#measurements-from-the-scanner-sr)).
+
+**Setup:**
+
+1. **Choose the scanners.** List each machine's AE title under **Admin › Institutions › Edit › Scanners**. Machines not listed are refused.
+2. **Configure the machines.** On each machine, or on the integration engine that already receives their reports, add a DICOM destination for SR:
+   * the SonoForms server's address
+   * port 11112 (`SCANNER_HOST_PORT` in `.env`)
+   * that institution's AE title (*Our AE title*, usually `SONOFORMS`)
+
+   C-ECHO works, so the connection can be tested from the machine.
+3. **Firewall the port.** Allow port 11112 only from the scanners' network. AE titles aren't secret, so the firewall is what really limits who can send.
+
+**Checking it works:** **Admin › Scanner reports** lists what arrived, from which machine, and whether it matched an exam. It shows no patient details.
+
+**What's accepted and kept:**
+
+* Only SR objects are accepted. Re-sent reports replace the earlier copy.
+* Reports are stored encrypted, like all patient data.
+* A report that matches no exam within 14 days is deleted.
+* A matched report is deleted with its exam.
+* When an exam is cancelled, its reports wait to be matched again.
+
+**Troubleshooting a report that doesn't fill a form:**
+
+* **Did it arrive?** Check *Scanner reports*.
+* **Does the study match?** The machine and PACS must use the same Study Instance UID, which they do when the machine gets the study from the worklist.
+* **What's in it?** Use the SR viewer in `tools/` on a copy of the report to see the measurements and their mapping keys. Different scanner software versions can label measurements differently.
+
 ## Users and roles
 
 | Role | Can |
@@ -174,6 +205,7 @@ By default nothing is deleted. To keep data only as long as it's useful, e.g. fo
 * **What's reachable:** only the `web` container (Apache) is reachable from the network, on ports 443 and 80 (80 just redirects to HTTPS).
 * **Internal networks:** Apache reaches the app over an internal Docker network (`PROXY_SUBNET` in `.env`, default `172.31.250.0/28`; change it only if it clashes with your hospital's addresses). The database sits on a separate internal network with no outside access.
 * **Logs:** the access log records paths without query strings, and container logs are rotated (5 × 10 MB per container).
+* **Scanner reports in:** the app container listens for scanner reports (DICOM) on port 11112 and accepts only listed scanners. Firewall it to the scanners' network; see [Scanner reports](#scanner-reports).
 * **Outbound connections:** the app container connects only to the PACS you configure. It loads no external scripts, fonts or analytics, has no update checks and sends no telemetry. The browser's Content-Security-Policy blocks connections to any other site.
 * **Firewalling outbound traffic:** for defense in depth, block the server from reaching the internet. On Linux with Docker, this limits the containers to your PACS (replace the address and port):
 

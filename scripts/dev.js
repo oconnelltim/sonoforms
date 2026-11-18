@@ -79,6 +79,8 @@ const env = {
   SONOFORMS_MASTER_KEY_FILE: keyFile,
   INSECURE_COOKIES: 'true',
   DICOM_MOCK: process.argv.includes('--pacs') ? 'false' : 'true',
+  // Scanner reports; npm run demo:sr sends demo ones here (11112 is the mock PACS).
+  SCANNER_PORT: process.env.SCANNER_PORT || '11113',
   INITIAL_ADMIN_PASSWORD: process.env.INITIAL_ADMIN_PASSWORD || 'admin-dev-password',
   TRUST_PROXY: 'false',
   BACKUP_DIR: path.join(DEV, 'backups'),

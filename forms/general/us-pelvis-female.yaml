@@ -99,6 +99,7 @@ sections:
       - id: uterus_dims
         type: dims
         label: Uterus size
+        unit: cm
         axes: [ L, AP, W ]
         min: 2
         max: 15
@@ -211,10 +212,17 @@ sections:
       - id: r_ovary
         type: dims
         label: Size
+        unit: cm
+        decimals: 1
         required: true
         show_if: "r_ovary_status == 'seen'"
         min: 0.5
         max: 10
+        # Filled from the scanner report: right ovary length, height (AP) and width.
+        sr:
+          - LN:11841-4
+          - LN:11858-8
+          - LN:11830-7
       - id: r_ovary_vol
         type: calc
         label: Volume
@@ -266,10 +274,17 @@ sections:
       - id: l_ovary
         type: dims
         label: Size
+        unit: cm
+        decimals: 1
         required: true
         show_if: "l_ovary_status == 'seen'"
         min: 0.5
         max: 10
+        # Filled from the scanner report: left ovary length, height (AP) and width.
+        sr:
+          - LN:11840-6
+          - LN:11857-0
+          - LN:11829-9
       - id: l_ovary_vol
         type: calc
         label: Volume

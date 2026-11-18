@@ -18,6 +18,7 @@ import { startMaintenance } from './maintenance.js';
 import { ensureFirstAdmin } from './bootstrap.js';
 import { ensureAppRole, assertMigrated } from './dbroles.js';
 import { pool, switchToAppRole } from './db.js';
+import { startScannerReceiver } from './scanner-receiver.js';
 
 async function waitForDatabase(log) {
   for (let i = 1; i <= 30; i++) {
@@ -62,9 +63,11 @@ async function main() {
   if (config.dicomMock) log.warn('DICOM_MOCK is on: the worklist shows fake demo studies, not PACS.');
   startMaintenance(log);
   await app.listen({ port: config.port, host: config.host });
+  const receiver = config.scannerPort > 0 ? startScannerReceiver(config.scannerPort, log) : null;
 
   const shutdown = async (signal) => {
     log.info(`${signal} received, shutting down`);
+    receiver?.close();
     await app.close();
     await pool.end();
     process.exit(0);

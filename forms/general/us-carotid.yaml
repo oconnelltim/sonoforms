@@ -1,0 +1,290 @@
+# Starter form. Review wording with your radiologists before clinical use.
+#
+# Carotid duplex ultrasound. The velocities fill in from the scanner's report
+# (DICOM SR) when the machine sends one; the tech checks them and adds plaque,
+# patency and vertebral flow. ICA stenosis is graded with the Society of
+# Radiologists in Ultrasound consensus criteria (Grant et al., Radiology 2003),
+# using ICA peak systolic velocity as the primary parameter.
+id: us-carotid
+title: US Carotid Duplex
+description: Carotid and vertebral duplex ultrasound, with ICA stenosis grading (SRU consensus criteria).
+# Adjust study_match to the study descriptions your PACS uses.
+study_match:
+  - US CAROTID
+  - CAROTID DOPPLER
+  - CAROTID DUPLEX
+  - DOPPLER CAROTID
+
+report:
+  heading: "ULTRASOUND {{side | upper}} CAROTID DUPLEX" # used when reported together with other exams from the same visit
+
+sections:
+  - id: clinical
+    title: Clinical
+    fields:
+      - id: side
+        type: choice
+        label: Side
+        required: true
+        default: bilateral
+        options:
+          - { value: bilateral, label: Bilateral, text: bilateral }
+          - { value: right, label: Right, text: right }
+          - { value: left, label: Left, text: left }
+      - id: indication
+        type: multi
+        label: Indication
+        required: true
+        other: true
+        options:
+          - { value: tia, label: TIA, text: transient ischemic attack }
+          - { value: stroke, label: Stroke, text: stroke }
+          - { value: amaurosis, label: Amaurosis fugax, text: amaurosis fugax }
+          - { value: bruit, label: Carotid bruit, text: carotid bruit }
+          - { value: syncope, label: "Dizziness / syncope", text: dizziness or syncope }
+          - { value: preop, label: Pre-operative, text: pre-operative assessment }
+          - { value: followup, label: Follow-up of known stenosis, text: follow-up of known carotid stenosis }
+      - id: comparison
+        type: text
+        label: Comparison
+        placeholder: "e.g. US carotid 03/14/2025, or leave blank for none"
+    report:
+      indication: |-
+        {{indication | cap}}.
+      comparison: |-
+        {{#if present(comparison)}}{{comparison}}{{else}}None{{/if}}.
+
+  - id: technique
+    title: Technique
+    fields:
+      - id: tech_limited
+        type: text
+        label: "Limitations (optional)"
+        placeholder: "e.g. high carotid bifurcation, patient motion"
+    report_field: technique
+    report: |
+      Grayscale, color and spectral Doppler ultrasound of the {{side}} carotid and vertebral arteries was performed.{{#if present(tech_limited)}} Limited by {{tech_limited}}.{{/if}}
+
+  - id: right
+    title: Right
+    show_if: "side in ['bilateral', 'right']"
+    fields:
+      - id: r_note
+        type: note
+        label: Velocities fill in from the scanner when it sends its report. Check them against the images.
+      - id: r_cca_psv
+        type: number
+        label: CCA peak systolic velocity
+        unit: cm/s
+        decimals: 1
+        min: 10
+        max: 300
+        sr: LN:11726-7 in SRT:T-45100 right
+      - id: r_cca_edv
+        type: number
+        label: CCA end diastolic velocity
+        unit: cm/s
+        decimals: 1
+        min: 0
+        max: 150
+        sr: LN:11653-3 in SRT:T-45100 right
+      - id: r_ica_flow
+        type: choice
+        label: ICA
+        required: true
+        default: patent
+        normal: patent
+        options:
+          - { value: patent, label: Patent }
+          - { value: near, label: "Near occlusion (string sign)" }
+          - { value: occluded, label: Occluded }
+      - id: r_ica_psv
+        type: number
+        label: ICA peak systolic velocity
+        unit: cm/s
+        decimals: 1
+        min: 10
+        max: 700
+        required: true
+        show_if: "r_ica_flow != 'occluded'"
+        sr: LN:11726-7 in SRT:T-45300 right
+      - id: r_ica_edv
+        type: number
+        label: ICA end diastolic velocity
+        unit: cm/s
+        decimals: 1
+        min: 0
+        max: 300
+        show_if: "r_ica_flow != 'occluded'"
+        sr: LN:11653-3 in SRT:T-45300 right
+      - id: r_eca_psv
+        type: number
+        label: ECA peak systolic velocity
+        unit: cm/s
+        decimals: 1
+        min: 10
+        max: 500
+        sr: LN:11726-7 in SRT:T-45200 right
+      - id: r_ratio
+        type: calc
+        label: ICA/CCA PSV ratio
+        formula: ratio(r_ica_psv, r_cca_psv)
+        decimals: 1
+        show_if: "r_ica_flow != 'occluded'"
+      - id: r_plaque
+        type: choice
+        label: ICA plaque (visual estimate)
+        required: true
+        default: none
+        normal: none
+        options:
+          - { value: none, label: None, text: No plaque is seen }
+          - { value: lt50, label: "Plaque, under 50% diameter reduction", text: Plaque causes less than 50% diameter reduction }
+          - { value: ge50, label: "Plaque, 50% or more diameter reduction", text: Plaque causes 50% or more diameter reduction }
+      - id: r_plaque_type
+        type: multi
+        label: Plaque appearance
+        show_if: "r_plaque != 'none'"
+        options:
+          - { value: calcified, label: Calcified, text: calcified }
+          - { value: hypoechoic, label: Hypoechoic, text: hypoechoic }
+          - { value: heterogeneous, label: Heterogeneous, text: heterogeneous }
+          - { value: irregular, label: Irregular surface, text: with an irregular surface }
+      - id: r_vert
+        type: choice
+        label: Vertebral artery flow
+        required: true
+        default: antegrade
+        normal: antegrade
+        options:
+          - { value: antegrade, label: Antegrade, text: antegrade flow }
+          - { value: retrograde, label: Retrograde, text: retrograde flow }
+          - { value: absent, label: No flow, text: no detectable flow }
+          - { value: not_seen, label: Not visualized, text: not visualized }
+      - id: r_stenosis
+        type: calc
+        label: Estimated ICA stenosis (SRU)
+        formula: "if(r_ica_flow == 'occluded', 'occluded', if(r_ica_flow == 'near', 'near occlusion', if(empty(r_ica_psv), '', if(r_ica_psv > 230, '70% or greater stenosis', if(r_ica_psv >= 125, '50-69% stenosis', if(r_plaque != 'none', 'less than 50% stenosis', 'no stenosis'))))))"
+    report:
+      findings: |-
+        RIGHT CAROTID:{{#if present(r_cca_psv)}} Common carotid artery peak systolic velocity {{r_cca_psv}}{{#if present(r_cca_edv)}}, end diastolic velocity {{r_cca_edv}}{{/if}}.{{/if}}{{#if r_ica_flow == 'occluded'}} The internal carotid artery is occluded, with no detectable flow.{{else}} Internal carotid artery peak systolic velocity {{r_ica_psv}}{{#if present(r_ica_edv)}}, end diastolic velocity {{r_ica_edv}}{{/if}}{{#if present(r_ratio)}}; ICA/CCA ratio {{r_ratio}}{{/if}}.{{#if r_ica_flow == 'near'}} There is a string sign, with near occlusion.{{/if}}{{/if}}{{#if present(r_eca_psv)}} External carotid artery peak systolic velocity {{r_eca_psv}}.{{/if}} {{r_plaque}}{{#if present(r_plaque_type)}}; the plaque is {{r_plaque_type}}{{/if}}.
+        RIGHT VERTEBRAL: {{r_vert | cap}}.
+      impression: |-
+        {{#if present(r_stenosis)}}
+        Right internal carotid artery: {{r_stenosis}}{{#if r_ica_flow == 'patent'}}, by SRU consensus velocity criteria{{/if}}.
+        {{/if}}
+        {{#if r_vert == 'retrograde'}}
+        Retrograde flow in the right vertebral artery, which can be seen with subclavian steal physiology.
+        {{/if}}
+
+  - id: left
+    title: Left
+    show_if: "side in ['bilateral', 'left']"
+    fields:
+      - id: l_note
+        type: note
+        label: Velocities fill in from the scanner when it sends its report. Check them against the images.
+      - id: l_cca_psv
+        type: number
+        label: CCA peak systolic velocity
+        unit: cm/s
+        decimals: 1
+        min: 10
+        max: 300
+        sr: LN:11726-7 in SRT:T-45100 left
+      - id: l_cca_edv
+        type: number
+        label: CCA end diastolic velocity
+        unit: cm/s
+        decimals: 1
+        min: 0
+        max: 150
+        sr: LN:11653-3 in SRT:T-45100 left
+      - id: l_ica_flow
+        type: choice
+        label: ICA
+        required: true
+        default: patent
+        normal: patent
+        options:
+          - { value: patent, label: Patent }
+          - { value: near, label: "Near occlusion (string sign)" }
+          - { value: occluded, label: Occluded }
+      - id: l_ica_psv
+        type: number
+        label: ICA peak systolic velocity
+        unit: cm/s
+        decimals: 1
+        min: 10
+        max: 700
+        required: true
+        show_if: "l_ica_flow != 'occluded'"
+        sr: LN:11726-7 in SRT:T-45300 left
+      - id: l_ica_edv
+        type: number
+        label: ICA end diastolic velocity
+        unit: cm/s
+        decimals: 1
+        min: 0
+        max: 300
+        show_if: "l_ica_flow != 'occluded'"
+        sr: LN:11653-3 in SRT:T-45300 left
+      - id: l_eca_psv
+        type: number
+        label: ECA peak systolic velocity
+        unit: cm/s
+        decimals: 1
+        min: 10
+        max: 500
+        sr: LN:11726-7 in SRT:T-45200 left
+      - id: l_ratio
+        type: calc
+        label: ICA/CCA PSV ratio
+        formula: ratio(l_ica_psv, l_cca_psv)
+        decimals: 1
+        show_if: "l_ica_flow != 'occluded'"
+      - id: l_plaque
+        type: choice
+        label: ICA plaque (visual estimate)
+        required: true
+        default: none
+        normal: none
+        options:
+          - { value: none, label: None, text: No plaque is seen }
+          - { value: lt50, label: "Plaque, under 50% diameter reduction", text: Plaque causes less than 50% diameter reduction }
+          - { value: ge50, label: "Plaque, 50% or more diameter reduction", text: Plaque causes 50% or more diameter reduction }
+      - id: l_plaque_type
+        type: multi
+        label: Plaque appearance
+        show_if: "l_plaque != 'none'"
+        options:
+          - { value: calcified, label: Calcified, text: calcified }
+          - { value: hypoechoic, label: Hypoechoic, text: hypoechoic }
+          - { value: heterogeneous, label: Heterogeneous, text: heterogeneous }
+          - { value: irregular, label: Irregular surface, text: with an irregular surface }
+      - id: l_vert
+        type: choice
+        label: Vertebral artery flow
+        required: true
+        default: antegrade
+        normal: antegrade
+        options:
+          - { value: antegrade, label: Antegrade, text: antegrade flow }
+          - { value: retrograde, label: Retrograde, text: retrograde flow }
+          - { value: absent, label: No flow, text: no detectable flow }
+          - { value: not_seen, label: Not visualized, text: not visualized }
+      - id: l_stenosis
+        type: calc
+        label: Estimated ICA stenosis (SRU)
+        formula: "if(l_ica_flow == 'occluded', 'occluded', if(l_ica_flow == 'near', 'near occlusion', if(empty(l_ica_psv), '', if(l_ica_psv > 230, '70% or greater stenosis', if(l_ica_psv >= 125, '50-69% stenosis', if(l_plaque != 'none', 'less than 50% stenosis', 'no stenosis'))))))"
+    report:
+      findings: |-
+        LEFT CAROTID:{{#if present(l_cca_psv)}} Common carotid artery peak systolic velocity {{l_cca_psv}}{{#if present(l_cca_edv)}}, end diastolic velocity {{l_cca_edv}}{{/if}}.{{/if}}{{#if l_ica_flow == 'occluded'}} The internal carotid artery is occluded, with no detectable flow.{{else}} Internal carotid artery peak systolic velocity {{l_ica_psv}}{{#if present(l_ica_edv)}}, end diastolic velocity {{l_ica_edv}}{{/if}}{{#if present(l_ratio)}}; ICA/CCA ratio {{l_ratio}}{{/if}}.{{#if l_ica_flow == 'near'}} There is a string sign, with near occlusion.{{/if}}{{/if}}{{#if present(l_eca_psv)}} External carotid artery peak systolic velocity {{l_eca_psv}}.{{/if}} {{l_plaque}}{{#if present(l_plaque_type)}}; the plaque is {{l_plaque_type}}{{/if}}.
+        LEFT VERTEBRAL: {{l_vert | cap}}.
+      impression: |-
+        {{#if present(l_stenosis)}}
+        Left internal carotid artery: {{l_stenosis}}{{#if l_ica_flow == 'patent'}}, by SRU consensus velocity criteria{{/if}}.
+        {{/if}}
+        {{#if l_vert == 'retrograde'}}
+        Retrograde flow in the left vertebral artery, which can be seen with subclavian steal physiology.
+        {{/if}}

@@ -14,6 +14,7 @@ import { query } from './db.js';
 import { getSettings } from './settings.js';
 import { writeBackup } from './backup.js';
 import { audit, verifyAuditChain } from './audit.js';
+import { purgeUnmatchedReports } from './scanner.js';
 
 const BACKUP_DIR = process.env.BACKUP_DIR || '';
 const BACKUP_HOUR = Number(process.env.BACKUP_HOUR ?? 2);
@@ -97,6 +98,7 @@ export function startMaintenance(log = console) {
     await task('sessions', () => query('DELETE FROM sessions WHERE expires_at < now()'));
     await task('sign-in throttling', () => query("DELETE FROM login_failures WHERE last_failed_at < now() - interval '1 day' AND (locked_until IS NULL OR locked_until < now())"));
     await task('retention', () => purgeOldExams(log));
+    await task('unmatched scanner reports', () => purgeUnmatchedReports(log));
     const now = new Date();
     if (BACKUP_DIR && now.getHours() >= BACKUP_HOUR && !backedUpToday()) {
       await task('backup', async () => {

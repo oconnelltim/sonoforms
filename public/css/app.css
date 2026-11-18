@@ -193,6 +193,9 @@ select.input { cursor: pointer; }
 /* ---- Badges, alerts, toasts -------------------------------------------- */
 .badge { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: .76rem; font-weight: 600; background: var(--surface-3); color: var(--muted); margin-right: 4px; white-space: nowrap; vertical-align: middle; }
 .badge.accent { background: var(--accent-soft); color: var(--accent); }
+.badge.scanner { background: var(--accent-soft); color: var(--accent); font-weight: 500; }
+.scanner-banner { margin-bottom: 12px; }
+.scanner-report + .scanner-report { margin-top: 16px; }
 .status-draft { background: var(--info-soft); color: var(--info); }
 .status-submitted { background: var(--success-soft); color: var(--success); }
 .status-returned { background: var(--warn-soft); color: var(--warn); }
@@ -335,7 +338,7 @@ dialog.modal::backdrop { background: rgba(10, 15, 20, .5); }
 .other-input { margin-top: 8px; max-width: 520px; }
 .input-unit, .dims { display: flex; align-items: center; gap: 6px; }
 .input.num { width: 96px; text-align: right; font-variant-numeric: tabular-nums; font-size: 1rem; }
-.dims .input.num { width: 78px; }
+.dims .input.num { width: 92px; }   /* room for a scanner value like 3.153901 */
 .dim-wrap { display: flex; flex-direction: column; align-items: center; }
 .dim-axis { font-size: .7rem; color: var(--muted); font-weight: 600; }
 .times { color: var(--muted); margin-top: 14px; }

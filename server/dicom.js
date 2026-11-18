@@ -255,6 +255,7 @@ export function mockStudies(institution) {
     // billed separately but on the abdomen form, and a DVT study.
     ['TEST^CARLOS^J', 'M', '19550130', 'US DOPPLER ABDOMEN', 2],
     ['TEST^CARLOS^J', 'M', '19550130', 'US VENOUS DUPLEX LOWER EXT RIGHT', 2],
+    ['SAMPLE^KAREN', 'F', '19580212', 'US CAROTID DUPLEX BILATERAL'],
   ];
   const midnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
   return people.map(([name, sex, dob, desc, samePatientAs], i) => {

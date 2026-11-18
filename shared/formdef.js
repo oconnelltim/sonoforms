@@ -7,11 +7,12 @@
 import { compile, identifiers } from './expr.js';
 import { parseTemplate } from './template.js';
 import { REPORT_FIELD_IDS } from './report-fields.js';
+import { parseSrSpec } from './sr.js';
 
 export const FIELD_TYPES = ['text', 'textarea', 'number', 'choice', 'multi', 'boolean', 'date', 'dims', 'calc', 'repeat', 'note'];
 const FIELD_KEYS = ['id', 'type', 'label', 'help', 'required', 'show_if', 'default', 'normal', 'unit', 'decimals', 'min', 'max', 'step',
   'options', 'other', 'layout', 'placeholder', 'width', 'axes', 'formula', 'fields', 'item_label', 'min_items', 'max_items',
-  'true_text', 'false_text', 'conjunction', 'rows'];
+  'true_text', 'false_text', 'conjunction', 'rows', 'sr'];
 const OPTION_KEYS = ['value', 'label', 'text', 'points', 'help'];
 const SECTION_KEYS = ['id', 'title', 'show_if', 'fields', 'report', 'report_field', 'help'];
 const RESERVED_IDS = new Set(['__proto__', 'constructor', 'prototype', 'patient', 'exam', 'institution', 'true', 'false', 'null', 'and', 'or', 'not', 'in']);
@@ -117,6 +118,22 @@ export function lintForm(rawOrDef) {
     }
   };
 
+  // Scanner measurement mappings (see shared/sr.js): a number field takes one
+  // mapping key, a dims field one per axis.
+  const checkSr = (path, f) => {
+    if (!['number', 'dims'].includes(f.type)) { err(path, `'${f.id}': only number and measurement (dims) fields can take scanner values (sr)`); return; }
+    const keys = f.type === 'dims' ? f.sr : [f.sr];
+    if (f.type === 'dims' && (!Array.isArray(f.sr) || f.sr.length !== (f.axes || ['L', 'AP', 'W']).length)) {
+      err(path, `'${f.id}': sr needs one mapping key per axis (${(f.axes || ['L', 'AP', 'W']).join(', ')})`);
+      return;
+    }
+    for (const k of keys) {
+      if (typeof k !== 'string') { err(path, `'${f.id}': each sr mapping key must be text`); continue; }
+      try { parseSrSpec(k); } catch (e) { err(path, `'${f.id}': sr mapping "${k}" ${e.message}`); }
+    }
+    if (!f.unit) warn(path, `'${f.id}' has no unit, so it only accepts unitless scanner values (ratios, counts)`);
+  };
+
   const checkTemplate = (path, src) => {
     let nodes;
     try { nodes = parseTemplate(src); } catch (e) { err(path, e.message); return; }
@@ -168,6 +185,7 @@ export function lintForm(rawOrDef) {
       }
     }
     if (f.type === 'calc' && !f.formula) err(path, `Calculated field '${f.id}' needs a formula`);
+    if (f.sr !== undefined) checkSr(path, f);
     if (f.formula) checkExpr(path, f.formula, scopeIds);
     if (f.show_if) checkExpr(path, f.show_if, scopeIds);
     if (typeof f.required === 'string') checkExpr(path, f.required, scopeIds);

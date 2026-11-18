@@ -66,6 +66,8 @@ export const config = {
   trustProxy: parseTrustProxy(env('TRUST_PROXY', 'false')),
   formsDir: env('FORMS_DIR', path.join(ROOT, 'forms')),
   dicomMock: bool(env('DICOM_MOCK', 'false')),
+  // Port for receiving scanner reports (DICOM SR) from ultrasound machines; 0 = off.
+  scannerPort: Number(env('SCANNER_PORT', 0)),
   logLevel: env('LOG_LEVEL', 'info'),
 };
 

@@ -247,6 +247,44 @@ Without one, it's made from the title ("US Pelvis (female, non-OB)" becomes "ULT
 
 A separately billed study that the same form covers (e.g. an abdominal Doppler done with the abdomen) doesn't need its own form: the tech links it to the abdomen form when starting, and the radiologist sees both accession numbers.
 
+## Measurements from the scanner (`sr`)
+
+Ultrasound machines send a measurement report (a DICOM Structured Report) when a study is done. SonoForms matches it to the exam, and any field with an `sr:` mapping fills in from it when the tech opens the form (see [ADMIN.md › Scanner reports](ADMIN.md#scanner-reports)).
+
+```yaml
+- id: r_ica_psv
+  type: number
+  label: ICA peak systolic velocity
+  unit: cm/s
+  sr: LN:11726-7 in SRT:T-45300 right
+- id: r_ovary
+  type: dims
+  unit: cm
+  sr:                       # one per axis: length, height (AP), width
+    - LN:11841-4
+    - LN:11858-8
+    - LN:11830-7
+```
+
+A mapping key names the measurement by its code. Most scanners use LOINC codes (`LN:…`). Then, optionally:
+
+* `in CODE`: the place it was measured, such as the vessel or organ (e.g. `SRT:T-45300`, internal carotid artery). It matches the section of the report the value sits in, or a Finding Site on it.
+* `right`, `left` or `bilateral`: the side.
+* `with CODE`: any other modifier that tells two values apart (e.g. `with SRT:R-FAB5B`, end systole).
+
+**How values are filled in:**
+
+* **Only empty fields:** the tech's own entries are never overwritten.
+* **Marked:** each filled field shows **from scanner** until the tech changes it.
+* **Chosen values:** where the scanner recorded a value several times (each attempt, then the mean or the value the tech picked), the chosen one is used.
+* **Units:** values are converted to the field's unit (mm ↔ cm, m/s ↔ cm/s, mL). A field without a unit only takes unitless values such as ratios, so a length is never taken without knowing whether it's in cm or mm.
+* **Measurement fields:** a `dims` field fills only when all its sizes are found.
+* **Precision:** values keep the scanner's precision, and the report rounds them once, to the field's `decimals`.
+* **Patient check:** if the report's patient ID doesn't match the exam's patient, its values aren't used, and the tech sees a warning.
+* **Older and newer codes:** mappings work with both the older SNOMED codes (`SRT:…`) and SNOMED CT (`SCT:…`), which newer scanner software uses.
+
+To find the mapping key for a measurement, open a scanner report in the SR viewer, `tools/sr-viewer/index.html` (see [tools/README.md](../tools/README.md)). Every measurement has its key next to it. The starter carotid and pelvis forms have mappings for GE LOGIQ scanners.
+
 ## Worked example: scoring
 
 ```yaml

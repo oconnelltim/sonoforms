@@ -46,6 +46,11 @@ A checklist for trying SonoForms in one ultrasound department before wider use. 
 - [ ] Enter the PACS host, port and AE title in **Admin › Institutions › Edit**. Run **Test connection**, then **Test query**.
 - [ ] Check that the test query shows only your site's ultrasound studies. Add an institution filter if it doesn't.
 - [ ] Check that each common study description suggests the right form. If not, add the description's words to the form's *Study descriptions that pick this form*.
+- [ ] **Scanner measurements (optional):**
+  - List the pilot machines' AE titles under Admin › Institutions › Scanners.
+  - Have the PACS team add SonoForms as an SR destination (port 11112, our AE title).
+  - Firewall that port to the scanners.
+  - Check **Admin › Scanner reports** after a study, and that the velocities or sizes fill in the form.
 - [ ] Check how **multipart orders** appear, e.g. an abdomen plus a Doppler billed separately. Each should be its own study, and the tech links them to one form when starting.
 
 ## 6. Forms

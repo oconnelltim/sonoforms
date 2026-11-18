@@ -85,6 +85,101 @@ export async function render({ root, params, navigate, session }) {
     }
   }, 150);
 
+  // ---- scanner values ---------------------------------------------------------
+  // Measurements the ultrasound machine sent (a DICOM SR, matched to this exam
+  // by Study UID) fill empty fields. Each is marked "from scanner" until the
+  // tech changes it; answers.__scanner remembers which, and what was filled.
+  let scanner = null;
+  const scannerHost = h('div.scanner-host');
+  const blank = v => v === undefined || v === null || v === '' || (Array.isArray(v) && v.every(x => x === null || x === undefined || x === ''));
+  const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+
+  async function loadScanner() {
+    try { scanner = await get(`/exams/${id}/scanner`); } catch { scanner = null; }
+  }
+
+  // Fills empty fields (and, with refill, ones still holding an earlier
+  // scanner value) from the scanner. Returns how many changed.
+  function applyScanner({ refill = false } = {}) {
+    if (!scanner || !editable() || !data.form) return 0;
+    const marks = { ...(answers.__scanner || {}) };
+    let changed = 0;
+    for (const [fid, value] of Object.entries(scanner.values || {})) {
+      const current = answers[fid];
+      const stillScanner = marks[fid] && same(current, marks[fid].value);
+      if (!blank(current) && !(refill && stillScanner)) continue;
+      if (!same(current, value)) { answers[fid] = value; changed++; }
+      marks[fid] = { value, report: scanner.sources?.[fid]?.report ?? null };
+    }
+    answers.__scanner = marks;
+    return changed;
+  }
+
+  // Drops marks for fields the tech changed, and shows the rest.
+  function updateScannerMarks() {
+    const marks = answers.__scanner || {};
+    for (const [fid, m] of Object.entries(marks)) if (!same(answers[fid], m.value)) delete marks[fid];
+    formHost.querySelectorAll('.badge.scanner').forEach(b => b.remove());
+    for (const fid of Object.keys(marks)) {
+      const label = formHost.querySelector(`[data-field="${CSS.escape(fid)}"] .field-label`);
+      if (label) label.append(' ', h('span.badge.scanner', { title: 'Filled in from the scanner’s measurement report. Changing the value removes this mark.' }, 'from scanner'));
+    }
+  }
+
+  // "Internal Carotid Artery (right)"; values for a whole side just "Right".
+  const where = (m) => {
+    const place = m.path.filter(x => x !== 'Findings').join(' › ');
+    const side = m.side ? m.side[0].toUpperCase() + m.side.slice(1) : '';
+    return place ? `${place}${side ? ` (${m.side})` : ''}` : (side || '—');
+  };
+
+  function showScannerValues() {
+    modal({
+      title: 'Measurements from the scanner',
+      wide: true,
+      body: scanner.reports.map(r => h('div.scanner-report',
+        h('p.small.muted', [r.title, r.device, `received ${fmtDateTime(r.received_at)}`].filter(Boolean).join(' · ')),
+        h('table.table.small', h('thead', h('tr', h('th', 'Where'), h('th', 'Measurement'), h('th.num', 'Value'))),
+          h('tbody', r.measurements.map(m => h('tr',
+            h('td', where(m)),
+            h('td', m.name || m.key),
+            h('td.num', `${Math.round(m.value * 100) / 100} ${m.unit === '1' ? '' : m.unit}`))))))),
+      actions: [{ label: 'Close', primary: true }],
+    });
+  }
+
+  async function refreshScanner() {
+    await loadScanner();
+    const n = applyScanner({ refill: true });
+    buildForm();
+    if (n) markDirty();
+    toast(n ? `Updated ${n} field${n === 1 ? '' : 's'} from the scanner` : 'Nothing new from the scanner', n ? 'success' : 'info');
+  }
+
+  function drawScannerBanner() {
+    const mapped = data.form && (data.form.definition.sections || []).some(sec => (sec.fields || []).some(f => f.sr));
+    const reports = scanner?.reports || [];
+    const marks = Object.keys(answers.__scanner || {}).length;
+    if (!reports.length) {
+      mount(scannerHost, mapped && editable()
+        ? h('div.alert.info.small.scanner-banner', 'No measurements from the scanner yet. They fill in by themselves once the machine sends its report. ',
+          h('button.link', { type: 'button', onclick: refreshScanner }, 'Check again'))
+        : null);
+      return;
+    }
+    const latest = reports[0];
+    mount(scannerHost,
+      reports.some(r => r.patient_mismatch)
+        ? h('div.alert.error.small', 'A scanner report for this study names a different patient ID, so its values weren’t used. Check the study on the scanner and tell your PACS administrator.')
+        : null,
+      h('div.alert.info.small.scanner-banner',
+        h('strong', 'Scanner measurements: '),
+        `${latest.title || 'report'} from ${latest.device || 'the scanner'}, received ${fmtDateTime(latest.received_at)}. `,
+        editable() ? `${marks} field${marks === 1 ? '' : 's'} filled in from it; check them against the images. ` : '',
+        h('button.link', { type: 'button', onclick: showScannerValues }, 'Show all values'),
+        editable() ? [' · ', h('button.link', { type: 'button', onclick: refreshScanner }, 'Check for a newer report')] : null));
+  }
+
   let form = null;
   const formHost = h('div.form-host');
   const navHost = h('div.nav-host');
@@ -106,13 +201,15 @@ export async function render({ root, params, navigate, session }) {
     form = renderForm(def, answers, {
       env: data.env,
       readOnly: !editable(),
-      onChange: () => { markDirty(); updatePreview(); },
+      onChange: () => { markDirty(); updatePreview(); updateScannerMarks(); },
     });
     mount(navHost, form.nav);
-    mount(formHost, form.el,
+    mount(formHost, scannerHost, form.el,
       h('section.form-section', h('div.section-head', h('h3', 'Note to radiologist')), techNote));
     techNote.disabled = !editable();
     updatePreview();
+    updateScannerMarks();
+    drawScannerBanner();
   }
 
   async function changeForm() {
@@ -265,6 +362,9 @@ export async function render({ root, params, navigate, session }) {
   mount(root, h('div.exam-page', header, grid));
   layoutPreview();
   buildForm();
+  // Scanner values arrive after the form is drawn (and its defaults set).
+  await loadScanner();
+  if (applyScanner()) { buildForm(); markDirty(); } else drawScannerBanner();
   if (editable()) setSaveState(exam.status === 'returned' ? 'Returned for changes' : 'All changes saved', 'ok');
 
   // Keyboard: Ctrl/Cmd+S saves now.

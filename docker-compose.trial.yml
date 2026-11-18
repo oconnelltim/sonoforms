@@ -103,6 +103,9 @@ services:
       TRUST_PROXY: 172.31.251.0/28
       BACKUP_DIR: /backups
       DICOM_MOCK: "${DICOM_MOCK:-false}"
+      SCANNER_PORT: "11112"
+    ports:
+      - "${SCANNER_HOST_PORT:-11112}:11112"
     volumes:
       - trial-secrets:/trial:ro
       - backups:/backups

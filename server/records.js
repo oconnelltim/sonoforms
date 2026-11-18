@@ -19,6 +19,7 @@ export const indexes = {
   lastName: (inst, name) => nameIndex(name, `last-name:${inst}`),
   studyUid: (inst, uid) => exactIndex(uid, `study-uid:${inst}`),
   accession: (inst, acc) => exactIndex(acc, `accession:${inst}`),
+  sopUid: (inst, uid) => exactIndex(uid, `sop-uid:${inst}`),
 };
 
 async function nextId(table) {

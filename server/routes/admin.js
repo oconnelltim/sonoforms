@@ -13,6 +13,7 @@ import { audit, verifyAuditChain } from '../audit.js';
 import { requireAuth, can, HttpError, lockStatus, unlockAccount } from '../auth.js';
 import { getSettings, updateSettings } from '../settings.js';
 import { echo, todaysStudies, clearCache, queryIsConstrained, MODALITY_KEYS, DEFAULT_MAX_RESULTS } from '../dicom.js';
+import { recentReports, UNMATCHED_KEEP_DAYS } from '../scanner.js';
 import { writeBackup } from '../backup.js';
 import { backupFiles, backupToDir, backupDir } from '../maintenance.js';
 
@@ -36,6 +37,8 @@ function cleanDicom(d = {}) {
     modality_key: MODALITY_KEYS.includes(d.modality_key) ? d.modality_key : 'ModalitiesInStudy',
     date_mode: d.date_mode === 'single' ? 'single' : 'range',
     max_results: Math.min(Math.max(Number(d.max_results) || DEFAULT_MAX_RESULTS, 50), 2000),
+    // Ultrasound machines allowed to send scanner reports to this institution.
+    scanners: [...new Set((Array.isArray(d.scanners) ? d.scanners : String(d.scanners || '').split(/[\s,]+/)).map(ae).filter(Boolean))].slice(0, 50),
     filters: (Array.isArray(d.filters) ? d.filters : [])
       .filter(f => f && DICOM_KEYS.includes(f.tag) && String(f.value || '').trim())
       .map(f => ({ tag: f.tag, value: String(f.value).trim().slice(0, 64), mode: f.mode === 'local' ? 'local' : 'query' })),
@@ -217,6 +220,13 @@ export default async function adminRoutes(app) {
     clearCache();
     await audit({ req, institutionId: id, action: 'institution.update', entityType: 'institution', entityId: id, details: { changed: Object.keys(b) } });
     return { ok: true };
+  });
+
+  // What scanners have sent recently, without patient details (for
+  // checking that machines are configured correctly).
+  app.get('/scanner-reports', admin, async () => {
+    const ids = (await many('SELECT id FROM institutions ORDER BY id')).map(r => r.id);
+    return { reports: await recentReports(ids), unmatched_keep_days: UNMATCHED_KEEP_DAYS, receiver_port: config.scannerPort || null };
   });
 
   app.post('/institutions/:id/echo', { ...admin, schema: { body: { type: 'object', properties: { dicom: { type: 'object' } } } } }, async (req) => {

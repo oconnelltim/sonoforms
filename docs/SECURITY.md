@@ -109,6 +109,7 @@ SonoForms handles protected health information. This document describes how it i
 * **Free text:** free-text fields (comparison, "other" descriptions, tech notes) can contain whatever the tech types, including identifiers. They are encrypted like all other answers.
 * **Plaintext metadata:** exam dates, form titles and the patient each exam belongs to are not encrypted, so a database dump shows which kinds of exams an anonymous patient record had, and when.
 * **Admin connection tests:** administrators can point the PACS connection tests at any host and port. The connection only speaks DICOM, and detailed errors are kept because they're needed for troubleshooting.
+* **Scanner reports:** the receiver accepts DICOM only from scanners listed by AE title. AE titles aren't secret, so its port (11112) must be firewalled to the scanners' network. Only Structured Report objects are accepted, and they're parsed but never executed. They're stored encrypted, and unmatched ones are deleted after 14 days.
 * **Outbound traffic:** the app container's outbound traffic isn't restricted at the network level by default. docs/ADMIN.md shows how to limit it to your PACS with a firewall rule.
 * **Owner credentials:** the database owner password and master key are on the server, in `secrets/`. Anyone with root on the host can read all data. Protect the host accordingly.
 * **No single sign-on:** there is no LDAP/SAML yet.

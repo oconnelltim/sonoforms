@@ -91,7 +91,7 @@ for (const [name, ts] of [['explicit VR', '1.2.840.10008.1.2.1'], ['implicit VR'
       ['Findings > Internal Carotid Artery', 'LN:11726-7', 61.2, 'cm/s', 'Right', true],
     ]);
     assert.equal(ms[2].selection, 'User chosen value');
-    assert.equal(SR.mappingKey(ms[2]), 'LN:11726-7 · in SRT:T-45300 · right');
+    assert.equal(SR.mappingKey(ms[2]), 'LN:11726-7 in SRT:T-45300 right');
   });
 }
 

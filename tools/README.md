@@ -9,7 +9,7 @@ Opens a DICOM Structured Report, such as the measurement report an ultrasound ma
 - **Summary:** report type and template (e.g. TID 5100 Vascular Ultrasound), device, study and report dates, and the Study Instance UID. Patient identifiers are blurred until you tick *Show patient identifiers*.
 - **Measurements:** every numeric item with where it sits in the report (e.g. *Internal Carotid Artery*), side, modifiers (derivation, cardiac cycle point…) and units.
   - Machines often record a measurement several times. The value the machine or tech chose is marked, and the rest are greyed out.
-  - Each row has a *mapping key*, the codes that identify the measurement, for wiring it to a form field.
+  - Each row has a *mapping key*, the codes that identify the measurement. Paste it into a form field's `sr:` setting to fill that field from the scanner (see "Measurements from the scanner" in `docs/FORMS.md`).
   - Measurements can be downloaded as CSV or JSON.
 - **Content tree:** the whole report as a collapsible tree.
 - **Vendor data:** private blocks. For GE machines this includes their XML list of every measurement and calculation, stored in SI units and shown converted to the units the machine displayed.

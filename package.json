@@ -14,6 +14,7 @@
     "dev": "node scripts/dev.js",
     "dev:cli": "node scripts/dev-cli.js",
     "mock-pacs": "node scripts/mock-pacs.js",
+    "demo:sr": "node scripts/demo-sr.js",
     "test": "node --test test/*.test.js",
     "check": "npm test && npm run lint-forms && npm audit --omit=dev --audit-level=high",
     "check:linux": "bash scripts/check-linux.sh",

@@ -4,9 +4,36 @@ All notable changes to SonoForms are documented here. The format follows [Keep a
 
 ## [Unreleased]
 
+### Upgrading
+
+- **New port for scanner reports:** the app container now listens on port 11112 (`SCANNER_HOST_PORT` in `.env`) for measurement reports from ultrasound machines. Nothing is accepted until scanners are listed under Admin › Institutions › Scanners. Firewall the port to the scanners' network. If another program on the server already uses 11112, set a different `SCANNER_HOST_PORT`.
+
 ### Added
 
+- **Measurements from the scanner.** Ultrasound machines (or the integration engine) can push their DICOM Structured Reports to SonoForms when a study is done.
+  - **Holding area:** a report waits until an exam for the same study exists (matched by Study Instance UID), then fills that exam's form.
+  - **Mapping:** forms say which value goes where with `sr:` mappings on number and measurement fields, e.g. `sr: LN:11726-7 in SRT:T-45300 right`. See "Measurements from the scanner" in [docs/FORMS.md](docs/FORMS.md).
+  - **Filling the form:** only empty fields are filled, each marked *from scanner* until the tech changes it. The tech can see all the scanner's values and check for a newer report.
+  - **Safety:** the chosen value is used where the scanner recorded several; units are converted; reports naming a different patient aren't used.
+  - **Code versions:** mappings match both older (SRT) and newer (SNOMED CT) codes.
+  - **Receiver:** only scanners listed under Admin › Institutions › Scanners can send, on port 11112, and only SR objects are accepted. Reports are stored encrypted, and unmatched ones are deleted after 14 days. **Admin › Scanner reports** shows what arrived, without patient details. See "Scanner reports" in [docs/ADMIN.md](docs/ADMIN.md).
+  - **Development:** `npm run demo:sr` sends demo reports to `npm run dev`.
+- **Carotid duplex starter form** (`us-carotid`):
+  - both sides, with CCA, ICA and ECA velocities filled from the scanner
+  - ICA/CCA ratio, plaque, ICA patency and vertebral flow
+  - ICA stenosis graded with the SRU consensus criteria, and a drafted impression
+  
+  Have your radiologists review it before clinical use.
 - **SR viewer** ([tools/sr-viewer](tools/README.md)): a single-file browser tool for looking inside the DICOM Structured Reports that ultrasound machines send. It shows measurements with their location, side, modifiers and the chosen value, plus the content tree, vendor data (including GE's XML measurement list) and every element. It also exports CSV and JSON. It runs entirely in the browser and is blocked from making any network connections.
+
+### Changed
+
+- The pelvis starter form's uterus and ovary sizes now have a unit (cm), so the report reads "measures 3.2 x 1.6 x 2.9 cm". Its ovary sizes fill in from the scanner.
+- Measurement boxes are wider, to fit a scanner's full-precision value.
+
+### Security
+
+- `glob` and `minimatch` (used by the web server's static file serving) updated for moderate-severity advisories.
 
 ## [0.3.2] - 2026-10-29
 

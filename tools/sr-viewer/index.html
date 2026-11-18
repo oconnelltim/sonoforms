@@ -448,15 +448,16 @@ FFFE,E000|NONE|Item FFFE,E00D|NONE|ItemDelimitationItem FFFE,E0DD|NONE|SequenceD
     return out;
   }
 
-  // A compact description of what identifies a measurement, as a starting
-  // point for mapping it to a form field.
+  // The mapping key for a measurement, in the syntax a form's `sr:` uses
+  // (see shared/sr.js): its code, the innermost named container, the side,
+  // and any other modifier values that tell it apart.
   function mappingKey(m) {
     const where = m.pathKeys.filter(k => k && !/^DCM:121070$/.test(k)).slice(-1)[0];
     const parts = [m.key];
     if (where) parts.push('in ' + where);
     if (m.laterality) parts.push(m.laterality.toLowerCase());
-    for (const x of m.modifiers.filter(x => x.key !== DERIVATION && !LATERALITY.has(x.key))) parts.push(`${x.name}=${x.value}`);
-    return parts.join(' · ');
+    for (const x of m.modifiers.filter(x => x.key !== DERIVATION && !LATERALITY.has(x.key) && x.valueKey)) parts.push(`with ${x.valueKey}`);
+    return parts.join(' ');
   }
 
   // ---- document summary ----
